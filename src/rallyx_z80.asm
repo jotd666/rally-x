@@ -84,7 +84,17 @@
 ;	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
 ;	PORT_SERVICE_DIPLOC( 0x01, 0x01, "DSW:1")
 
-0000: C3 00 38    jp   $3800
+p1_a000 = $a000
+p2_a080 = $a080
+scrollx_a130 = $a130
+scrolly_a140 = $a140
+watchdog_a080 = $a080
+dsw_a100 = $a100
+sound_a100 = $a100
+
+0000: C3 00 38    jp   boot_3800
+
+; reaches here when all memory & screen tests are done
 0003: 31 00 84    ld   sp,$8400
 0006: 18 32       jr   $003A
 
@@ -113,7 +123,7 @@
 0062: C3 E7 04    jp   $04E7
 
 irq_0069:
-0069: 32 80 A0    ld   ($A080),a
+0069: 32 80 A0    ld   (watchdog_a080),a
 006C: FD 26 01    ld   iyh,$01
 006F: 2A 69 80    ld   hl,($8069)
 0072: ED 4B 50 80 ld   bc,($8050)
@@ -317,7 +327,7 @@ irq_0069:
 01F6: FD E5       push iy
 01F8: AF          xor  a
 01F9: 32 81 A1    ld   ($A181),a
-01FC: 32 80 A0    ld   ($A080),a
+01FC: 32 80 A0    ld   (watchdog_a080),a
 01FF: CD C5 14    call $14C5
 0202: CD 4D 15    call $154D
 0205: 3A 20 80    ld   a,($8020)
@@ -326,10 +336,10 @@ irq_0069:
 020B: FE 02       cp   $02
 020D: C2 BD 03    jp   nz,$03BD
 0210: 3A 4D 80    ld   a,($804D)
-0213: 32 30 A1    ld   ($A130),a
+0213: 32 30 A1    ld   (scrollx_a130),a
 0216: 3A 4F 80    ld   a,($804F)
 0219: ED 44       neg
-021B: 32 40 A1    ld   ($A140),a
+021B: 32 40 A1    ld   (scrolly_a140),a
 021E: DD 21 14 88 ld   ix,$8814
 0222: 21 15 80    ld   hl,$8015
 0225: FD 21 02 80 ld   iy,$8002
@@ -608,9 +618,9 @@ irq_0069:
 0445: 30 01       jr   nc,$0448
 0447: 3C          inc  a
 0448: 32 86 A1    ld   ($A186),a
-044B: 3A 00 A1    ld   a,($A100)
+044B: 3A 00 A1    ld   a,(dsw_a100)
 044E: E6 01       and  $01
-0450: CA 00 38    jp   z,$3800
+0450: CA 00 38    jp   z,boot_3800
 0453: 3E 01       ld   a,$01
 0455: 32 81 A1    ld   ($A181),a
 0458: FD E1       pop  iy
@@ -696,7 +706,7 @@ irq_0069:
 04ED: 0E 66       ld   c,$66
 04EF: CD 4E 1C    call $1C4E
 04F2: CD 76 1B    call $1B76
-04F5: 3A 00 A1    ld   a,($A100)
+04F5: 3A 00 A1    ld   a,(dsw_a100)
 04F8: 47          ld   b,a
 04F9: 21 AA 82    ld   hl,$82AA
 04FC: E6 C0       and  $C0
@@ -760,7 +770,7 @@ irq_0069:
 0569: 23          inc  hl
 056A: 56          ld   d,(hl)
 056B: ED 53 B3 81 ld   ($81B3),de
-056F: 3A 80 A0    ld   a,($A080)
+056F: 3A 80 A0    ld   a,(watchdog_a080)
 0572: F6 FE       or   $FE
 0574: 2F          cpl
 0575: 32 A9 81    ld   ($81A9),a
@@ -943,10 +953,10 @@ irq_0069:
 071C: CC 30 1C    call z,$1C30
 071F: E6 0F       and  $0F
 0721: CC 3A 1C    call z,$1C3A
-0724: 3A 00 A0    ld   a,($A000)
+0724: 3A 00 A0    ld   a,(p1_a000)
 0727: E6 40       and  $40
 0729: 28 18       jr   z,$0743
-072B: 3A 80 A0    ld   a,($A080)
+072B: 3A 80 A0    ld   a,(watchdog_a080)
 072E: E6 40       and  $40
 0730: 20 E5       jr   nz,$0717
 0732: 3A 24 80    ld   a,($8024)    ; [uncovered] 
@@ -970,7 +980,7 @@ irq_0069:
 0759: ED B0       ldir
 075B: E1          pop  hl
 075C: 32 81 A1    ld   ($A181),a
-075F: 32 80 A0    ld   ($A080),a
+075F: 32 80 A0    ld   (watchdog_a080),a
 0762: 3E F7       ld   a,$F7
 0764: D3 00       out  ($00),a
 0766: FB          ei
@@ -1051,7 +1061,7 @@ irq_0069:
 0817: 13          inc  de
 0818: 24          inc  h
 0819: 10 F8       djnz $0813
-081B: 32 80 A0    ld   ($A080),a
+081B: 32 80 A0    ld   (watchdog_a080),a
 081E: 60          ld   h,b
 081F: 2C          inc  l
 0820: 0D          dec  c
@@ -1155,8 +1165,8 @@ irq_0069:
 08EE: 32 81 A1    ld   ($A181),a
 08F1: FB          ei
 08F2: AF          xor  a
-08F3: 32 40 A1    ld   ($A140),a
-08F6: 32 30 A1    ld   ($A130),a
+08F3: 32 40 A1    ld   (scrolly_a140),a
+08F6: 32 30 A1    ld   (scrollx_a130),a
 08F9: CD 31 11    call $1131
 08FC: 21 F5 89    ld   hl,$89F5
 08FF: CB 46       bit  0,(hl)
@@ -2229,7 +2239,7 @@ irq_0069:
 1134: ED 5B 54 80 ld   de,($8054)
 1138: 06 20       ld   b,$20
 113A: CD 62 11    call $1162
-113D: 32 80 A0    ld   ($A080),a
+113D: 32 80 A0    ld   (watchdog_a080),a
 1140: 2A 56 80    ld   hl,($8056)
 1143: 78          ld   a,b
 1144: 01 20 00    ld   bc,$0020
@@ -2802,7 +2812,7 @@ irq_0069:
 14D5: 18 3C       jr   $1513    ; [uncovered] 
 
 14D7: 21 AC 82    ld   hl,$82AC
-14DA: 3A 00 A0    ld   a,($A000)
+14DA: 3A 00 A0    ld   a,(p1_a000)
 14DD: 47          ld   b,a
 14DE: 1F          rra
 14DF: CB 16       rl   (hl)
@@ -2810,7 +2820,7 @@ irq_0069:
 14E2: CB 10       rl   b
 14E4: CB 16       rl   (hl)
 14E6: 23          inc  hl
-14E7: 3A 80 A0    ld   a,($A080)
+14E7: 3A 80 A0    ld   a,(watchdog_a080)
 14EA: 17          rla
 14EB: CB 16       rl   (hl)
 14ED: 7E          ld   a,(hl)
@@ -3953,8 +3963,8 @@ irq_0069:
 1DE1: 77          ld   (hl),a
 1DE2: ED B0       ldir
 1DE4: AF          xor  a
-1DE5: 32 40 A1    ld   ($A140),a
-1DE8: 32 30 A1    ld   ($A130),a
+1DE5: 32 40 A1    ld   (scrolly_a140),a
+1DE8: 32 30 A1    ld   (scrollx_a130),a
 1DEB: 21 4C 80    ld   hl,$804C
 1DEE: 06 04       ld   b,$04
 1DF0: 77          ld   (hl),a
@@ -4803,10 +4813,16 @@ irq_0069:
 2984: E1          pop  hl
 2985: C9          ret
 
+boot_3800:
 3800: 31 4C 38    ld   sp,$384C
 3803: C9          ret				; jumps to 3911
 
-389E: ??????????? ld   sp,$8400
+boot_sequence_384C:
+	.word	reset_3911
+	.word	resume_boot_3967
+	.word 	resume_boot_39b1
+	
+389E: 31 00 84    ld   sp,$8400
 389F: 00          nop    ; [uncovered] 
 38A0: 84          add  a,h    ; [uncovered] 
 38A1: 21 00 80    ld   hl,$8000
@@ -4834,7 +4850,7 @@ irq_0069:
 38D8: 32 81 A1    ld   ($A181),a
 38DB: 32 82 A1    ld   ($A182),a
 38DE: FB          ei
-38DF: 3A 00 A1    ld   a,($A100)
+38DF: 3A 00 A1    ld   a,(dsw_a100)
 38E2: CB 47       bit  0,a
 38E4: 28 F9       jr   z,$38DF
 38E6: F3          di
@@ -4844,31 +4860,32 @@ irq_0069:
 38EE: CD CE 3D    call $3DCE
 38F1: 01 00 00    ld   bc,$0000
 38F4: 3E 02       ld   a,$02
-38F6: 32 80 A0    ld   ($A080),a
+38F6: 32 80 A0    ld   (watchdog_a080),a
 38F9: 3D          dec  a
 38FA: 20 FA       jr   nz,$38F6
 38FC: 0D          dec  c
 38FD: 20 F5       jr   nz,$38F4
 38FF: 10 F3       djnz $38F4
-3901: 32 80 A0    ld   ($A080),a
-3904: 3A 00 A1    ld   a,($A100)
+3901: 32 80 A0    ld   (watchdog_a080),a
+3904: 3A 00 A1    ld   a,(dsw_a100)
 3907: CB 47       bit  0,a
 3909: 28 F6       jr   z,$3901
 390B: CD 59 39    call $3959
 390E: C3 03 00    jp   $0003
 
-; after setting the stack to a value to hide entrypoint
+; after setting the stack to a value to hide entrypoint/boot sequence
 ; the game jumps here
 reset_3911:
+; various memory fills
 3911: 21 00 84    ld   hl,$8400
 3914: 11 01 84    ld   de,$8401
 3917: 01 FF 03    ld   bc,$03FF
 391A: 36 40       ld   (hl),$40
-391C: ED B0       ldir
+391C: ED B0       ldir			; fill video with $40
 391E: 21 00 8C    ld   hl,$8C00
 3921: 11 01 8C    ld   de,$8C01
 3924: 01 FF 03    ld   bc,$03FF
-3927: 36 66       ld   (hl),$66
+3927: 36 66       ld   (hl),$66	; fill attibs
 3929: ED B0       ldir
 392B: 21 40 80    ld   hl,$8040
 392E: 01 08 1C    ld   bc,$1C08
@@ -4900,19 +4917,21 @@ reset_3911:
 3954: 20 FB       jr   nz,$3951
 3956: 19          add  hl,de
 3957: 10 F7       djnz $3950
-3959: 21 00 A0    ld   hl,$A000
+3959: 21 00 A0    ld   hl,p1_a000
 395C: 01 00 02    ld   bc,$0200
 395F: 71          ld   (hl),c
 3960: 2C          inc  l
 3961: 20 FC       jr   nz,$395F
 3963: 24          inc  h
 3964: 10 F9       djnz $395F
-3966: C9          ret
+3966: C9          ret		; [disabled] continues to 3967
 
+; another memory copy sequence
+resume_boot_3967:
 3967: 11 F9 3F    ld   de,$3FF9
 396A: 21 00 00    ld   hl,$0000
 396D: 01 00 10    ld   bc,$1000
-3970: 32 80 A0    ld   ($A080),a
+3970: 32 80 A0    ld   (watchdog_a080),a
 3973: 79          ld   a,c
 3974: 86          add  a,(hl)
 3975: 4F          ld   c,a
@@ -4932,6 +4951,7 @@ reset_3911:
 398B: 3E 4B       ld   a,$4B
 398D: 18 03       jr   $3992
 
+; displays "ROM OK"
 3992: 32 8C 84    ld   ($848C),a
 3995: 06 4F       ld   b,$4F
 3997: 21 86 84    ld   hl,$8486
@@ -4941,18 +4961,20 @@ reset_3911:
 399E: 2D          dec  l
 399F: 36 52       ld   (hl),$52
 39A1: FE 4B       cp   $4B
-39A3: C8          ret  z
-39A4: 32 80 A0    ld   ($A080),a    ; [uncovered] 
-39A7: 3A 00 A1    ld   a,($A100)    ; [uncovered] 
+39A3: C8          ret  z		; jumps to 39B1
+; error: reset
+39A4: 32 80 A0    ld   (watchdog_a080),a    ; [uncovered] 
+39A7: 3A 00 A1    ld   a,(dsw_a100)    ; [uncovered] 
 39AA: CB 47       bit  0,a    ; [uncovered] 
 39AC: 28 F6       jr   z,$39A4    ; [uncovered] 
 39AE: C3 00 00    jp   $0000    ; [uncovered] 
 
+resume_boot_39b1:
 39B1: 16 0F       ld   d,$0F
 39B3: E1          pop  hl
 39B4: C1          pop  bc
 39B5: 5A          ld   e,d
-39B6: 32 80 A0    ld   ($A080),a
+39B6: 32 80 A0    ld   (watchdog_a080),a
 39B9: 7B          ld   a,e
 39BA: 0F          rrca
 39BB: 0F          rrca
@@ -4979,7 +5001,7 @@ reset_3911:
 39D2: E1          pop  hl
 39D3: C1          pop  bc
 39D4: 5A          ld   e,d
-39D5: 32 80 A0    ld   ($A080),a
+39D5: 32 80 A0    ld   (watchdog_a080),a
 39D8: 7B          ld   a,e
 39D9: 0F          rrca
 39DA: 0F          rrca
@@ -5031,7 +5053,7 @@ reset_3911:
 3A51: C9          ret
 
 3DCE: 3E 03       ld   a,$03
-3DD0: 32 30 A1    ld   ($A130),a
+3DD0: 32 30 A1    ld   (scrollx_a130),a
 3DD3: 21 00 84    ld   hl,$8400
 3DD6: 11 01 84    ld   de,$8401
 3DD9: 01 FF 03    ld   bc,$03FF
