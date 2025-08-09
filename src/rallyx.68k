@@ -114,7 +114,7 @@ l_003a:
 	jbsr	osd_enable_interrupts
 	move.b	#0xF7,d0                        	| [$003d: ld   a,$F7]
 *out  ($00),a
-	lea	l_8000(a6),a0                      	| [$0041: ld   hl,$8000]
+	lea	timer_8000(a6),a0                      	| [$0041: ld   hl,$8000]
 	lea	l_8001(a6),a1                      	| [$0044: ld   de,$8001]
 	move.l	#0x0800,d1                      	| [$0047: ld   bc,$0800]
 	clr.b	(a0)                             	| [$004a: ld   (hl),$00]
@@ -148,9 +148,10 @@ l_0084:
 	LOAD_WORD	value16_804c(a6),d3             	| [$0084: ld   de,($804C)]
 	add.w	d3,d5                            	| [$0088: add  hl,de]
 	STORE_WORD	d5,value16_804c(a6)            	| [$0089: ld   ($804C),hl]
-	move.b	d3,d0                           	| [$008c: ld   a,d]
-	sub.b	d5,d0                            	| [$008d: sub  h]
-	ERROR	"review hl / h or l mixup"
+	* subtract MSBs
+	move.w	d3,d0                           	| [$008c: ld   a,d]
+	sub.w	d5,d0                            	| [$008d: sub  h]
+	rol.w	#8,d0
 	lea	l_8073(a6),a0                      	| [$008e: ld   hl,$8073]
 	jbsr	l_0d8c                            	| [$0091: call $0D8C]
 	add.b	d2,d0                            	| [$0094: add  a,c]
@@ -165,13 +166,14 @@ l_00a3:
 	move.b	l_8048(a6),d0                   	| [$00a3: ld   a,($8048)]
 	btst.b	#1,d0                           	| [$00a6: bit  1,a]
 	jne	l_00ce                             	| [$00a8: jp   nz,$00CE]
-	LOAD_WORD	l_804E(a6),d3             	| [$00ab: ld   de,($804E)]
+	LOAD_WORD	value16_804e(a6),d3             	| [$00ab: ld   de,($804E)]
 
 	add.w	d3,d5                            	| [$00af: add  hl,de]
-	STORE_WORD	d5,l_804E(a6)            	| [$00b0: ld   ($804E),hl]
-	move.b	d3,d0                           	| [$00b3: ld   a,d]
-	sub.b	d5,d0                            	| [$00b4: sub  h]
-	ERROR	"review hl / h or l mixup"
+	STORE_WORD	d5,value16_804e(a6)            	| [$00b0: ld   ($804E),hl]
+	* subtract MSBs
+	move.w	d3,d0                           	| [$00b3: ld   a,d]
+	sub.w	d5,d0                            	| [$00b4: sub  h]
+	rol.w	#8,d0
 	lea	l_8075(a6),a0                      	| [$00b5: ld   hl,$8075]
 	jbsr	l_0d8c                            	| [$00b8: call $0D8C]
 	neg.b	d0                               	| [$00bb: neg]
@@ -181,7 +183,7 @@ l_00a3:
 	                               	| [$00c3: and  a]
 	jeq	l_00ce                             	| [$00c4: jr   z,$00CE]
 	move.b	#0x00,iyh                        	| [$00c6: ld   iyh,$00]
-	LOAD_POINTER	value16_805a(a6),a0             	| [$00c9: ld   hl,($805A)]
+	LOAD_WORD	value16_805a(a6),d5             	| [$00c9: ld   hl,($805A)]
 
 	jra	l_0084                             	| [$00cc: jr   $0084]
 
@@ -260,7 +262,8 @@ l_0141:
 	jne	l_015a                             	| [$0145: jr   nz,$015A]
 	move.b	(0x03,a2),d0                    	| [$0147: ld   a,(ix+$03)]
 	not.b	d0                               	| [$014a: cpl]
-	LOAD_POINTER	value16_805a(a6),a0             	| [$014b: ld   hl,($805A)]
+	LOAD_WORD	value16_805a(a6),d5             	| [$014b: ld   hl,($805A)]
+	LOAD_D5D6_FROM_D5_16
 
 	jra	l_00fc                             	| [$014e: jp   $00FC]
 
@@ -359,13 +362,13 @@ l_01d3:
 	move.b	d0,(a1)                         	| [$01dc: ld   (de),a]
 	move.b	#0x15,(a0)                      	| [$01dd: ld   (hl),$15]
 l_01df:
-	jbsr	l_0e5d                            	| [$01df: call $0E5D]
+	jbsr	advance_hl_and_de_0e5d                            	| [$01df: call $0E5D]
 	subq.b	#1,d2                           	| [$01e2: dec  c]
 	jne	l_01d3                             	| [$01e3: jr   nz,$01D3]
 	move.l	(sp)+,a1                        	| [$01e5: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$01e5: pop  de]
 	move.l	(sp)+,a0                        	| [$01e6: pop  hl]
-	jbsr	l_0e6c                            	| [$01e7: call $0E6C]
+	jbsr	advance_hl_and_de_0e6c                            	| [$01e7: call $0E6C]
 	subq.b	#1,d1                           	| [...]
 	jne	l_01cf                             	| [$01ea: djnz $01CF]
 l_01ec:
@@ -447,7 +450,7 @@ l_024f:
 	move.l	(sp)+,a3                        	| [$026f: pop  iy]
 	cmp.b	#0x06,d0                         	| [$0271: cp   $06]
 	jeq	l_02a5                             	| [$0273: jr   z,$02A5]
-	LOAD_WORD	value16_8052(a6),d3             	| [$0275: ld   de,($8052)]
+	LOAD_WORD	pointer_8052(a6),d3             	| [$0275: ld   de,($8052)]
 	LOAD_D3D4_FROM_D3_16
 	move.b	l_8055(a6),d0                   	| [$0279: ld   a,($8055)]
 	ror.b	#1,d0                            	| [$027c: rrca]
@@ -458,7 +461,7 @@ l_024f:
 	cmp.b	#0x0B,d0                         	| [$0285: cp   $0B]
 	jcc	l_02b7                             	| [$0287: jr   nc,$02B7]
 	move.b	d0,d3                           	| [$0289: ld   d,a]
-	move.b	l_8054(a6),d0                   	| [$028a: ld   a,($8054)]
+	move.b	value16_8054(a6),d0                   	| [$028a: ld   a,($8054)]
 	ror.b	#1,d0                            	| [$028d: rrca]
 	and.b	#0x01,d0                         	| [$028e: and  $01]
 	neg.b	d0                               	| [$0290: neg]
@@ -499,7 +502,7 @@ l_02b7:
 	jra	l_02a7                             	| [$02c5: jr   $02A7]
 
 l_02c7:
-	move.b	l_8054(a6),d0                   	| [$02c7: ld   a,($8054)]
+	move.b	value16_8054(a6),d0                   	| [$02c7: ld   a,($8054)]
 	                               	| [$02ca: and  a]
 	jeq	l_02d1                             	| [$02cb: jr   z,$02D1]
 	subq.b	#1,d0                           	| [$02cd: dec  a]
@@ -829,15 +832,14 @@ l_04c7:
 	rts                                    	| [$04d1: ret  nz] [...]
 0:
 l_04d2:
-	move.b	(a0),d0                         	| [$04d2: ld   a,(hl)]
-	cmp.b	#0x66,d0                         	| [$04d3: cp   $66]
+	move.b	(a0),d7                         	| [$04d2: ld   a,(hl)]
 	move.b	#0x67,d0                        	| [$04d5: ld   a,$67]
+	cmp.b	#0x66,d7                         	| [$04d3: cp   $66]
 	jeq	l_04db                             	| [$04d7: jr   z,$04DB]
-	ERROR	"review cpu flags (move.b,jeq)"
 	move.b	#0x66,d0                        	| [$04d9: ld   a,$66]
 l_04db:
-	move.b	d0,(a0)                         	| [$04db: ld   (hl),a]
-	addq.w	#1,a0                           	| [$04dc: inc  hl]
+	move.b	d0,(a0)+                         	| [$04db: ld   (hl),a]
+	                           	| [$04dc: inc  hl]
 	subq.b	#1,d1                           	| [...]
 	jne	l_04db                             	| [$04dd: djnz $04DB]
 	rts                                    	| [$04df: ret]
@@ -865,8 +867,8 @@ l_04e7:
 	btst.b	#6,d0                           	| [$0507: bit  6,a]
 	jne	l_050e                             	| [$0509: jr   nz,$050E]
 	addq.b	#1,(a0)                         	| [$050b: inc  (hl)] [uncovered]
-	subq.w	#1,a0                           	| [$050c: dec  hl] [uncovered]
-	addq.b	#1,(a0)                         	| [$050d: inc  (hl)] [uncovered]
+	                           	| [$050c: dec  hl] [uncovered]
+	addq.b	#1,-(a0)                         	| [$050d: inc  (hl)] [uncovered]
 l_050e:
 	move.b	d1,d0                           	| [$050e: ld   a,b]
 	ror.b	#3,d0                            	| [$050f: rrca] * 3
@@ -895,7 +897,7 @@ l_0539:
 	move.b	#0x11,d0                        	| [$0541: ld   a,$11]
 	lea	l_2213(a6),a1                      	| [$0543: ld   de,$2213]
 l_0546:
-	STORE_POINTER	a0,l_82D2(a6)            	| [$0546: ld   ($82D2),hl]
+	STORE_POINTER	a0,pointer_82d2(a6)            	| [$0546: ld   ($82D2),hl]
 	move.b	d0,l_82D8(a6)                   	| [$0549: ld   ($82D8),a]
 	lea	l_8060(a6),a0                      	| [$054c: ld   hl,$8060]
 	move.b	#0x70,d2                        	| [$054f: ld   c,$70]
@@ -1027,9 +1029,7 @@ l_0656:
 	move.b	#0xAA,(0x04,a2)                 	| [$0656: ld   (ix+$04),$AA]
 	move.b	d4,(0x03,a2)                    	| [$065a: ld   (ix+$03),e]
 	move.b	d4,d0                           	| [$065d: ld   a,e]
-	ERROR	"review de / d or e mixup"
-	addq.w	#1,a1                           	| [$065e: inc  e]
-	ERROR	"review inc register d4 or a1"
+	addq.b	#1,d4                           	| [$065e: inc  e]
 	cmp.b	#0xA9,d0                         	| [$065f: cp   $A9]
 	jne	l_0631                             	| [$0661: jr   nz,$0631]
 	move.b	#0xA0,(0x03,a2)                 	| [$0663: ld   (ix+$03),$A0]
@@ -1259,9 +1259,9 @@ l_0811:
 	move.b	#0x20,d1                        	| [$0811: ld   b,$20]
 l_0813:
 	jbsr	l_12c5                            	| [$0813: call $12C5]
-	move.b	d0,(a1)                         	| [$0816: ld   (de),a]
-	addq.w	#1,a1                           	| [$0817: inc  de]
-	addq.b	#1,d5                           	| [$0818: inc  h]
+	move.b	d0,(a1)+                         	| [$0816: ld   (de),a]
+											| [$0817: inc  de]
+	addq.b	#0x100,d5                           	| [$0818: inc  h]
 	subq.b	#1,d1                           	| [...]
 	jne	l_0813                             	| [$0819: djnz $0813]
 	            	| [$081b: ld   (watchdog_a080),a]
@@ -1386,7 +1386,7 @@ l_08dc:
 l_08e0:
 	jbsr	l_0aba                            	| [$08e0: call $0ABA]
 	lea	l_2D0A(a6),a0                      	| [$08e3: ld   hl,$2D0A]
-	STORE_POINTER	a0,value16_8052(a6)            	| [$08e6: ld   ($8052),hl]
+	STORE_POINTER	a0,pointer_8052(a6)            	| [$08e6: ld   ($8052),hl]
 	move.b	#0x03,d0                        	| [$08e9: ld   a,$03]
 	move.b	d0,l_8020(a6)                   	| [$08eb: ld   ($8020),a]
 	                   	| [$08ee: ld   ($A181),a]
@@ -1406,8 +1406,8 @@ l_08ff:
 	LOAD_WORD	car_speed_8027(a6),d5     	| [$090a: ld   hl,(car_speed_8027)]
 
 	STORE_WORD	d5,value16_802d(a6)            	| [$090d: ld   ($802D),hl]
-	LOAD_POINTER	value16_8025(a6),a0             	| [$0910: ld   hl,($8025)]
-
+	LOAD_WORD	value16_8025(a6),d5             	| [$0910: ld   hl,($8025)]
+	LOAD_D5D6_FROM_D5_16
 	                         	| [$0913: xor  a]
 	clr.b	d0                               	| [$0913: xor  a]
 l_0914:
@@ -1457,7 +1457,7 @@ l_0969:
 	move.l	(sp)+,a1                        	| [$0971: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$0971: pop  de]
 	lea	l_8344(a6),a2                      	| [$0972: ld   ix,$8344]
-	LOAD_POINTER	l_8988(a6),a0             	| [$0976: ld   hl,($8988)]
+	LOAD_POINTER	pointer_8988(a6),a0             	| [$0976: ld   hl,($8988)]
 
 	move.b	(a0),d2                         	| [$0979: ld   c,(hl)]
 	addq.b	#1,d2                           	| [$097a: inc  c]
@@ -1473,7 +1473,7 @@ l_0988:
 	jbsr	l_1c4e                            	| [$098b: call $1C4E]
 	subq.b	#1,d1                           	| [...]
 	jne	l_0988                             	| [$098e: djnz $0988]
-	LOAD_POINTER	l_8988(a6),a0             	| [$0990: ld   hl,($8988)]
+	LOAD_POINTER	pointer_8988(a6),a0             	| [$0990: ld   hl,($8988)]
 
 	move.b	(a0),d2                         	| [$0993: ld   c,(hl)]
 l_0994:
@@ -1721,17 +1721,19 @@ l_0b34:
 	move.b	d0,(0x13,a2)                    	| [$0b49: ld   (ix+$13),a]
 	move.b	(0x08,a3),d0                    	| [$0b4c: ld   a,(iy+$08)]
 	sub.b	(0x08,a2),d0                     	| [$0b4f: sub  (ix+$08)]
+	scs		d7
 	move.b	d0,d3                           	| [$0b52: ld   d,a]
-	jcc	l_0b57                             	| [$0b53: jr   nc,$0B57]
-	ERROR	"review cpu flags (move.b,jcc)"
+	tst.b	d7
+	jeq	l_0b57                             	| [$0b53: jr   nc,$0B57]
 	neg.b	d0                               	| [$0b55: neg]
 l_0b57:
 	move.b	d0,d4                           	| [$0b57: ld   e,a]
 	move.b	(0x0a,a2),d0                    	| [$0b58: ld   a,(ix+$0a)]
 	sub.b	(0x0a,a3),d0                     	| [$0b5b: sub  (iy+$0a)]
+	scs		d7
 	move.b	d0,d5                           	| [$0b5e: ld   h,a]
-	jcc	l_0b63                             	| [$0b5f: jr   nc,$0B63]
-	ERROR	"review cpu flags (move.b,jcc)"
+	tst.b	d7
+	jeq	l_0b63                             	| [$0b5f: jr   nc,$0B63]
 	neg.b	d0                               	| [$0b61: neg]
 l_0b63:
 	move.b	d0,d6                           	| [$0b63: ld   l,a]
@@ -1747,6 +1749,7 @@ l_0b63:
 	jbsr	l_0c98                            	| [$0b70: call z,$0C98]
 0:
 	jbsr	exx                               	| [$0b73: exx]
+	BREAKPOINT	"value of A0???"
 	move.b	(0x0c,a2),d1                    	| [$0b74: ld   b,(ix+$0c)]
 	move.b	(0x0e,a2),d2                    	| [$0b77: ld   c,(ix+$0e)]
 	jbsr	l_0e7f                            	| [$0b7a: call $0E7F]
@@ -1889,14 +1892,15 @@ l_0c4a:
 	jbsr	l_0cb1                            	| [$0c4a: call $0CB1]
 	jcc	l_0c7f                             	| [$0c4d: jr   nc,$0C7F]
 l_0c4f:
-	LOAD_POINTER	value16_8025(a6),a0             	| [$0c4f: ld   hl,($8025)]
+	LOAD_WORD	value16_8025(a6),d5             	| [$0c4f: ld   hl,($8025)]
 
 	move.b	l_81B5(a6),d0                   	| [$0c52: ld   a,($81B5)]
 	                               	| [$0c55: and  a]
 	jeq	l_0c5b                             	| [$0c56: jr   z,$0C5B]
-	LOAD_POINTER	value16_8029(a6),a0             	| [$0c58: ld   hl,($8029)]
+	LOAD_WORD	value16_8029(a6),d5             	| [$0c58: ld   hl,($8029)]
 
 l_0c5b:
+	LOAD_D5D6_FROM_D5_16
 	move.b	(0x02,a2),d0                    	| [$0c5b: ld   a,(ix+$02)]
 	eor.b	d5,d0                            	| [$0c5e: xor  h]
 	btst.b	#7,d0                           	| [$0c5f: bit  7,a]
@@ -1928,14 +1932,15 @@ l_0c91:
 	addq.b	#1,(a0)                         	| [$0c94: inc  (hl)]
 	jra	l_0a7a                             	| [$0c95: jp   $0A7A]
 
+* < D5.W
+* > carry
 l_0cb1:
 	movem.w	d1/d2,-(sp)                    	| [$0cb1: push bc]
-	move.l	a4,-(sp)                        	| [$0cb1: push bc]
 	move.b	d0,d2                           	| [$0cb2: ld   c,a]
 
-	move.l	a0,-(sp)                        	| [$0cb3: push hl]
-	exg	a1,a0                              	| [$0cb4: ex   de,hl]
-	ERROR	"review hl / h or l mixup"
+	move.w	d5,-(sp)                        	| [$0cb3: push hl]
+	exg	d3,d5                              	| [$0cb4: ex   de,hl]
+	LOAD_D3D4_FROM_D3_16
 	move.b	(0x08,a2),d5                    	| [$0cb5: ld   h,(ix+$08)]
 	move.b	(0x0a,a2),d6                    	| [$0cb8: ld   l,(ix+$0a)]
 	clr.b	d1                               	| [$0cbb: ld   b,$00]
@@ -1971,22 +1976,18 @@ l_0ce9:
 	btst.b	#7,d3                           	| [$0ce9: bit  7,d]
 	jne	l_0cf8                             	| [$0ceb: jr   nz,$0CF8]
 	move.b	(0x07,a2),d0                    	| [$0ced: ld   a,(ix+$07)]
-	subq.w	#1,a1                           	| [$0cf0: dec  e]
-	ERROR	"review dec register d4 or a1"
+	subq.b	#1,d4                           	| [$0cf0: dec  e]
 	tst.b	d0                               	| [$0cf1: and  a]
 	jmi	l_0d3c                             	| [$0cf2: jp   m,$0D3C]
-	subq.w	#1,a0                           	| [$0cf5: dec  l]
-	ERROR	"review dec register d6 or a0"
+	subq.b	#1,d6                           	| [$0cf5: dec  l]
 	jra	l_0d3c                             	| [$0cf6: jr   $0D3C]
 
 l_0cf8:
 	move.b	(0x07,a2),d0                    	| [$0cf8: ld   a,(ix+$07)]
-	addq.w	#1,a1                           	| [$0cfb: inc  e]
-	ERROR	"review inc register d4 or a1"
+	addq.b	#1,d4                           	| [$0cfb: inc  e]
 	subq.b	#1,d0                           	| [$0cfc: dec  a]
 	jpl	l_0d3c                             	| [$0cfd: jp   p,$0D3C]
-	addq.w	#1,a0                           	| [$0d00: inc  l]
-	ERROR	"review inc register d6 or a0"
+	addq.b	#1,d6                           	| [$0d00: inc  l]
 	jra	l_0d3c                             	| [$0d01: jr   $0D3C]
 
 l_0d03:
@@ -2009,13 +2010,11 @@ l_0d18:
 	jra	l_0d27                             	| [$0d21: jr   $0D27] [uncovered]
 
 l_0d23:
-	addq.w	#1,a0                           	| [$0d23: inc  l]
-	ERROR	"review inc register d6 or a0"
+	addq.b	#1,d6                           	| [$0d23: inc  l]
 	jra	l_0d27                             	| [$0d24: jr   $0D27]
 
 l_0d26:
-	subq.w	#1,a0                           	| [$0d26: dec  l]
-	ERROR	"review dec register d6 or a0"
+	subq.b	#1,d6                           	| [$0d26: dec  l]
 l_0d27:
 	move.b	(0x05,a2),d0                    	| [$0d27: ld   a,(ix+$05)]
 	btst.b	#7,d3                           	| [$0d2a: bit  7,d]
@@ -2032,9 +2031,11 @@ l_0d36:
 	jpl	l_0d3c                             	| [$0d38: jp   p,$0D3C]
 	subq.b	#1,d5                           	| [$0d3b: dec  h]
 l_0d3c:
-	exg	a1,a0                              	| [$0d3c: ex   de,hl]
+	LOAD_D5_16_FROM_D5D6
+	exg	d3,d5                              	| [$0d3c: ex   de,hl]
+	LOAD_D3D4_FROM_D3_16
 	jbsr	l_12f2                            	| [$0d3d: call $12F2]
-	exg	d0,d7                              	| [$0d40: ex   af,af']
+	scs		d7                              	| [$0d40: ex   af,af'] save carry
 	move.b	d3,d0                           	| [$0d41: ld   a,d]
 	add.b	d1,d0                            	| [$0d42: add  a,b]
 	move.b	d0,d3                           	| [$0d43: ld   d,a]
@@ -2051,42 +2052,42 @@ l_0d3c:
 	move.b	d0,d4                           	| [$0d51: ld   e,a]
 	jbsr	l_12f2                            	| [$0d52: call $12F2]
 l_0d55:
-	exg	d0,d7                              	| [$0d55: ex   af,af']
-	move.l	(sp)+,a0                        	| [$0d56: pop  hl]
+	tst.b	d7                              	| [$0d55: ex   af,af']
+	jne		l_0d5a
+	CLEAR_XC_FLAGS
+	move.w	(sp)+,d5                        	| [$0d56: pop  hl]
 	move.b	d2,d0                           	| [$0d57: ld   a,c]
-	move.l	(sp)+,a4                        	| [$0d58: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$0d58: pop  bc]
 	rts                                    	| [$0d59: ret]
 
 l_0d5a:
-	move.l	(sp)+,a0                        	| [$0d5a: pop  hl]
+	move.w	(sp)+,d5                        	| [$0d5a: pop  hl]
 	move.b	d2,d0                           	| [$0d5b: ld   a,c]
-	move.l	(sp)+,a4                        	| [$0d5c: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$0d5c: pop  bc]
 	SET_XC_FLAGS                           	| [$0d5d: scf]
 	rts                                    	| [$0d5e: ret]
 
-l_0d5f:
-	subq.w	#1,a0                           	| [$0d5f: dec  hl]
-	ERROR	"review hl / h or l mixup"
-	move.b	d6,d0                           	| [$0d60: ld   a,l]
+* < d5.W
+decrease_and_wrap_d5w_0d5f:
+	subq.w	#1,d5                           	| [$0d5f: dec  hl]
+	move.b	d5,d0                           	| [$0d60: ld   a,l]
 	or.b	#0xE0,d0                          	| [$0d61: or   $E0]
 	addq.b	#1,d0                           	| [$0d63: inc  a]
 	beq.b	0f                               	| [...]
 	rts                                    	| [$0d64: ret  nz] [...]
 0:
-	lea	l_9F00(a6),a0                      	| [$0d65: ld   hl,$9F00]
+	move.w	#0x9F00,d5                      	| [$0d65: ld   hl,$9F00]
 	rts                                    	| [$0d68: ret]
 
-l_0d69:
-	addq.w	#1,a0                           	| [$0d69: inc  hl]
-	ERROR	"review hl / h or l mixup"
-	move.b	d6,d0                           	| [$0d6a: ld   a,l]
+* <D5.W
+increase_and_wrap_d5w_0d69:
+	addq.w	#1,d5                           	| [$0d69: inc  hl]
+	move.b	d5,d0                           	| [$0d6a: ld   a,l]
 	and.b	#0x1F,d0                         	| [$0d6b: and  $1F]
 	beq.b	0f                               	| [...]
 	rts                                    	| [$0d6d: ret  nz] [...]
 0:
-	lea	l_9F00(a6),a0                      	| [$0d6e: ld   hl,$9F00] [uncovered]
+	move.w	#0x9F00,d5                      	| [$0d6e: ld   hl,$9F00] [uncovered]
 	rts                                    	| [$0d71: ret] [uncovered]
 
 l_0d72:
@@ -2095,23 +2096,19 @@ l_0d72:
 	movem.w	d3/d4,-(sp)                    	| [$0d73: push de]
 	move.l	a1,-(sp)                        	| [$0d73: push de]
 	move.w	d0,-(sp)                        	| [$0d74: push af]
-	LOAD_POINTER	l_8000(a6),a0             	| [$0d75: ld   hl,($8000)]
+	LOAD_WORD	timer_8000(a6),d5             	| [$0d75: ld   hl,($8000)]
 
-	add.w	d5,a0                            	| [$0d78: add  hl,hl]
-	ERROR	"review d5 computation above"
+	add.w	d5,d5                            	| [$0d78: add  hl,hl]
 	jcc	l_0d7c                             	| [$0d79: jr   nc,$0D7C]
-	addq.w	#1,a0                           	| [$0d7b: inc  l]
-	ERROR	"review inc register d6 or a0"
+	addq.w	#1,d5                           	| [$0d7b: inc  l]
 l_0d7c:
-	move.b	d6,d0                           	| [$0d7c: ld   a,l]
+	move.b	d5,d0                           	| [$0d7c: ld   a,l]
 	and.b	#0x49,d0                         	| [$0d7d: and  $49]
 	jne	l_0d85                             	| [$0d7f: jr   nz,$0D85]
-	lea	l_4080(a6),a1                      	| [$0d81: ld   de,$4080]
-	ERROR	"review de / d or e mixup"
-	add.w	d3,a0                            	| [$0d84: add  hl,de]
-	ERROR	"review d3 computation above"
+	move.w	#0x4080,d3                      	| [$0d81: ld   de,$4080]
+	add.w	d3,d5                            	| [$0d84: add  hl,de]
 l_0d85:
-	STORE_POINTER	a0,l_8000(a6)            	| [$0d85: ld   ($8000),hl]
+	STORE_WORD	d5,timer_8000(a6)            	| [$0d85: ld   ($8000),hl]
 	move.w	(sp)+,d0                        	| [$0d88: pop  af]
 	move.l	(sp)+,a1                        	| [$0d89: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$0d89: pop  de]
@@ -2138,16 +2135,13 @@ l_0d97:
 	addq.b	#1,(-1,a0)                         	| [$0d9c: inc  (hl)]
 	                           	| [$0d9d: inc  hl]
 l_0d9e:
-	move.b	d6,d0                           	| [$0d9e: ld   a,l]
-	add.b	#0x20,d0                         	| [$0d9f: add  a,$20]
-	jcc	l_0da4                             	| [$0da1: jr   nc,$0DA4]
-	addq.b	#1,d5                           	| [$0da3: inc  h]
-l_0da4:
-	move.b	d0,d6                           	| [$0da4: ld   l,a]
+	                           	| [$0d9e: ld   a,l]
+	add.w	#0x20,a0                         	| [$0d9f: add  a,$20]
+	                          	| [$0da1: jr   nc,$0DA4]
+	                           	| [$0da3: inc  h]
+	                           	| [$0da4: ld   l,a]
 	move.b	d3,d0                           	| [$0da5: ld   a,d]
-	ERROR	"review de / d or e mixup"
-	subq.w	#1,a1                           	| [$0da6: dec  e]
-	ERROR	"review dec register d4 or a1"
+	subq.b	#1,d4                           	| [$0da6: dec  e]
 	jne	l_0d90                             	| [$0da7: jr   nz,$0D90]
 	rts                                    	| [$0da9: ret]
 
@@ -2232,7 +2226,8 @@ l_0e1b:
 	move.b	d5,d3                           	| [$0e28: ld   d,h]
 	move.b	d6,d4                           	| [$0e29: ld   e,l]
 	bset.b	#3,d5                           	| [$0e2a: set  3,h]
-	ERROR	"review hl / h or l mixup"
+	LOAD_A0_FROM_D5D6
+	LOAD_A1_FROM_D3D4
 	btst.b	#7,(a0)                         	| [$0e2c: bit  7,(hl)]
 	jeq	l_0e59                             	| [$0e2e: jr   z,$0E59]
 	move.b	(a1),d0                         	| [$0e30: ld   a,(de)]
@@ -2251,13 +2246,13 @@ l_0e3f:
 	move.b	d0,(a1)                         	| [$0e3f: ld   (de),a]
 	addq.b	#1,d0                           	| [$0e40: inc  a]
 	move.b	#0x45,(a0)                      	| [$0e41: ld   (hl),$45]
-	jbsr	l_0e5d                            	| [$0e43: call $0E5D]
+	jbsr	advance_hl_and_de_0e5d                            	| [$0e43: call $0E5D]
 	subq.b	#1,d2                           	| [$0e46: dec  c]
 	jne	l_0e3f                             	| [$0e47: jr   nz,$0E3F]
 	move.l	(sp)+,a1                        	| [$0e49: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$0e49: pop  de]
 	move.l	(sp)+,a0                        	| [$0e4a: pop  hl]
-	jbsr	l_0e6c                            	| [$0e4b: call $0E6C]
+	jbsr	advance_hl_and_de_0e6c                            	| [$0e4b: call $0E6C]
 	subq.b	#1,d1                           	| [...]
 	jne	l_0e3b                             	| [$0e4e: djnz $0E3B]
 	lea	l_8291(a6),a0                      	| [$0e50: ld   hl,$8291]
@@ -2272,8 +2267,12 @@ l_0e59:
 	move.l	(sp)+,a0                        	| [$0e5b: pop  hl]
 	rts                                    	| [$0e5c: ret]
 
-l_0e5d:
+* < A0,A1
+
+advance_hl_and_de_0e5d:
 	move.w	d0,-(sp)                        	| [$0e5d: push af]
+	LOAD_D3D4_FROM_A1
+	LOAD_D5D6_FROM_A0
 	move.b	d4,d0                           	| [$0e5e: ld   a,e]
 	or.b	#0xE0,d0                          	| [$0e5f: or   $E0]
 	addq.b	#1,d0                           	| [$0e61: inc  a]
@@ -2282,20 +2281,19 @@ l_0e5d:
 	sub.b	#0x20,d0                         	| [$0e65: sub  $20]
 	move.b	d0,d4                           	| [$0e67: ld   e,a]
 l_0e68:
-	addq.w	#1,a1                           	| [$0e68: inc  e]
-	ERROR	"review inc register d4 or a1"
-	ERROR	"review de / d or e mixup"
+	addq.b	#1,d4                           	| [$0e68: inc  e]
 	move.b	d4,d6                           	| [$0e69: ld   l,e]
+	LOAD_A1_FROM_D3D4
+	LOAD_A0_FROM_D5D6
 	move.w	(sp)+,d0                        	| [$0e6a: pop  af]
 	rts                                    	| [$0e6b: ret]
 
-l_0e6c:
+advance_hl_and_de_0e6c:
 	movem.w	d1/d2,-(sp)                    	| [$0e6c: push bc]
-	move.l	a4,-(sp)                        	| [$0e6c: push bc]
 	move.w	d0,-(sp)                        	| [$0e6d: push af]
 	move.w	#0x0020,d1                      	| [$0e6e: ld   bc,$0020]
+	LOAD_D5D6_FROM_A0
 	add.w	d1,a0                            	| [$0e71: add  hl,bc]
-	ERROR	"review hl / h or l mixup"
 	move.b	d5,d0                           	| [$0e72: ld   a,h]
 	and.b	#0x03,d0                         	| [$0e73: and  $03]
 	or.b	#0x8C,d0                          	| [$0e75: or   $8C]
@@ -2303,8 +2301,9 @@ l_0e6c:
 	and.b	#0xF7,d0                         	| [$0e78: and  $F7]
 	move.b	d0,d3                           	| [$0e7a: ld   d,a]
 	move.b	d6,d4                           	| [$0e7b: ld   e,l]
+	LOAD_A0_FROM_D5D6
+	LOAD_A1_FROM_D3D4
 	move.w	(sp)+,d0                        	| [$0e7c: pop  af]
-	move.l	(sp)+,a4                        	| [$0e7d: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$0e7d: pop  bc]
 	rts                                    	| [$0e7e: ret]
 
@@ -2339,7 +2338,7 @@ l_0ea0:
 	move.b	d0,(0x13,a2)                    	| [$0eb1: ld   (ix+$13),a]
 	lea	l_89F4(a6),a0                      	| [$0eb4: ld   hl,$89F4]
 	bset.b	#6,(a0)                         	| [$0eb7: set  6,(hl)]
-	LOAD_POINTER	car_speed_8027(a6),a0     	| [$0eb9: ld   hl,(car_speed_8027)]
+	LOAD_WORD	car_speed_8027(a6),d5     	| [$0eb9: ld   hl,(car_speed_8027)]
 
 	LOAD_POINTER	pointer_899e(a6),a4             	| [$0ebc: ld   bc,($899E)]
 
@@ -2347,12 +2346,12 @@ l_0ea0:
 	move.b	d0,d1                           	| [$0ec1: ld   b,a]
 
 	jbsr	osd_disable_interrupts			| di
-	STORE_POINTER	a0,value16_802d(a6)            	| [$0ec3: ld   ($802D),hl]
-	CLEAR_XC_FLAGS                         	| [$0ec6: xor  a]
+	STORE_POINTER	d5,value16_802d(a6)            	| [$0ec3: ld   ($802D),hl]
+	                         	| [$0ec6: xor  a]
 	clr.b	d0                               	| [$0ec6: xor  a]
 	move.b	d0,l_8068(a6)                   	| [$0ec7: ld   ($8068),a]
 	move.b	d0,l_8048(a6)                   	| [$0eca: ld   ($8048),a]
-	LOAD_POINTER	value16_8069(a6),a0             	| [$0ecd: ld   hl,($8069)]
+	LOAD_WORD	value16_8069(a6),d5             	| [$0ecd: ld   hl,($8069)]
 
 	move.b	l_8020(a6),d0                   	| [$0ed0: ld   a,($8020)]
 	                               	| [$0ed3: and  a]
@@ -2362,7 +2361,7 @@ l_0ea0:
 	jbsr	l_0fd8                            	| [$0ed7: call $0FD8]
 	jcc	l_0f55                             	| [$0eda: jr   nc,$0F55]
 	move.b	l_806B(a6),d0                   	| [$0edc: ld   a,($806B)]
-	LOAD_POINTER	value16_8069(a6),a0             	| [$0edf: ld   hl,($8069)]
+	LOAD_WORD	value16_8069(a6),d5             	| [$0edf: ld   hl,($8069)]
 
 	jbsr	l_0cb1                            	| [$0ee2: call $0CB1]
 	jcc	l_0f16                             	| [$0ee5: jr   nc,$0F16]
@@ -2375,7 +2374,7 @@ l_0ea0:
 	move.b	d3,d0                           	| [$0ef2: ld   a,d]
 	tst.b	d7
 	jeq	l_0f00                             	| [$0ef3: jr   z,$0F00]
-	LOAD_POINTER	value16_8049(a6),a0             	| [$0ef5: ld   hl,($8049)]
+	LOAD_WORD	value16_8049(a6),d5             	| [$0ef5: ld   hl,($8049)]
 
 	jbsr	l_0cb1                            	| [$0ef8: call $0CB1]
 	jcc	l_0f16                             	| [$0efb: jr   nc,$0F16]
@@ -2478,7 +2477,7 @@ l_0f94:
 l_0f99:
 	move.w	#0x0000,d5                      	| [$0f99: ld   hl,$0000]
 l_0f9c:
-	STORE_POINTER	a0,value16_805a(a6)            	| [$0f9c: ld   ($805A),hl]
+	STORE_WORD	d5,value16_805a(a6)            	| [$0f9c: ld   ($805A),hl]
 	move.b	l_8020(a6),d0                   	| [$0f9f: ld   a,($8020)]
 	                               	| [$0fa2: and  a]
 	bne.b	0f                               	| [...]
@@ -2552,38 +2551,38 @@ l_1009:
 	jra	l_0ffa                             	| [$100b: jr   $0FFA]
 
 l_100d:
-di
+	jbsr	osd_disable_interrupts
 	btst.b	#7,d0                           	| [$100e: bit  7,a]
 	jeq	l_1034                             	| [$1010: jr   z,$1034]
 	move.b	value16_8050(a6),d0                   	| [$1012: ld   a,($8050)]
 	add.b	#0x08,d0                         	| [$1015: add  a,$08]
 	move.b	d0,value16_8050(a6)                   	| [$1017: ld   ($8050),a]
-	move.b	l_8054(a6),d0                   	| [$101a: ld   a,($8054)]
+	move.b	value16_8054(a6),d0                   	| [$101a: ld   a,($8054)]
 	addq.b	#1,d0                           	| [$101d: inc  a]
-	move.b	d0,l_8054(a6)                   	| [$101e: ld   ($8054),a]
+	move.b	d0,value16_8054(a6)                   	| [$101e: ld   ($8054),a]
 	cmp.b	#0x03,d0                         	| [$1021: cp   $03]
 	jne	l_10cc                             	| [$1023: jp   nz,$10CC]
-	CLEAR_XC_FLAGS                         	| [$1026: xor  a]
+	                         	| [$1026: xor  a]
 	clr.b	d0                               	| [$1026: xor  a]
-	move.b	d0,l_8054(a6)                   	| [$1027: ld   ($8054),a]
-	move.b	value16_8052(a6),d0                   	| [$102a: ld   a,($8052)]
+	move.b	d0,value16_8054(a6)                   	| [$1027: ld   ($8054),a]
+	move.b	pointer_8052(a6),d0                   	| [$102a: ld   a,($8052)]
 	addq.b	#1,d0                           	| [$102d: inc  a]
-	move.b	d0,value16_8052(a6)                   	| [$102e: ld   ($8052),a]
+	move.b	d0,pointer_8052(a6)                   	| [$102e: ld   ($8052),a]
 	jra	l_10cc                             	| [$1031: jp   $10CC]
 
 l_1034:
 	move.b	value16_8050(a6),d0                   	| [$1034: ld   a,($8050)]
 	sub.b	#0x08,d0                         	| [$1037: sub  $08]
 	move.b	d0,value16_8050(a6)                   	| [$1039: ld   ($8050),a]
-	move.b	l_8054(a6),d0                   	| [$103c: ld   a,($8054)]
+	move.b	value16_8054(a6),d0                   	| [$103c: ld   a,($8054)]
 	subq.b	#1,d0                           	| [$103f: dec  a]
-	move.b	d0,l_8054(a6)                   	| [$1040: ld   ($8054),a]
+	move.b	d0,value16_8054(a6)                   	| [$1040: ld   ($8054),a]
 	jpl	l_10f6                             	| [$1043: jp   p,$10F6]
 	move.b	#0x02,d0                        	| [$1046: ld   a,$02]
-	move.b	d0,l_8054(a6)                   	| [$1048: ld   ($8054),a]
-	move.b	value16_8052(a6),d0                   	| [$104b: ld   a,($8052)]
+	move.b	d0,value16_8054(a6)                   	| [$1048: ld   ($8054),a]
+	move.b	pointer_8052(a6),d0                   	| [$104b: ld   a,($8052)]
 	subq.b	#1,d0                           	| [$104e: dec  a]
-	move.b	d0,value16_8052(a6)                   	| [$104f: ld   ($8052),a]
+	move.b	d0,pointer_8052(a6)                   	| [$104f: ld   ($8052),a]
 	jra	l_10f6                             	| [$1052: jp   $10F6]
 
 l_1055:
@@ -2623,7 +2622,8 @@ l_107c:
 
 l_109d:
 	jbsr	l_1127                            	| [$109d: call $1127]
-	LOAD_POINTER	l_8054(a6),a1             	| [$10a0: ld   de,($8054)]
+	LOAD_D5D6_FROM_A0
+	LOAD_POINTER	value16_8054(a6),a1             	| [$10a0: ld   de,($8054)]
 
 	addq.b	#1,d3                           	| [$10a4: inc  d]
 	move.b	d3,d0                           	| [$10a5: ld   a,d]
@@ -2635,42 +2635,41 @@ l_10ad:
 	move.b	d5,d0                           	| [$10ad: ld   a,h]
 	add.b	#0x0A,d0                         	| [$10ae: add  a,$0A]
 	move.b	d0,l_8059(a6)                   	| [$10b0: ld   ($8059),a]
-	LOAD_POINTER	l_8056(a6),a0             	| [$10b3: ld   hl,($8056)]
+	LOAD_POINTER	pointer_8056(a6),a0             	| [$10b3: ld   hl,($8056)]
 
 	move.w	#-0x20,d1                       	| [$10b6: ld   bc,$FFE0]
 	add.w	d1,a0                            	| [$10b9: add  hl,bc]
-	ERROR	"review hl / h or l mixup"
+	LOAD_D5D6_FROM_A0
 	bset.b	#2,d5                           	| [$10ba: set  2,h]
-	ERROR	"review hl / h or l mixup"
-	STORE_POINTER	a0,l_8056(a6)            	| [$10bc: ld   ($8056),hl]
+	LOAD_A0_FROM_D5D6
+	STORE_POINTER	a0,pointer_8056(a6)            	| [$10bc: ld   ($8056),hl]
 	jra	l_10c8                             	| [$10bf: jr   $10C8]
 
 l_10c1:
 	jbsr	l_1127                            	| [$10c1: call $1127]
-	LOAD_POINTER	l_8054(a6),a1             	| [$10c4: ld   de,($8054)]
+	LOAD_D5D6_FROM_A0
+	LOAD_WORD	value16_8054(a6),d3             	| [$10c4: ld   de,($8054)]
 
 l_10c8:
-ei
+	jbsr	osd_enable_interrupts
 	jra	l_1162                             	| [$10c9: jp   $1162]
 
 l_10cc:
 	jbsr	l_1127                            	| [$10cc: call $1127]
-	LOAD_POINTER	l_8054(a6),a1             	| [$10cf: ld   de,($8054)]
+	LOAD_D5D6_FROM_A0
+	LOAD_WORD	value16_8054(a6),d3             	| [$10cf: ld   de,($8054)]
 
-	addq.w	#1,a1                           	| [$10d3: inc  e]
-	ERROR	"review inc register d4 or a1"
-	ERROR	"review de / d or e mixup"
-	move.b	d4,d0                           	| [$10d4: ld   a,e]
-	cmp.b	#0x03,d0                         	| [$10d5: cp   $03]
+	addq.b	#1,d3                           	| [$10d3: inc  e]
+	                           	| [$10d4: ld   a,e]
+	cmp.b	#0x03,d3                        	| [$10d5: cp   $03]
 	jne	l_10dc                             	| [$10d7: jr   nz,$10DC]
-	clr.b	d4                               	| [$10d9: ld   e,$00]
-	addq.w	#1,a0                           	| [$10db: inc  l]
-	ERROR	"review inc register d6 or a0"
+	clr.b	d3                               	| [$10d9: ld   e,$00]
+	addq.b	#1,d6                           	| [$10db: inc  l]
 l_10dc:
 	move.b	d6,d0                           	| [$10dc: ld   a,l]
 	add.b	#0x0A,d0                         	| [$10dd: add  a,$0A]
-	move.b	d0,l_8058(a6)                   	| [$10df: ld   ($8058),a]
-	LOAD_POINTER	l_8056(a6),a0             	| [$10e2: ld   hl,($8056)]
+	move.b	d0,pointer_8058(a6)                   	| [$10df: ld   ($8058),a]
+	LOAD_POINTER	pointer_8056(a6),a0             	| [$10e2: ld   hl,($8056)]
 
 	move.b	d6,d0                           	| [$10e5: ld   a,l]
 	and.b	#0x1F,d0                         	| [$10e6: and  $1F]
@@ -2681,20 +2680,22 @@ l_10dc:
 	jra	l_10f1                             	| [$10ee: jr   $10F1]
 
 l_10f0:
-	subq.w	#1,a0                           	| [$10f0: dec  hl]
+	LOAD_D5_16_FROM_D5D6
+	subq.w	#1,d5                           	| [$10f0: dec  hl]
 l_10f1:
-	STORE_POINTER	a0,l_8056(a6)            	| [$10f1: ld   ($8056),hl]
+	STORE_WORD	d5,pointer_8056(a6)            	| [$10f1: ld   ($8056),hl]
 	jra	l_10fd                             	| [$10f4: jr   $10FD]
 
 l_10f6:
 	jbsr	l_1127                            	| [$10f6: call $1127]
-	LOAD_POINTER	l_8054(a6),a1             	| [$10f9: ld   de,($8054)]
+	LOAD_D5D6_FROM_A0
+	LOAD_POINTER	value16_8054(a6),a1             	| [$10f9: ld   de,($8054)]
 
 l_10fd:
-ei
+	jbsr	osd_enable_interrupts
 	move.b	#0x20,d1                        	| [$10fe: ld   b,$20]
 	move.b	d1,d2                           	| [$1100: ld   c,b]
-	LOAD_POINTER	l_8058(a6),a0             	| [$1101: ld   hl,($8058)]
+	LOAD_POINTER	pointer_8058(a6),a0             	| [$1101: ld   hl,($8058)]
 
 l_1104:
 	jbsr	l_131e                            	| [$1104: call $131E]
@@ -2705,52 +2706,52 @@ l_1104:
 0:
 
 	move.l	a0,-(sp)                        	| [$110a: push hl]
-	LOAD_POINTER	l_8056(a6),a0             	| [$110b: ld   hl,($8056)]
-
+	* it's a pointer but here it's processed as data (MSB address)
+	LOAD_WORD	pointer_8056(a6),d5             	| [$110b: ld   hl,($8056)]
 	move.b	d1,d0                           	| [$110e: ld   a,b]
 	clr.b	d1                               	| [$110f: ld   b,$00]
-	add.w	#0x20,a0                            	| [$1111: add  hl,bc]
+	add.w	#0x20,d5                            	| [$1111: add  hl,bc]
+	LOAD_D5D6_FROM_D5_16
 	move.b	d0,d1                           	| [$1112: ld   b,a]
 	move.b	d5,d0                           	| [$1113: ld   a,h]
 	and.b	#0x03,d0                         	| [$1114: and  $03]
 	or.b	#0x84,d0                          	| [$1116: or   $84]
 	move.b	d0,d5                           	| [$1118: ld   h,a]
-	ERROR	"review hl / h or l mixup"
-	STORE_POINTER	a0,l_8056(a6)            	| [$1119: ld   ($8056),hl]
+	LOAD_D5_16_FROM_D5D6
+	STORE_WORD	d5,pointer_8056(a6)            	| [$1119: ld   ($8056),hl]
 	move.l	(sp)+,a0                        	| [$111c: pop  hl]
 	move.b	d3,d0                           	| [$111d: ld   a,d]
 	cmp.b	#0x03,d0                         	| [$111e: cp   $03]
 	jne	l_1104                             	| [$1120: jr   nz,$1104]
 	clr.b	d3                               	| [$1122: ld   d,$00]
-	addq.b	#1,d5                           	| [$1124: inc  h]
-	ERROR	"review hl / h or l mixup"
+	add.w	#0x100,a0                           	| [$1124: inc  h]
 	jra	l_1104                             	| [$1125: jr   $1104]
 
 l_1127:
 	jbsr	l_1497                            	| [$1127: call $1497]
-	LOAD_POINTER	value16_8052(a6),a0             	| [$112a: ld   hl,($8052)]
+	LOAD_POINTER	pointer_8052(a6),a0             	| [$112a: ld   hl,($8052)]
 
-	STORE_POINTER	a0,l_8058(a6)            	| [$112d: ld   ($8058),hl]
+	STORE_POINTER	a0,pointer_8058(a6)            	| [$112d: ld   ($8058),hl]
 	rts                                    	| [$1130: ret]
 
 l_1131:
 	jbsr	l_1127                            	| [$1131: call $1127]
-	LOAD_POINTER	l_8054(a6),a1             	| [$1134: ld   de,($8054)]
+	LOAD_POINTER	value16_8054(a6),a1             	| [$1134: ld   de,($8054)]
 
 	move.b	#0x20,d1                        	| [$1138: ld   b,$20]
 l_113a:
 	jbsr	l_1162                            	| [$113a: call $1162]
 	            	| [$113d: ld   (watchdog_a080),a]
-	LOAD_POINTER	l_8056(a6),a0             	| [$1140: ld   hl,($8056)]
-
+	LOAD_WORD	pointer_8056(a6),d5             	| [$1140: ld   hl,($8056)]
 	move.b	d1,d0                           	| [$1143: ld   a,b]
 	move.w	#0x0020,d1                      	| [$1144: ld   bc,$0020]
-	add.w	d1,a0                            	| [$1147: add  hl,bc]
+	add.w	d1,d5                            	| [$1147: add  hl,bc]
 	move.b	d0,d1                           	| [$1148: ld   b,a]
+	LOAD_D5D6_FROM_D5_16
 	bset.b	#2,d5                           	| [$1149: set  2,h]
 	bclr.b	#3,d5                           	| [$114b: res  3,h]
-	ERROR	"review hl / h or l mixup"
-	STORE_POINTER	a0,l_8056(a6)            	| [$114d: ld   ($8056),hl]
+	LOAD_D5_16_FROM_D5D6
+	STORE_WORD	d5,pointer_8056(a6)            	| [$114d: ld   ($8056),hl]
 	move.b	d3,d0                           	| [$1150: ld   a,d]
 	subq.b	#1,d1                           	| [$1151: dec  b]
 	bne.b	0f                               	| [...]
@@ -2770,29 +2771,26 @@ l_1162:
 	movem.w	d3/d4,-(sp)                    	| [$1163: push de]
 	move.l	a1,-(sp)                        	| [$1163: push de]
 	move.b	#0x20,d1                        	| [$1164: ld   b,$20]
-	LOAD_POINTER	l_8058(a6),a0             	| [$1166: ld   hl,($8058)]
+	LOAD_POINTER	pointer_8058(a6),a0             	| [$1166: ld   hl,($8058)]
 
 l_1169:
 	jbsr	l_131e                            	| [$1169: call $131E]
-	addq.w	#1,a1                           	| [$116c: inc  e]
-	ERROR	"review inc register d4 or a1"
+	addq.b	#1,d4                           	| [$116c: inc  e]
 
-	move.l	a0,-(sp)                        	| [$116d: push hl]
-	LOAD_POINTER	l_8056(a6),a0             	| [$116e: ld   hl,($8056)]
+	move.w	d5,-(sp)                        	| [$116d: push hl]
+	LOAD_WORD	pointer_8056(a6),d5             	| [$116e: ld   hl,($8056)]
 
-	addq.w	#1,a0                           	| [$1171: inc  hl]
-	ERROR	"review hl / h or l mixup"
-	move.b	d6,d0                           	| [$1172: ld   a,l]
+	addq.w	#1,d5                           	| [$1171: inc  hl]
+	move.b	d5,d0                           	| [$1172: ld   a,l]
 	and.b	#0x1F,d0                         	| [$1173: and  $1F]
 	jne	l_117c                             	| [$1175: jr   nz,$117C]
-	subq.w	#1,a0                           	| [$1177: dec  hl]
-	ERROR	"review hl / h or l mixup"
-	move.b	d6,d0                           	| [$1178: ld   a,l]
-	and.b	#0xE0,d0                         	| [$1179: and  $E0]
-	move.b	d0,d6                           	| [$117b: ld   l,a]
+	subq.w	#1,d5                           	| [$1177: dec  hl]
+	                           	| [$1178: ld   a,l]
+	and.b	#0xE0,d5                         	| [$1179: and  $E0]
+	                           	| [$117b: ld   l,a]
 l_117c:
-	STORE_POINTER	a0,l_8056(a6)            	| [$117c: ld   ($8056),hl]
-	move.l	(sp)+,a0                        	| [$117f: pop  hl]
+	STORE_WORD	d5,pointer_8056(a6)            	| [$117c: ld   ($8056),hl]
+	move.w	(sp)+,d5                        	| [$117f: pop  hl]
 	subq.b	#1,d1                           	| [$1180: dec  b]
 	jeq	l_118d                             	| [$1181: jr   z,$118D]
 	move.b	d4,d0                           	| [$1183: ld   a,e]
@@ -2816,16 +2814,15 @@ l_1191:
 
 	move.w	#0x0020,d3                      	| [$1194: ld   de,$0020]
 	add.w	d3,a0                            	| [$1197: add  hl,de]
-	ERROR	"review de / d or e mixup"
-	LOAD_POINTER	l_8994(a6),a1             	| [$1198: ld   de,($8994)]
+	LOAD_POINTER	pointer_8994(a6),a1             	| [$1198: ld   de,($8994)]
 
 	st.b	d0                                	| [$119c: ld   a,$FF]
 	move.b	#0x18,d1                        	| [$119e: ld   b,$18]
 l_11a0:
-	move.b	d0,(a0)                         	| [$11a0: ld   (hl),a]
-	move.b	d0,(a1)                         	| [$11a1: ld   (de),a]
-	addq.w	#1,a1                           	| [$11a2: inc  de]
-	addq.w	#1,a0                           	| [$11a3: inc  hl]
+	move.b	d0,(a0)+                         	| [$11a0: ld   (hl),a]
+	move.b	d0,(a1)+                         	| [$11a1: ld   (de),a]
+	                           	| [$11a2: inc  de]
+	                           	| [$11a3: inc  hl]
 	subq.b	#1,d1                           	| [...]
 	jne	l_11a0                             	| [$11a4: djnz $11A0]
 	move.b	nb_rocks_8251(a6),d0            	| [$11a6: ld   a,(nb_rocks_8251)]
@@ -2835,7 +2832,7 @@ l_11a0:
 	clr.b	d2                               	| [$11ae: ld   c,$00]
 l_11b0:
 	jbsr	l_0d72                            	| [$11b0: call $0D72]
-	move.b	l_8000(a6),d0                   	| [$11b3: ld   a,($8000)]
+	move.b	timer_8000(a6),d0                   	| [$11b3: ld   a,($8000)]
 	and.b	#0x1E,d0                         	| [$11b6: and  $1E]
 	add.b	#0xE0,d0                         	| [$11b8: add  a,$E0]
 	move.b	d0,d6                           	| [$11ba: ld   l,a]
@@ -2845,12 +2842,12 @@ l_11b0:
 	move.b	(a0)+,d4                         	| [$11bf: ld   e,(hl)]
 	                           	| [$11c0: inc  hl]
 	move.b	(a0),d3                         	| [$11c1: ld   d,(hl)]
-	ERROR	"review de / d or e mixup"
+	LOAD_A1_FROM_D3D4
 	exg	a1,a0                              	| [$11c2: ex   de,hl]
 	jra	l_11fc                             	| [$11c3: jr   $11FC]
 
 l_11c5:
-	nop                                    	| [$11c5: nop]
+	                                    	| [$11c5: nop]
 	LOAD_POINTER	pointer_8996(a6),a2             	| [$11c6: ld   ix,($8996)]
 
 	move.w	#0x0020,d3                      	| [$11ca: ld   de,$0020]
@@ -2872,7 +2869,7 @@ l_11e2:
 	move.b	l_8001(a6),d0                   	| [$11e9: ld   a,($8001)]
 	and.b	#0x3F,d0                         	| [$11ec: and  $3F]
 	move.b	d0,d5                           	| [$11ee: ld   h,a]
-	move.b	l_8000(a6),d0                   	| [$11ef: ld   a,($8000)]
+	move.b	timer_8000(a6),d0                   	| [$11ef: ld   a,($8000)]
 	and.b	#0x1F,d0                         	| [$11f2: and  $1F]
 	move.b	d0,d6                           	| [$11f4: ld   l,a]
 	move.b	d5,d4                           	| [$11f5: ld   e,h]
@@ -2881,17 +2878,14 @@ l_11e2:
 	jcs	l_11e2                             	| [$11fa: jr   c,$11E2]
 l_11fc:
 	movem.w	d1/d2,-(sp)                    	| [$11fc: push bc]
-	move.l	a4,-(sp)                        	| [$11fc: push bc]
 	move.b	#0x0A,d2                        	| [$11fd: ld   c,$0A]
-	LOAD_POINTER	l_8994(a6),a1             	| [$11ff: ld   de,($8994)]
+	LOAD_POINTER	pointer_8994(a6),a1             	| [$11ff: ld   de,($8994)]
 
 	jbsr	l_125f                            	| [$1203: call $125F]
-	move.l	(sp)+,a4                        	| [$1206: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$1206: pop  bc]
 	jcs	l_11e2                             	| [$1207: jr   c,$11E2]
 	move.b	nb_rocks_8251(a6),d0            	| [$1209: ld   a,(nb_rocks_8251)]
 	movem.w	d1/d2,-(sp)                    	| [$120c: push bc]
-	move.l	a4,-(sp)                        	| [$120c: push bc]
 	move.b	d0,d2                           	| [$120d: ld   c,a]
 
 	move.l	a0,-(sp)                        	| [$120e: push hl]
@@ -2899,19 +2893,15 @@ l_11fc:
 
 	move.w	#0x0020,d3                      	| [$1212: ld   de,$0020]
 	add.w	d3,a0                            	| [$1215: add  hl,de]
-	ERROR	"review de / d or e mixup"
 	exg	a1,a0                              	| [$1216: ex   de,hl]
 	move.l	(sp)+,a0                        	| [$1217: pop  hl]
 	jbsr	l_125f                            	| [$1218: call $125F]
-	move.l	(sp)+,a4                        	| [$121b: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$121b: pop  bc]
 	jcs	l_11e2                             	| [$121c: jr   c,$11E2]
 	movem.w	d1/d2,-(sp)                    	| [$121e: push bc]
-	move.l	a4,-(sp)                        	| [$121e: push bc]
 	lea	l_125B(a6),a1                      	| [$121f: ld   de,$125B]
 	move.b	#0x02,d2                        	| [$1222: ld   c,$02]
 	jbsr	l_125f                            	| [$1224: call $125F]
-	move.l	(sp)+,a4                        	| [$1227: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$1227: pop  bc]
 	jcs	l_11e2                             	| [$1228: jr   c,$11E2]
 	move.b	d5,(0x21,a2)                    	| [$122a: ld   (ix+$21),h]
@@ -2945,9 +2935,10 @@ l_11fc:
 	move.b	d0,l_828F(a6)                   	| [$1257: ld   ($828F),a] [uncovered]
 	rts                                    	| [$125a: ret] [uncovered]
 
+* < A1,D5/D6
 l_125f:
-	move.b	(a1),d0                         	| [$125f: ld   a,(de)]
-	addq.w	#1,a1                           	| [$1260: inc  de]
+	move.b	(a1)+,d0                         	| [$125f: ld   a,(de)]
+	                           	| [$1260: inc  de]
 	cmp.b	#0xFF,d0                         	| [$1261: cp   $FF]
 	jeq	l_1277                             	| [$1263: jr   z,$1277]
 	sub.b	d6,d0                            	| [$1265: sub  l]
@@ -2993,11 +2984,9 @@ l_127f:
 	addq.b	#1,d5                           	| [$1298: inc  h]
 l_1299:
 	move.b	d0,d6                           	| [$1299: ld   l,a]
-	ERROR	"review hl / h or l mixup"
+	LOAD_A0_FROM_D5D6
 	move.b	d2,(a0)                         	| [$129a: ld   (hl),c]
-	ERROR	"review hl / h or l mixup"
-	bset.b	#3,d5                           	| [$129b: set  3,h]
-	ERROR	"review hl / h or l mixup"
+	add.w	#0x800,a0                           	| [$129b: set  3,h]	; screen ?
 	move.b	(a0),d0                         	| [$129d: ld   a,(hl)]
 	and.b	#0x3F,d0                         	| [$129e: and  $3F]
 	btst.b	#1,d4                           	| [$12a0: bit  1,e]
@@ -3013,7 +3002,7 @@ l_12ac:
 	rts                                    	| [$12ae: ret]
 
 l_12af:
-	LOAD_POINTER	l_8994(a6),a0             	| [$12af: ld   hl,($8994)]
+	LOAD_POINTER	pointer_8994(a6),a0             	| [$12af: ld   hl,($8994)]
 
 	move.b	#0xC6,d2                        	| [$12b2: ld   c,$C6]
 	move.b	#0x0A,d1                        	| [$12b4: ld   b,$0A]
@@ -3032,22 +3021,20 @@ l_12c2:
 	jne	l_12b6                             	| [$12c2: djnz $12B6]
 	rts                                    	| [$12c4: ret]
 
+* < D5.W
 l_12c5:
 
-	move.l	a0,-(sp)                        	| [$12c5: push hl]
+	move.w	d5,-(sp)                        	| [$12c5: push hl]
 	movem.w	d3/d4,-(sp)                    	| [$12c6: push de]
-	move.l	a1,-(sp)                        	| [$12c6: push de]
 	movem.w	d1/d2,-(sp)                    	| [$12c7: push bc]
-	move.l	a4,-(sp)                        	| [$12c7: push bc]
-	CLEAR_XC_FLAGS                         	| [$12c8: xor  a]
+	                         	| [$12c8: xor  a]
 	clr.b	d0                               	| [$12c8: xor  a]
-	exg	a1,a0                              	| [$12c9: ex   de,hl]
+	exg	d5,d3                              	| [$12c9: ex   de,hl]
+	LOAD_D3D4_FROM_D3_16
 	jbsr	l_12f2                            	| [$12ca: call $12F2]
 	jcc	l_12ee                             	| [$12cd: jr   nc,$12EE]
 	subq.b	#1,d3                           	| [$12cf: dec  d]
-	ERROR	"review de / d or e mixup"
-	subq.w	#1,a1                           	| [$12d0: dec  e]
-	ERROR	"review dec register d4 or a1"
+	subq.b	#1,d4                           	| [$12d0: dec  e]
 	lea	l_2267(a6),a0                      	| [$12d1: ld   hl,$2267]
 	move.b	#0x03,d2                        	| [$12d4: ld   c,$03]
 l_12d6:
@@ -3062,27 +3049,25 @@ l_12de:
 	subq.b	#1,d1                           	| [...]
 	jne	l_12d8                             	| [$12e0: djnz $12D8]
 	subq.b	#3,d3                           	| [$12e2: dec  d] * 3
-	ERROR	"review de / d or e mixup"
-	addq.w	#1,a1                           	| [$12e5: inc  e]
-	ERROR	"review inc register d4 or a1"
+	addq.b	#1,d4                           	| [$12e5: inc  e]
 	subq.b	#1,d2                           	| [$12e6: dec  c]
 	jne	l_12d6                             	| [$12e7: jr   nz,$12D6]
 	tst.b	d0                               	| [$12e9: and  a]
 	jne	l_12ee                             	| [$12ea: jr   nz,$12EE]
 	or.b	#0x87,d0                          	| [$12ec: or   $87]
 l_12ee:
-	move.l	(sp)+,a4                        	| [$12ee: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$12ee: pop  bc]
-	move.l	(sp)+,a1                        	| [$12ef: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$12ef: pop  de]
-	move.l	(sp)+,a0                        	| [$12f0: pop  hl]
+	move.w	(sp)+,d5                        	| [$12f0: pop  hl]
 	rts                                    	| [$12f1: ret]
 
+* < D0
+* < D3/D4
+* > C
 l_12f2:
 	movem.w	d3/d4,-(sp)                    	| [$12f2: push de]
 	move.l	a1,-(sp)                        	| [$12f2: push de]
 	movem.w	d1/d2,-(sp)                    	| [$12f3: push bc]
-	move.l	a4,-(sp)                        	| [$12f3: push bc]
 	move.b	d0,d2                           	| [$12f4: ld   c,a]
 	move.b	d3,d0                           	| [$12f5: ld   a,d]
 	cmp.b	#0x20,d0                         	| [$12f6: cp   $20]
@@ -3110,7 +3095,6 @@ l_1312:
 	subq.b	#1,d1                           	| [...]
 	jne	l_1312                             	| [$1313: djnz $1312]
 	move.b	d2,d0                           	| [$1315: ld   a,c]
-	move.l	(sp)+,a4                        	| [$1316: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$1316: pop  bc]
 	move.l	(sp)+,a1                        	| [$1317: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$1317: pop  de]
@@ -3118,20 +3102,19 @@ l_1312:
 
 l_1319:
 	move.b	d2,d0                           	| [$1319: ld   a,c]
-	move.l	(sp)+,a4                        	| [$131a: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$131a: pop  bc]
 	move.l	(sp)+,a1                        	| [$131b: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$131b: pop  de]
 	SET_XC_FLAGS                           	| [$131c: scf]
 	rts                                    	| [$131d: ret]
 
+* < A0: pointer
 l_131e:
 	movem.w	d1/d2,-(sp)                    	| [$131e: push bc]
-	move.l	a4,-(sp)                        	| [$131e: push bc]
 	movem.w	d3/d4,-(sp)                    	| [$131f: push de]
 	move.l	a1,-(sp)                        	| [$131f: push de]
-
-	move.l	a0,-(sp)                        	| [$1320: push hl]
+	LOAD_D5D6_FROM_A0
+	move.w	d5,-(sp)                        	| [$1320: push hl]
 	move.b	d5,d0                           	| [$1321: ld   a,h]
 	cmp.b	#0x38,d0                         	| [$1322: cp   $38]
 	jcc	l_13b5                             	| [$1324: jp   nc,$13B5]
@@ -3168,9 +3151,8 @@ l_131e:
 	add.w	d0,a0                           	| [$1350: add  a,l]
 												| [$1351: jr   nc,$1354]
 												| [$1353: inc  h] [uncovered]
-l_1354:
-	ERROR	"review hl / h or l mixup"
-	move.b	d0,d6                           	| [$1354: ld   l,a]
+
+	                           	| [$1354: ld   l,a]
 	clr.b	d4                               	| [$1355: ld   e,$00]
 	move.b	(a0)+,d1                         	| [$1357: ld   b,(hl)]
 	                           	| [$1358: inc  hl]
@@ -3197,22 +3179,18 @@ l_136d:
 	add.w	d0,a0                           	| [$1371: add  a,l]
 	                         	| [$1372: jr   nc,$1375]
 	                          	| [$1374: inc  h] [uncovered]
-l_1375:
-	move.b	d0,d6                           	| [$1375: ld   l,a]
-	ERROR	"review hl / h or l mixup"
+	                           	| [$1375: ld   l,a]
 	move.b	(a0),d2                         	| [$1376: ld   c,(hl)]
-	LOAD_POINTER	l_8056(a6),a0             	| [$1377: ld   hl,($8056)]
+	LOAD_POINTER	pointer_8056(a6),a0             	| [$1377: ld   hl,($8056)]
 
 	move.b	d2,(a0)                         	| [$137a: ld   (hl),c]
-	ERROR	"review hl / h or l mixup"
-	bset.b	#3,d5                           	| [$137b: set  3,h]
+	add.w	#0x800,a0                           	| [$137b: set  3,h] screen?
 	move.b	l_82B1(a6),d0                   	| [$137d: ld   a,($82B1)]
 	or.b	d1,d0                             	| [$1380: or   b]
-	move.b	d0,(a0)                         	| [$1381: ld   (hl),a]
+	move.b	d0,(a0)                         	| [$1381: ld   (hl),a] screen?
 	move.l	(sp)+,a0                        	| [$1382: pop  hl]
 	move.l	(sp)+,a1                        	| [$1383: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$1383: pop  de]
-	move.l	(sp)+,a4                        	| [$1384: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$1384: pop  bc]
 	rts                                    	| [$1385: ret]
 
@@ -3223,11 +3201,11 @@ l_1386:
 	move.b	d0,d5                           	| [$1388: ld   h,a]
 	move.b	d2,d6                           	| [$1389: ld   l,c]
 	LOAD_D5_16_FROM_D5D6
+	LOAD_D1_16_FROM_D1D2
 	add.w	d5,d5                            	| [$138a: add  hl,hl]
 	add.w	d5,d5                            	| [$138b: add  hl,hl]
 	add.w	d5,d5                            	| [$138c: add  hl,hl]
 	add.w	d1,d5                            	| [$138d: add  hl,bc]
-	ERROR	"review d1 computation above"
 	moveq	#0,d1
 	move.b	d3,d1                           	| [$138e: ld   c,d]
 	add.w	d1,d5                            	| [$138f: add  hl,bc]
@@ -3237,7 +3215,7 @@ l_1386:
 	add.w	d1,d5                            	| [$1393: add  hl,bc]
 	move.w	#0x2288,d1                      	| [$1394: ld   bc,$2288]
 	add.w	d1,d5                            	| [$1397: add  hl,bc]
-	LOAD_POINTER	l_8056(a6),a1             	| [$1398: ld   de,($8056)]
+	LOAD_POINTER	pointer_8056(a6),a1             	| [$1398: ld   de,($8056)]
 	LOAD_A0_FROM_D5_16
 	move.b	(a0),d0                         	| [$139c: ld   a,(hl)]
 	and.b	#0xC0,d0                         	| [$139d: and  $C0]
@@ -3253,14 +3231,13 @@ l_13a8:
 	move.b	d0,(a1)                         	| [$13ac: ld   (de),a]
 l_13ad:
 	exg	a1,a0                              	| [$13ad: ex   de,hl]
-	ERROR	"review hl / h or l mixup"
+	LOAD_D5D6_FROM_A0
 	bset.b	#3,d5                           	| [$13ae: set  3,h]
-	ERROR	"review hl / h or l mixup"
+	LOAD_A0_FROM_D5D6
 	move.b	d1,(a0)                         	| [$13b0: ld   (hl),b]
 	move.l	(sp)+,a0                        	| [$13b1: pop  hl]
 	move.l	(sp)+,a1                        	| [$13b2: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$13b2: pop  de]
-	move.l	(sp)+,a4                        	| [$13b3: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$13b3: pop  bc]
 	rts                                    	| [$13b4: ret]
 
@@ -3270,7 +3247,7 @@ l_13b5:
 	add.b	d3,d0                            	| [$13b9: add  a,d]
 	add.b	d3,d0                            	| [$13ba: add  a,d]
 	add.b	d4,d0                            	| [$13bb: add  a,e]
-	LOAD_POINTER	l_8056(a6),a1             	| [$13bc: ld   de,($8056)]
+	LOAD_POINTER	pointer_8056(a6),a1             	| [$13bc: ld   de,($8056)]
 
 	move.b	d0,(a1)                         	| [$13c0: ld   (de),a]
 	move.b	#0x51,d1                        	| [$13c1: ld   b,$51]
@@ -3288,10 +3265,11 @@ l_13cf:
 	bne.b	0f                               	| [...]
 	rts                                    	| [$13d3: ret  z] [...]
 0:
-	lea	l_01F8(a6),a0                      	| [$13d4: ld   hl,$01F8]
-di
-	LOAD_POINTER	l_8054(a6),a1             	| [$13d8: ld   de,($8054)]
-
+	move.	#0x01F8,d5                      	| [$13d4: ld   hl,$01F8]
+	jbsr	osd_disable_interrupts
+	LOAD_WORD	value16_8054(a6),d3             	| [$13d8: ld   de,($8054)]
+	LOAD_D3D4_FROM_D3_16
+	
 	move.b	value16_8050(a6),d0                   	| [$13dc: ld   a,($8050)]
 	clr.w	d1                               	| [$13df: ld   b,$00]
 	move.b	d0,d1                           	| [$13e1: ld   c,a]
@@ -3299,17 +3277,17 @@ di
 	jeq	l_13e7                             	| [$13e4: jr   z,$13E7]
 	subq.w	#0x100,d1                           	| [$13e6: dec  b]
 l_13e7:
-	add.w	d1,a0                            	| [$13e7: add  hl,bc]
+	add.w	d1,d5                            	| [$13e7: add  hl,bc]
 	move.w	#-0x08,d1                       	| [$13e8: ld   bc,$FFF8]
 	addq.b	#1,d4                           	| [$13eb: inc  e]
 l_13ec:
 	subq.b	#1,d4                           	| [$13ec: dec  e]
 	jeq	l_13f2                             	| [$13ed: jr   z,$13F2]
-	add.w	d1,a0                            	| [$13ef: add  hl,bc]
+	add.w	d1,d5                            	| [$13ef: add  hl,bc]
 	jra	l_13ec                             	| [$13f0: jr   $13EC]
 
 l_13f2:
-	STORE_POINTER	a0,l_8248(a6)            	| [$13f2: ld   ($8248),hl]
+	STORE_WORD	d5,value16_8248(a6)            	| [$13f2: ld   ($8248),hl]
 	move.b	l_8051(a6),d0                   	| [$13f5: ld   a,($8051)]
 	add.b	#0x14,d0                         	| [$13f8: add  a,$14]
 	neg.b	d0                               	| [$13fa: neg]
@@ -3326,7 +3304,7 @@ l_1403:
 	move.b	d0,d1                           	| [$1409: ld   b,a]
 	lea	l_8093(a6),a2                      	| [$140a: ld   ix,$8093]
 l_140e:
-	LOAD_POINTER	value16_8052(a6),a0             	| [$140e: ld   hl,($8052)]
+	LOAD_POINTER	pointer_8052(a6),a0             	| [$140e: ld   hl,($8052)]
 
 	move.b	(-0x03,a2),d0                   	| [$1411: ld   a,(ix-$03)]
 	sub.b	d6,d0                            	| [$1414: sub  l]
@@ -3401,13 +3379,13 @@ l_1466:
 	add.b	d0,d0                            	| [$147f: add  a,a]
 	clr.w	d3                               	| [$1481: ld   d,$00]
 	move.b	d0,d3                           	| [$1480: ld   e,a]
-	LOAD_POINTER	l_8248(a6),a0             	| [$1483: ld   hl,($8248)]
+	LOAD_WORD	value16_8248(a6),d5             	| [$1483: ld   hl,($8248)]
 
-	add.w	d3,a0                            	| [$1486: add  hl,de]
-	ERROR	"review hl / h or l mixup"
+	add.w	d3,d5                            	| [$1486: add  hl,de]
+	LOAD_D5D6_FROM_D5_16
 	move.b	d5,(0x00,a2)                    	| [$1487: ld   (ix+$00),h]
 	move.b	d6,(0x01,a2)                    	| [$148a: ld   (ix+$01),l]
-	CLEAR_XC_FLAGS                         	| [$148d: xor  a]
+	                         	| [$148d: xor  a]
 	clr.b	d0                               	| [$148d: xor  a]
 	move.b	d0,(-0x04,a2)                   	| [$148e: ld   (ix-$04),a]
 	move.b	d0,(-0x06,a2)                   	| [$1491: ld   (ix-$06),a]
@@ -3441,7 +3419,7 @@ l_1497:
 	or.b	d6,d0                             	| [$14bd: or   l]
 	move.b	d0,d6                           	| [$14be: ld   l,a]
 	LOAD_D5_16_FROM_D5D6
-	STORE_WORD	d5,l_8056(a6)            	| [$14bf: ld   ($8056),hl]
+	STORE_WORD	d5,pointer_8056(a6)            	| [$14bf: ld   ($8056),hl]
 	move.w	(sp)+,d0                        	| [$14c2: pop  af]
 	move.w	(sp)+,d5                        	| [$14c3: pop  hl]
 	rts                                    	| [$14c4: ret]
@@ -3453,7 +3431,6 @@ l_14c5:
 	movem.w	d3/d4,-(sp)                    	| [$14c7: push de]
 	move.l	a1,-(sp)                        	| [$14c7: push de]
 	movem.w	d1/d2,-(sp)                    	| [$14c8: push bc]
-	move.l	a4,-(sp)                        	| [$14c8: push bc]
 	move.w	d0,-(sp)                        	| [$14c9: push af]
 	move.b	l_82AA(a6),d0                   	| [$14ca: ld   a,($82AA)]
 	                               	| [$14cd: and  a]
@@ -3466,32 +3443,36 @@ l_14d7:
 	lea	l_82AC(a6),a0                      	| [$14d7: ld   hl,$82AC]
 	move.b	p1_a000(a6),d0                  	| [$14da: ld   a,(p1_a000)]
 	move.b	d0,d1                           	| [$14dd: ld   b,a]
+	CLEAR_XC_FLAGS
 	roxr.b	#1,d0                           	| [$14de: rra]
-	ERROR	"review cpu X flag"
-	roxl.b	#1,(a0)                         	| [$14df: rl   (hl)]
-	addq.w	#1,a0                           	| [$14e1: inc  hl]
+	move.b	(a0),d7
+	roxl.b	#1,d7                         	| [$14df: rl   (hl)]
+	move.b	d7,(a0)+                           	| [$14e1: inc  hl]
 	roxl.b	#1,d1                           	| [$14e2: rl   b]
-	roxl.b	#1,(a0)                         	| [$14e4: rl   (hl)]
-	addq.w	#1,a0                           	| [$14e6: inc  hl]
+	move.b	(a0),d7                         	| [$14e4: rl   (hl)]
+	roxl.b	#1,d7                           	| [$14e6: inc  hl]
+	move.b	d7,(a0)+
 	move.b	p2_a080(a6),d0            	| [$14e7: ld   a,(watchdog_a080)]
 	roxl.b	#1,d0                           	| [$14ea: rla]
-	ERROR	"review cpu X flag"
-	roxl.b	#1,(a0)                         	| [$14eb: rl   (hl)]
+	move.b	(a0),d7                         	| [$14eb: rl   (hl)]
+	roxl.b	#1,d7
+	move.b	d7,(a0)+
 	move.b	(a0),d0                         	| [$14ed: ld   a,(hl)]
+	
 	and.b	#0x0F,d0                         	| [$14ee: and  $0F]
 	cmp.b	#0x0C,d0                         	| [$14f0: cp   $0C]
 	bne.b	0f                               	| [...]
 	jbsr	l_1518                            	| [$14f2: call z,$1518]
 0:
-	subq.w	#1,a0                           	| [$14f5: dec  hl]
-	move.b	(a0),d0                         	| [$14f6: ld   a,(hl)]
+	                           	| [$14f5: dec  hl]
+	move.b	-(a0),d0                         	| [$14f6: ld   a,(hl)]
 	and.b	#0x0F,d0                         	| [$14f7: and  $0F]
 	cmp.b	#0x0C,d0                         	| [$14f9: cp   $0C]
 	bne.b	0f                               	| [...]
 	jbsr	l_1518                            	| [$14fb: call z,$1518]
 0:
-	subq.w	#1,a0                           	| [$14fe: dec  hl]
-	move.b	(a0),d0                         	| [$14ff: ld   a,(hl)]
+	                           	| [$14fe: dec  hl]
+	move.b	-(a0),d0                         	| [$14ff: ld   a,(hl)]
 	and.b	#0x0F,d0                         	| [$1500: and  $0F]
 	move.b	#0x01,d1                        	| [$1502: ld   b,$01]
 	cmp.b	#0x0C,d0                         	| [$1504: cp   $0C]
@@ -3502,7 +3483,6 @@ l_14d7:
 	jbsr	l_152a                            	| [$1510: call $152A] [uncovered]
 l_1513:
 	move.w	(sp)+,d0                        	| [$1513: pop  af]
-	move.l	(sp)+,a4                        	| [$1514: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$1514: pop  bc]
 	move.l	(sp)+,a1                        	| [$1515: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$1515: pop  de]
@@ -3723,11 +3703,11 @@ l_162d:
 	jcs	l_164e                             	| [$1640: jr   c,$164E]
 	btst.b	#7,d0                           	| [$1642: bit  7,a]
 	jne	l_164b                             	| [$1644: jr   nz,$164B]
-	jbsr	l_0d69                            	| [$1646: call $0D69]
+	jbsr	increase_and_wrap_d5w_0d69                            	| [$1646: call $0D69]
 	jra	l_164e                             	| [$1649: jr   $164E]
 
 l_164b:
-	jbsr	l_0d5f                            	| [$164b: call $0D5F]
+	jbsr	decrease_and_wrap_d5w_0d5f                            	| [$164b: call $0D5F]
 l_164e:
 	move.b	(0x07,a2),d0                    	| [$164e: ld   a,(ix+$07)]
 	move.w	#0x0020,d3                      	| [$1651: ld   de,$0020]
@@ -3736,7 +3716,7 @@ l_164e:
 	jcs	l_1664                             	| [$1658: jr   c,$1664]
 	btst.b	#7,d0                           	| [$165a: bit  7,a]
 	jeq	l_1661                             	| [$165c: jr   z,$1661]
-	add.w	d3,a0                            	| [$165e: add  hl,de]
+	add.w	d3,d5                            	| [$165e: add  hl,de]
 	jra	l_1664                             	| [$165f: jr   $1664]
 
 l_1661:
@@ -3762,17 +3742,16 @@ l_167a:
 
 	move.l	a2,-(sp)                        	| [$167a: push ix]
 
-	move.l	a3,-(sp)                        	| [$167c: push iy]
-	move.l	(sp)+,a2                        	| [$167e: pop  ix]
+	move.l	a3,a2                        	| [$167c: push iy]
+	                        	| [$167e: pop  ix]
 	jbsr	l_1697                            	| [$1680: call $1697]
 	move.l	(sp)+,a2                        	| [$1683: pop  ix]
 	move.b	(0x02,a3),d0                    	| [$1685: ld   a,(iy+$02)]
 	move.b	(0x02,a2),d7
-	eor.b	d7,d0                            	| [$1688: xor  (ix+$02)]
-	btst.b	#7,d0                           	| [$168b: bit  7,a]
+	eor.b	d0,d7                            	| [$1688: xor  (ix+$02)]
 	move.b	(0x02,a2),d0                    	| [$168d: ld   a,(ix+$02)]
+	btst.b	#7,d7                           	| [$168b: bit  7,a]
 	jeq	l_1694                             	| [$1690: jr   z,$1694]
-	ERROR	"review cpu flags (move.b,jeq)"
 	neg.b	d0                               	| [$1692: neg]
 l_1694:
 	move.b	d0,(0x02,a2)                    	| [$1694: ld   (ix+$02),a]
@@ -3781,7 +3760,8 @@ l_1697:
 	move.l	a0,-(sp)                        	| [$1697: push hl]
 	move.b	#0xE0,(0x00,a2)                 	| [$1698: ld   (ix+$00),$E0]
 	move.b	#0x32,(0x13,a2)                 	| [$169c: ld   (ix+$13),$32]
-	lea	l_0100(a6),a0                      	| [$16a0: ld   hl,$0100]
+	move.b	#0x1,d5                      	| [$16a0: ld   hl,$0100]
+	moveq	#0,d6                      	| [$16a0: ld   hl,$0100]
 	btst.b	#7,(0x02,a2)                    	| [$16a3: bit  7,(ix+$02)]
 	jne	l_16ab                             	| [$16a7: jr   nz,$16AB]
 	st.b	d5                                	| [$16a9: ld   h,$FF]
@@ -3830,7 +3810,7 @@ l_16d3:
 	move.b	l_8021(a6),d0                   	| [$16e8: ld   a,($8021)]
 	                               	| [$16eb: and  a]
 	jeq	l_068e                             	| [$16ec: jp   z,$068E]
-	LOAD_POINTER	l_8988(a6),a0             	| [$16ef: ld   hl,($8988)]
+	LOAD_POINTER	pointer_8988(a6),a0             	| [$16ef: ld   hl,($8988)]
 
 	subq.b	#1,(a0)                         	| [$16f2: dec  (hl)]
 	jeq	l_19b9                             	| [$16f3: jp   z,$19B9]
@@ -3872,7 +3852,7 @@ l_1741:
 	subq.w	#1,a0                           	| [$1746: dec  hl]
 	move.b	d0,(a0)                         	| [$1747: ld   (hl),a]
 	lea	l_1F00(a6),a0                      	| [$1748: ld   hl,$1F00]
-	lea	l_8988(a6),a1                      	| [$174b: ld   de,$8988]
+	lea	pointer_8988(a6),a1                      	| [$174b: ld   de,$8988]
 	move.w	#0x0018,d1                      	| [$174e: ld   bc,$0018]
 	jbsr	ldir                              	| [$1751: ldir]
 	rts                                    	| [$1753: ret]
@@ -3906,14 +3886,14 @@ l_178e:
 l_1792:
 	move.b	d0,(a1)                         	| [$1792: ld   (de),a]
 	move.b	#0x46,(a0)                      	| [$1793: ld   (hl),$46]
-	jbsr	l_0e5d                            	| [$1795: call $0E5D]
+	jbsr	advance_hl_and_de_0e5d                            	| [$1795: call $0E5D]
 	addq.b	#1,d0                           	| [$1798: inc  a]
 	subq.b	#1,d1                           	| [...]
 	jne	l_1792                             	| [$1799: djnz $1792]
 	move.l	(sp)+,a1                        	| [$179b: pop  de]
 	movem.w	(sp)+,d3/d4/d5/d6                   	| [$179b: pop  de]
 	move.l	(sp)+,a0                        	| [$179c: pop  hl]
-	jbsr	l_0e6c                            	| [$179d: call $0E6C]
+	jbsr	advance_hl_and_de_0e6c                            	| [$179d: call $0E6C]
 	subq.b	#1,d2                           	| [$17a0: dec  c]
 	jne	l_178e                             	| [$17a1: jr   nz,$178E]
 l_17a3:
@@ -4041,14 +4021,14 @@ l_184b:
 	move.b	d0,(a0)                         	| [$184d: ld   (hl),a]
 	; TODO write to screen?
 	jbsr	l_188d                            	| [$184e: call $188D]
-	jbsr	l_1988                            	| [$1851: call $1988]
+	jbsr	move_wrap_pointer_1988                            	| [$1851: call $1988]
 	move.b	#0xAA,(a0)                      	| [$1854: ld   (hl),$AA]
 	; TODO write to screen?
 	jbsr	l_188d                            	| [$1856: call $188D]
 	move.b	l_8250(a6),d0                   	| [$1859: ld   a,($8250)]
 	cmp.b	#0x0A,d0                         	| [$185c: cp   $0A]
 	jne	l_1868                             	| [$185e: jr   nz,$1868]
-	jbsr	l_1988                            	| [$1860: call $1988] [uncovered]
+	jbsr	move_wrap_pointer_1988                            	| [$1860: call $1988] [uncovered]
 	move.b	#0xAB,(a0)                      	| [$1863: ld   (hl),$AB] [uncovered]
 	; TODO write to screen?
 	jbsr	l_188d                            	| [$1865: call $188D] [uncovered]
@@ -4058,7 +4038,7 @@ l_1868:
 	jeq	l_1896                             	| [$186c: jr   z,$1896]
 
 	move.l	a0,-(sp)                        	| [$186e: push hl]
-	jbsr	l_1988                            	| [$186f: call $1988]
+	jbsr	move_wrap_pointer_1988                            	| [$186f: call $1988]
 	move.b	(a0),d0                         	| [$1872: ld   a,(hl)]
 	cmp.b	#0x81,d0                         	| [$1873: cp   $81]
 	jne	l_187f                             	| [$1875: jr   nz,$187F]
@@ -4172,33 +4152,33 @@ l_1927:
 	move.b	(a0),d0                         	| [$1932: ld   a,(hl)]
 l_1933:
 	cmp.b	d3,d0                            	| [$1933: cp   d]
-	jcs	l_193a                             	| [$1934: jr   c,$193A]
+	jcs	setup_new_level_193a                             	| [$1934: jr   c,$193A]
 	subq.b	#0x04,d0                        	| [$1936: sub  $04] [uncovered]
 	jra	l_1933                             	| [$1938: jr   $1933] [uncovered]
 
-l_193a:
+setup_new_level_193a:
 	subq.b	#0x02,d0                        	| [$193a: sub  $02]
 	add.b	d0,d0                            	| [$193c: add  a,a]
 	add.b	d0,d0                            	| [$193d: add  a,a]
 	add.b	d0,d0                            	| [$193e: add  a,a]
 	move.b	d0,d6                           	| [$193f: ld   l,a]
 	clr.b	d5                               	| [$1940: ld   h,$00]
-	LOAD_POINTER	l_82D2(a6),a1             	| [$1942: ld   de,($82D2)]
-
-	add.w	d3,a0                            	| [$1946: add  hl,de]
-	BREAKPOINT	"1946 review d3 computation above"
-	move.b	(a0),d0                         	| [$1947: ld   a,(hl)]
+	LOAD_A0_FROM_D5D6
+	moveq	#0,d3
+	LOAD_WORD	pointer_82d2(a6),d3             | [$1942: ld   de,($82D2)]
+	add.l	d3,a0                            	| [$1946: add  hl,de]
+	move.b	(a0)+,d0                         	| [$1947: ld   a,(hl)]
 	move.b	d0,nb_enemy_cars_824e(a6)       	| [$1948: ld   (nb_enemy_cars_824e),a]
-	addq.w	#1,a0                           	| [$194b: inc  hl]
-	move.b	(a0),d0                         	| [$194c: ld   a,(hl)]
+	                           	| [$194b: inc  hl]
+	move.b	(a0)+,d0                         	| [$194c: ld   a,(hl)]
 	move.b	d0,l_826E(a6)                   	| [$194d: ld   ($826E),a]
-	addq.w	#1,a0                           	| [$1950: inc  hl]
-	move.b	(a0),d0                         	| [$1951: ld   a,(hl)]
+	                           	| [$1950: inc  hl]
+	move.b	(a0)+,d0                         	| [$1951: ld   a,(hl)]
 	move.b	d0,l_8288(a6)                   	| [$1952: ld   ($8288),a]
-	addq.w	#1,a0                           	| [$1955: inc  hl]
-	move.b	(a0),d0                         	| [$1956: ld   a,(hl)]
+	                           	| [$1955: inc  hl]
+	move.b	(a0)+,d0                         	| [$1956: ld   a,(hl)]
 	move.b	d0,nb_rocks_8251(a6)            	| [$1957: ld   (nb_rocks_8251),a]
-	addq.w	#1,a0                           	| [$195a: inc  hl]
+	                           	| [$195a: inc  hl]
 	move.b	l_828A(a6),d0                   	| [$195b: ld   a,($828A)]
 	move.b	d0,d1                           	| [$195e: ld   b,a]
 	LOAD_POINTER	pointer_898c(a6),a1             	| [$195f: ld   de,($898C)]
@@ -4227,21 +4207,23 @@ l_1978:
 	jbsr	ldir                              	| [$1985: ldir]
 	rts                                    	| [$1987: ret]
 
-l_1988:
+move_wrap_pointer_1988:
 	addq.w	#1,a0                           	| [$1988: inc  hl]
+	LOAD_D5D6_FROM_A0
 	move.b	d0,d1                           	| [$1989: ld   b,a]
-	move.b	d6,d0                           	| [$198a: ld   a,l]
-	and.b	#0x1F,d0                         	| [$198b: and  $1F]
+	move.b	d6,d5                           	| [$198a: ld   a,l]
+	and.b	#0x1F,d5                         	| [$198b: and  $1F]
 	move.b	d1,d0                           	| [$198d: ld   a,b]
+	tst.b	d5
 	beq.b	0f                               	| [...]
-	ERROR	"review cpu flags (move.b,beq.b)"
 	rts                                    	| [$198e: ret  nz] [...]
 0:
 	subq.w	#1,a0                           	| [$198f: dec  hl]
-	ERROR	"review hl / h or l mixup"
-	move.b	d6,d0                           	| [$1990: ld   a,l]
-	and.b	#0xE0,d0                         	| [$1991: and  $E0]
-	move.b	d0,d6                           	| [$1993: ld   l,a]
+	LOAD_D5D6_FROM_A0
+	                           	| [$1990: ld   a,l]
+	and.b	#0xE0,d6                         	| [$1991: and  $E0]
+	                           	| [$1993: ld   l,a]
+	LOAD_A0_FROM_D5D6
 	move.b	d1,d0                           	| [$1994: ld   a,b]
 	rts                                    	| [$1995: ret]
 
@@ -4258,7 +4240,7 @@ l_1996:
 	move.b	l_8021(a6),d0                   	| [$19ab: ld   a,($8021)]
 	                               	| [$19ae: and  a]
 	jeq	l_068e                             	| [$19af: jp   z,$068E]
-	LOAD_POINTER	l_8988(a6),a0             	| [$19b2: ld   hl,($8988)] [uncovered]
+	LOAD_POINTER	pointer_8988(a6),a0             	| [$19b2: ld   hl,($8988)] [uncovered]
 
 	subq.b	#1,(a0)                         	| [$19b5: dec  (hl)] [uncovered]
 	jne	l_16f6                             	| [$19b6: jp   nz,$16F6] [uncovered]
@@ -4291,13 +4273,13 @@ l_19dd:
 	move.b	#0x03,d2                        	| [$19df: ld   c,$03] [uncovered]
 l_19e1:
 	move.b	d0,(a1)                         	| [$19e1: ld   (de),a] [uncovered]
-	jbsr	l_0e5d                            	| [$19e2: call $0E5D] [uncovered]
+	jbsr	advance_hl_and_de_0e5d                            	| [$19e2: call $0E5D] [uncovered]
 	subq.b	#1,d2                           	| [$19e5: dec  c] [uncovered]
 	jne	l_19e1                             	| [$19e6: jr   nz,$19E1] [uncovered]
 	move.l	(sp)+,a1                        	| [$19e8: pop  de] [uncovered]
 	movem.w	(sp)+,d3/d4                    	| [$19e8: pop  de] [uncovered]
 	move.l	(sp)+,a0                        	| [$19e9: pop  hl] [uncovered]
-	jbsr	l_0e6c                            	| [$19ea: call $0E6C] [uncovered]
+	jbsr	advance_hl_and_de_0e6c                            	| [$19ea: call $0E6C] [uncovered]
 	subq.b	#1,d1                           	| [...]
 	jne	l_19dd                             	| [$19ed: djnz $19DD] [uncovered]
 	lea	l_8014(a6),a2                      	| [$19ef: ld   ix,$8014] [uncovered]
@@ -4643,27 +4625,28 @@ l_1c4e:
 	movem.w	d3/d4,-(sp)                    	| [$1c58: push de]
 	move.l	a1,-(sp)                        	| [$1c58: push de]
 	exg	a1,a0                              	| [$1c59: ex   de,hl]
-	ERROR	"review hl / h or l mixup"
+	LOAD_D3D4_FROM_A1
+	LOAD_D5D6_FROM_A0
 	bset.b	#3,d5                           	| [$1c5a: set  3,h]
 	move.b	#0x08,d3                        	| [$1c5c: ld   d,$08]
+	LOAD_A0_FROM_D5D6
 l_1c5e:
-	move.b	d2,(a0)                         	| [$1c5e: ld   (hl),c]
-	addq.w	#1,a0                           	| [$1c5f: inc  hl]
+	move.b	d2,(a0)+                         	| [$1c5e: ld   (hl),c]
+	                           	| [$1c5f: inc  hl]
 	subq.b	#1,d3                           	| [$1c60: dec  d]
 	jne	l_1c5e                             	| [$1c61: jr   nz,$1C5E]
 	move.l	(sp)+,a1                        	| [$1c63: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$1c63: pop  de]
-	LOAD_D3_16_FROM_D3D4
+	LOAD_D3_16_FROM_A1
 	move.w	#0x0020,d5                      	| [$1c64: ld   hl,$0020]
-	ERROR	"review hl / h or l mixup"
-	add.w	d3,a0                            	| [$1c67: add  hl,de]
-	ERROR	"review de / d or e mixup"
+	add.w	d3,d5                            	| [$1c67: add  hl,de]
+	LOAD_A0_FROM_D5_16
 	exg	a1,a0                              	| [$1c68: ex   de,hl]
 	move.l	(sp)+,a0                        	| [$1c69: pop  hl]
 	rts                                    	| [$1c6a: ret]
 
 l_1c6b:
-	nop                                    	| [$1c6b: nop]
+	                                    	| [$1c6b: nop]
 	move.b	l_8021(a6),d0                   	| [$1c6c: ld   a,($8021)]
 	                               	| [$1c6f: and  a]
 	bne.b	0f                               	| [...]
@@ -4897,7 +4880,7 @@ l_1dac:
 	move.b	l_81AA(a6),d0                   	| [$1db3: ld   a,($81AA)] [uncovered]
 	or.b	d2,d0                             	| [$1db6: or   c] [uncovered]
 	move.b	d0,l_81B2(a6)                   	| [$1db7: ld   ($81B2),a] [uncovered]
-	LOAD_POINTER	l_8988(a6),a0             	| [$1dba: ld   hl,($8988)] [uncovered]
+	LOAD_POINTER	pointer_8988(a6),a0             	| [$1dba: ld   hl,($8988)] [uncovered]
 
 	addq.b	#1,(a0)                         	| [$1dbd: inc  (hl)] [uncovered]
 
@@ -4967,7 +4950,6 @@ l_1e11:
 	move.b	d6,d0                           	| [$1e15: ld   a,l]
 	not.b	d0                               	| [$1e16: cpl]
 	move.b	d0,d6                           	| [$1e17: ld   l,a]
-	ERROR	"review hl / h or l mixup"
 	addq.w	#1,d5                           	| [$1e18: inc  hl]
 	move.w	(sp)+,d0                        	| [$1e19: pop  af]
 	rts                                    	| [$1e1a: ret]
@@ -4986,7 +4968,6 @@ l_1e1b:
 	                         	| [$1e34: xor  a]
 	clr.b	d0                               	| [$1e34: xor  a]
 	clr.w	d5                           	| [$1e35: ld   h,a]
-	ERROR	"review hl / h or l mixup"
 	STORE_WORD	d5,value16_805a(a6)            	| [$1e36: ld   ($805A),hl]
 	move.b	d0,l_8020(a6)                   	| [$1e39: ld   ($8020),a]
 	move.b	d0,nb_enemy_cars_824e(a6)       	| [$1e3c: ld   (nb_enemy_cars_824e),a]
@@ -5609,46 +5590,46 @@ l_27d9:
 	move.b	#0x01,d0                        	| [$27d9: ld   a,$01]
 	jra	l_27ea                             	| [$27db: jr   $27EA]
 
+* sound code?
 l_27dd:
-	move.b	l_806B(a6),d0                   	| [$27dd: ld   a,($806B)]
-	                               	| [$27e0: cp   $00]
-	jeq	l_27e8                             	| [$27e2: jr   z,$27E8]
-	move.b	#0x02,d0                        	| [$27e4: ld   a,$02]
-	jra	l_27ea                             	| [$27e6: jr   $27EA]
-
-l_27e8:
-	move.b	#0x03,d0                        	| [$27e8: ld   a,$03]
-l_27ea:
-	move.b	d0,l_A10F(a6)                   	| [$27ea: ld   ($A10F),a]
-	move.b	#0x04,d0                        	| [$27ed: ld   a,$04]
-	move.b	d0,l_A11F(a6)                   	| [$27ef: ld   ($A11F),a]
-	move.w	#0x0050,d3                      	| [$27f2: ld   de,$0050]
-	LOAD_POINTER	value16_8069(a6),a0             	| [$27f5: ld   hl,($8069)]
-
-	btst.b	#7,d5                           	| [$27f8: bit  7,h]
-	jeq	l_2803                             	| [$27fa: jr   z,$2803]
-	move.b	d5,d0                           	| [$27fc: ld   a,h]
-	not.b	d0                               	| [$27fd: cpl]
-	move.b	d0,d5                           	| [$27fe: ld   h,a]
-	move.b	d6,d0                           	| [$27ff: ld   a,l]
-	not.b	d0                               	| [$2800: cpl]
-	move.b	d0,d6                           	| [$2801: ld   l,a]
-	ERROR	"review hl / h or l mixup"
-	addq.w	#1,a0                           	| [$2802: inc  hl]
-l_2803:
-	add.w	d3,a0                            	| [$2803: add  hl,de]
-	ERROR	"review hl / h or l mixup"
-	move.b	d6,d0                           	| [$2804: ld   a,l]
-	lsr.b	#4,d0                            	| [$2805: srl  a] * 4
-	move.b	d0,l_A11B(a6)                   	| [$280d: ld   ($A11B),a]
-	move.b	d5,d0                           	| [$2810: ld   a,h]
-	and.b	#0x0F,d0                         	| [$2811: and  $0F]
-	move.b	d0,l_A11C(a6)                   	| [$2813: ld   ($A11C),a]
-	move.b	d5,d0                           	| [$2816: ld   a,h]
-	lsr.b	#4,d0                            	| [$2817: srl  a] * 4
-	move.b	d0,l_A11D(a6)                   	| [$281f: ld   ($A11D),a]
-	clr.b	d0                               	| [$2822: ld   a,$00]
-	move.b	d0,l_A11E(a6)                   	| [$2824: ld   ($A11E),a]
+*	move.b	l_806B(a6),d0                   	| [$27dd: ld   a,($806B)]
+*	                               	| [$27e0: cp   $00]
+*	jeq	l_27e8                             	| [$27e2: jr   z,$27E8]
+*	move.b	#0x02,d0                        	| [$27e4: ld   a,$02]
+*	jra	l_27ea                             	| [$27e6: jr   $27EA]
+*
+*l_27e8:
+*	move.b	#0x03,d0                        	| [$27e8: ld   a,$03]
+*l_27ea:
+*	move.b	d0,l_A10F(a6)                   	| [$27ea: ld   ($A10F),a]
+*	move.b	#0x04,d0                        	| [$27ed: ld   a,$04]
+*	move.b	d0,l_A11F(a6)                   	| [$27ef: ld   ($A11F),a]
+*	move.w	#0x0050,d3                      	| [$27f2: ld   de,$0050]
+*	LOAD_WORD	value16_8069(a6),d5             	| [$27f5: ld   hl,($8069)]
+*	LOAD_D5D6_FROM_D5_16
+*	btst.b	#7,d5                           	| [$27f8: bit  7,h]
+*	jeq	l_2803                             	| [$27fa: jr   z,$2803]
+*	move.b	d5,d0                           	| [$27fc: ld   a,h]
+*	not.b	d0                               	| [$27fd: cpl]
+*	move.b	d0,d5                           	| [$27fe: ld   h,a]
+*	move.b	d6,d0                           	| [$27ff: ld   a,l]
+*	not.b	d0                               	| [$2800: cpl]
+*	move.b	d0,d6                           	| [$2801: ld   l,a]
+*	LOAD_D5_16_FROM_D5D6
+*	addq.w	#1,d5                           	| [$2802: inc  hl]
+*l_2803:
+*	add.w	d3,d5                            	| [$2803: add  hl,de]
+*	move.b	d6,d0                           	| [$2804: ld   a,l]
+*	lsr.b	#4,d0                            	| [$2805: srl  a] * 4
+*	move.b	d0,l_A11B(a6)                   	| [$280d: ld   ($A11B),a]
+*	move.b	d5,d0                           	| [$2810: ld   a,h]
+*	and.b	#0x0F,d0                         	| [$2811: and  $0F]
+*	move.b	d0,l_A11C(a6)                   	| [$2813: ld   ($A11C),a]
+*	move.b	d5,d0                           	| [$2816: ld   a,h]
+*	lsr.b	#4,d0                            	| [$2817: srl  a] * 4
+*	move.b	d0,l_A11D(a6)                   	| [$281f: ld   ($A11D),a]
+*	clr.b	d0                               	| [$2822: ld   a,$00]
+*	move.b	d0,l_A11E(a6)                   	| [$2824: ld   ($A11E),a]
 	rts                                    	| [$2827: ret]
 
 l_2828:
@@ -5718,7 +5699,7 @@ l_2875:
 l_2893:
 
 	move.l	a0,-(sp)                        	| [$2893: push hl]
-	STORE_POINTER	a0,l_8A0B(a6)            	| [$2894: ld   ($8A0B),hl]
+	STORE_POINTER	a0,pointer_8A0B(a6)            	| [$2894: ld   ($8A0B),hl]
 	btst.b	#7,(a0)                         	| [$2897: bit  7,(hl)]
 	jne	l_28b9                             	| [$2899: jr   nz,$28B9]
 	addq.w	#1,a0                           	| [$289b: inc  hl]
@@ -5738,13 +5719,13 @@ l_2893:
 	subq.w	#1,a0                           	| [$28b1: dec  hl]
 	move.b	(a1),d0                         	| [$28b2: ld   a,(de)]
 	move.b	d0,(a0)                         	| [$28b3: ld   (hl),a]
-	LOAD_POINTER	l_8A0B(a6),a0             	| [$28b4: ld   hl,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a0             	| [$28b4: ld   hl,($8A0B)]
 
 	bset.b	#7,(a0)                         	| [$28b7: set  7,(hl)]
 l_28b9:
 	btst.b	#6,(a0)                         	| [$28b9: bit  6,(hl)]
 	jne	l_292d                             	| [$28bb: jr   nz,$292D]
-	LOAD_POINTER	l_8A0B(a6),a1             	| [$28bd: ld   de,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a1             	| [$28bd: ld   de,($8A0B)]
 
 	addq.w	#1,a1                           	| [$28c1: inc  de]
 	move.b	(a1),d0                         	| [$28c2: ld   a,(de)]
@@ -5783,7 +5764,7 @@ l_28b9:
 	                           	| [$28f6: dec  de]
 	move.b	d0,-(a1)                         	| [$28f7: ld   (de),a]
 	addq.w	#1,a0                           	| [$28f8: inc  hl]
-	LOAD_POINTER	l_8A0B(a6),a1             	| [$28f9: ld   de,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a1             	| [$28f9: ld   de,($8A0B)]
 
 	LOAD_D5D6_FROM_A0
 	addq.w	#1,a1                           	| [$28fd: inc  de]
@@ -5798,7 +5779,7 @@ l_28b9:
 	move.b	l_8A10(a6),d0                   	| [$290a: ld   a,($8A10)]
 	                               	| [$290d: cp   $00]
 	jne	l_291a                             	| [$290f: jr   nz,$291A]
-	LOAD_POINTER	l_8A0B(a6),a0             	| [$2911: ld   hl,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a0             	| [$2911: ld   hl,($8A0B)]
 
 	bset.b	#5,(a0)                         	| [$2914: set  5,(hl)]
 	bclr.b	#7,(a0)                         	| [$2916: res  7,(hl)]
@@ -5806,10 +5787,10 @@ l_28b9:
 	rts                                    	| [$2919: ret]
 
 l_291a:
-	LOAD_POINTER	l_8A0B(a6),a0             	| [$291a: ld   hl,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a0             	| [$291a: ld   hl,($8A0B)]
 
 	bset.b	#6,(a0)                         	| [$291d: set  6,(hl)]
-	LOAD_POINTER	l_8A0B(a6),a0             	| [$291f: ld   hl,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a0             	| [$291f: ld   hl,($8A0B)]
 
 	move.w	#0x0009,d3                      	| [$2922: ld   de,$0009]
 	add.w	d3,a0                            	| [$2925: add  hl,de]
@@ -5819,7 +5800,7 @@ l_291a:
 	                           	| [$292b: inc  hl]
 	move.b	d3,(a0)                         	| [$292c: ld   (hl),d]
 l_292d:
-	LOAD_POINTER	l_8A0B(a6),a0             	| [$292d: ld   hl,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a0             	| [$292d: ld   hl,($8A0B)]
 
 	move.w	#0x0009,d3                      	| [$2930: ld   de,$0009]
 	add.w	d3,a0                            	| [$2933: add  hl,de]
@@ -5828,13 +5809,13 @@ l_292d:
 	addq.w	#1,a0                           	| [$2938: inc  hl]
 	move.b	(a0),d0                         	| [$2939: ld   a,(hl)]
 	move.b	d0,l_8A10(a6)                   	| [$293a: ld   ($8A10),a]
-	LOAD_POINTER	l_8A0B(a6),a0             	| [$293d: ld   hl,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a0             	| [$293d: ld   hl,($8A0B)]
 
 	move.w	#0x0008,d3                      	| [$2940: ld   de,$0008]
 	add.w	d3,a0                            	| [$2943: add  hl,de]
 	move.b	(a0),d0                         	| [$2944: ld   a,(hl)]
 	move.b	d0,l_8A0E(a6)                   	| [$2945: ld   ($8A0E),a]
-	LOAD_POINTER	l_8A0B(a6),a0             	| [$2948: ld   hl,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a0             	| [$2948: ld   hl,($8A0B)]
 
 	move.w	#0x0005,d3                      	| [$294b: ld   de,$0005]
 	add.w	d3,a0                            	| [$294e: add  hl,de]
@@ -5864,7 +5845,7 @@ l_2967:
 
 l_296a:
 	nop                                    	| [$296a: nop]
-	LOAD_POINTER	l_8A0B(a6),a0             	| [$296b: ld   hl,($8A0B)]
+	LOAD_POINTER	pointer_8A0B(a6),a0             	| [$296b: ld   hl,($8A0B)]
 
 	bclr.b	#6,(a0)                         	| [$296e: res  6,(hl)]
 	move.l	(sp)+,a0                        	| [$2970: pop  hl]
@@ -5905,7 +5886,7 @@ boot_sequence_384C:
 	                                    	| [$389f: nop] [uncovered]
 	add.b	d5,d0                            	| [$38a0: add  a,h] [uncovered]
 
-	lea	l_8000(a6),a0                      	| [$38a1: ld   hl,$8000]
+	lea	timer_8000(a6),a0                      	| [$38a1: ld   hl,$8000]
 	lea	l_8001(a6),a1                      	| [$38a4: ld   de,$8001]
 	move.w	#0x03FF,d1                      	| [$38a7: ld   bc,$03FF]
 	clr.b	(a0)                             	| [$38aa: ld   (hl),$00]
@@ -5986,17 +5967,18 @@ l_391e:
 l_3939:
 	move.b	d2,d3                           	| [$3939: ld   d,c]
 l_393a:
-	move.b	d0,(a0)                         	| [$393a: ld   (hl),a]
+	move.b	d0,(a0)+                         	| [$393a: ld   (hl),a]
 	addq.w	#1,a0                           	| [$393b: inc  hl]
 	subq.b	#1,d3                           	| [$393c: dec  d]
 	jne	l_393a                             	| [$393d: jr   nz,$393A]
 
+	LOAD_D3_16_FROM_D3D4
 	add.w	d3,a0                            	| [$393f: add  hl,de]
-	ERROR	"review d3 computation above"
 	subq.b	#1,d1                           	| [...]
 	jne	l_3939                             	| [$3940: djnz $3939]
 	lea	l_8840(a6),a0                      	| [$3942: ld   hl,$8840]
-	lea	l_1C08(a6),a4                      	| [$3945: ld   bc,$1C08]
+	move.b	#0x1C,d1                      	| [$3945: ld   bc,$1C08]
+	move.b	#0x08,d2                      	| [$3945: ld   bc,$1C08]
 	move.b	#0x66,d0                        	| [$3948: ld   a,$66]
 	move.b	d0,d3                           	| [$394a: ld   d,a]
 	move.b	#0x20,d0                        	| [$394b: ld   a,$20]
@@ -6006,17 +5988,18 @@ l_393a:
 l_3950:
 	move.b	d2,d3                           	| [$3950: ld   d,c]
 l_3951:
-	move.b	d0,(a0)                         	| [$3951: ld   (hl),a]
-	addq.w	#1,a0                           	| [$3952: inc  hl]
+	move.b	d0,(a0)+                         	| [$3951: ld   (hl),a]
+	                           	| [$3952: inc  hl]
 	subq.b	#1,d3                           	| [$3953: dec  d]
 	jne	l_3951                             	| [$3954: jr   nz,$3951]
+	LOAD_D3_16_FROM_D3D4
 	add.w	d3,a0                            	| [$3956: add  hl,de]
-	ERROR	"review d3 computation above"
 	subq.b	#1,d1                           	| [...]
 	jne	l_3950                             	| [$3957: djnz $3950]
 l_3959:
 	lea	p1_a000(a6),a0                     	| [$3959: ld   hl,p1_a000]
-	lea	l_0200(a6),a4                      	| [$395c: ld   bc,$0200]
+	move.b	#2,d1                      	| [$395c: ld   bc,$0200]
+	moveq	#0,d2                      	| [$395c: ld   bc,$0200]
 l_395f:
 	move.b	d2,(a0)+                         	| [$395f: ld   (hl),c]
 	                           	| [$3960: inc  l]
@@ -6032,7 +6015,8 @@ resume_boot_3967:
 	lea	l_3FF9(a6),a1                      	| [$3967: ld   de,$3FF9]
 	move.w	#0x0000,d5                      	| [$396a: ld   hl,$0000]
 l_396d:
-	lea	l_1000(a6),a4                      	| [$396d: ld   bc,$1000]
+	move.b	#1,d1                      	| [$396d: ld   bc,$1000]
+	move.b	#0,d2                      	| [$396d: ld   bc,$1000]
 l_3970:
 	            	| [$3970: ld   (watchdog_a080),a]
 l_3973:
@@ -6177,7 +6161,8 @@ l_3dce:
 	move.b	#0x5B,d0                        	| [$3de6: ld   a,$5B]
 	jbsr	l_3e20                            	| [$3de8: call $3E20]
 	lea	l_8C00(a6),a0                      	| [$3deb: ld   hl,$8C00]
-	lea	l_0400(a6),a4                      	| [$3dee: ld   bc,$0400]
+	moveq	#0,d2                      	| [$3dee: ld   bc,$0400]
+	moveq	#4,d1                      	| [$3dee: ld   bc,$0400]
 l_3df1:
 	jbsr	l_3e10                            	| [$3df1: call $3E10]
 	addq.w	#1,a0                           	| [$3df4: inc  hl]
@@ -6186,7 +6171,8 @@ l_3df1:
 	or.b	d1,d0                             	| [$3df7: or   b]
 	jne	l_3df1                             	| [$3df8: jr   nz,$3DF1]
 	lea	l_8840(a6),a0                      	| [$3dfa: ld   hl,$8840]
-	lea	l_1C08(a6),a4                      	| [$3dfd: ld   bc,$1C08]
+	move.b	#0x1C,d1                      	| [$3dfd: ld   bc,$1C08]
+	move.b	#0x8,d2                      	| [$3dfd: ld   bc,$1C08]
 	move.b	#0x20,d0                        	| [$3e00: ld   a,$20]
 	sub.b	d2,d0                            	| [$3e02: sub  c]
 	move.b	d0,d4                           	| [$3e03: ld   e,a]
@@ -6197,8 +6183,8 @@ l_3e05:
 	addq.w	#1,a0                           	| [$3e08: inc  hl]
 	subq.b	#1,d3                           	| [$3e09: dec  d]
 	jne	l_3e05                             	| [$3e0a: jr   nz,$3E05]
+	LOAD_D3_16_FROM_D3D4
 	add.w	d3,a0                            	| [$3e0c: add  hl,de]
-	ERROR	"review d3 computation above"
 	subq.b	#1,d1                           	| [...]
 	jne	l_3e04                             	| [$3e0d: djnz $3E04]
 	rts                                    	| [$3e0f: ret]
@@ -6227,12 +6213,11 @@ l_3e20:
 l_3e26:
 	move.b	d2,d3                           	| [$3e26: ld   d,c]
 l_3e27:
-	move.b	d0,(a0)                         	| [$3e27: ld   (hl),a]
-	addq.w	#1,a0                           	| [$3e28: inc  hl]
+	move.b	d0,(a0)+                         	| [$3e27: ld   (hl),a]
+	                           	| [$3e28: inc  hl]
 	subq.b	#1,d3                           	| [$3e29: dec  d]
 	jne	l_3e27                             	| [$3e2a: jr   nz,$3E27]
 	add.w	d3,a0                            	| [$3e2c: add  hl,de]
-	ERROR	"review d3 computation above"
 	subq.b	#1,d1                           	| [...]
 	jne	l_3e26                             	| [$3e2d: djnz $3E26]
 	rts                                    	| [$3e2f: ret]
