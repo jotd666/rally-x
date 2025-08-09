@@ -84,6 +84,8 @@
 ;	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
 ;	PORT_SERVICE_DIPLOC( 0x01, 0x01, "DSW:1")
 
+nb_enemy_cars_824e = $824e
+nb_rocks_8251 = $8251
 p1_a000 = $a000
 p2_a080 = $a080
 scrollx_a130 = $a130
@@ -91,6 +93,9 @@ scrolly_a140 = $a140
 watchdog_a080 = $a080
 dsw_a100 = $a100
 sound_a100 = $a100
+unknown_8080 = $8080
+enemy_car_structs_8088 = $8088
+car_speed_8027 = $8027
 
 0000: C3 00 38    jp   boot_3800
 
@@ -168,7 +173,7 @@ irq_0069:
 00CC: 18 B6       jr   $0084
 
 00CE: DD 21 68 80 ld   ix,$8068
-00D2: 3A 4E 82    ld   a,($824E)
+00D2: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 00D5: 3C          inc  a
 00D6: 47          ld   b,a
 00D7: FD 2E 01    ld   iyl,$01
@@ -645,7 +650,7 @@ irq_0069:
 0476: A7          and  a
 0477: 78          ld   a,b
 0478: C8          ret  z
-0479: 2A 27 80    ld   hl,($8027)
+0479: 2A 27 80    ld   hl,(car_speed_8027)
 047C: 11 E0 FF    ld   de,$FFE0
 047F: 19          add  hl,de
 0480: 7C          ld   a,h
@@ -655,7 +660,7 @@ irq_0069:
 0487: BD          cp   l    ; [uncovered] 
 0488: 38 01       jr   c,$048B    ; [uncovered] 
 048A: 6F          ld   l,a    ; [uncovered] 
-048B: 22 27 80    ld   ($8027),hl
+048B: 22 27 80    ld   (car_speed_8027),hl
 048E: 78          ld   a,b
 048F: C9          ret
 
@@ -989,7 +994,7 @@ irq_0069:
 076C: CD 41 17    call $1741
 076F: CD 3A 1C    call $1C3A
 0772: 21 9B 1F    ld   hl,$1F9B
-0775: 11 80 80    ld   de,$8080
+0775: 11 80 80    ld   de,unknown_8080
 0778: 0E 66       ld   c,$66
 077A: CD 4E 1C    call $1C4E
 077D: 0E 72       ld   c,$72
@@ -1077,7 +1082,7 @@ irq_0069:
 082F: 10 F9       djnz $082A
 0831: 3C          inc  a
 0832: 12          ld   (de),a
-0833: 3A 51 82    ld   a,($8251)
+0833: 3A 51 82    ld   a,(nb_rocks_8251)
 0836: 47          ld   b,a
 0837: 3E 03       ld   a,$03
 0839: 2A 96 89    ld   hl,($8996)
@@ -1174,7 +1179,7 @@ irq_0069:
 0903: 06 05       ld   b,$05
 0905: 11 20 00    ld   de,$0020
 0908: 0E 0D       ld   c,$0D
-090A: 2A 27 80    ld   hl,($8027)
+090A: 2A 27 80    ld   hl,(car_speed_8027)
 090D: 22 2D 80    ld   ($802D),hl
 0910: 2A 25 80    ld   hl,($8025)
 0913: AF          xor  a
@@ -1196,7 +1201,7 @@ irq_0069:
 0940: DD 75 01    ld   (ix+$01),l
 0943: DD 74 02    ld   (ix+$02),h
 0946: 10 CC       djnz $0914
-0948: 3A 4E 82    ld   a,($824E)
+0948: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 094B: D6 03       sub  $03
 094D: 20 05       jr   nz,$0954
 094F: DD 36 EA 64 ld   (ix-$16),$64
@@ -1271,7 +1276,7 @@ irq_0069:
 09EC: DD 74 02    ld   (ix+$02),h
 09EF: 10 CC       djnz $09BD
 09F1: DD 36 08 0D ld   (ix+$08),$0D
-09F5: 3A 4E 82    ld   a,($824E)
+09F5: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 09F8: D6 06       sub  $06
 09FA: 38 0E       jr   c,$0A0A
 09FC: 47          ld   b,a    ; [uncovered] 
@@ -1413,9 +1418,9 @@ irq_0069:
 0B22: E3          ex   (sp),hl    ; [uncovered] 
 0B23: C9          ret    ; [uncovered] 
 
-0B24: DD 21 88 80 ld   ix,$8088
+0B24: DD 21 88 80 ld   ix,enemy_car_structs_8088
 0B28: FD 21 68 80 ld   iy,$8068
-0B2C: 3A 4E 82    ld   a,($824E)
+0B2C: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 0B2F: 47          ld   b,a
 0B30: A7          and  a
 0B31: CA 91 0C    jp   z,$0C91
@@ -1924,7 +1929,7 @@ irq_0069:
 0EB1: DD 77 13    ld   (ix+$13),a
 0EB4: 21 F4 89    ld   hl,$89F4
 0EB7: CB F6       set  6,(hl)
-0EB9: 2A 27 80    ld   hl,($8027)
+0EB9: 2A 27 80    ld   hl,(car_speed_8027)
 0EBC: ED 4B 9E 89 ld   bc,($899E)
 0EC0: 0A          ld   a,(bc)
 0EC1: 47          ld   b,a
@@ -2302,7 +2307,7 @@ irq_0069:
 11A2: 13          inc  de
 11A3: 23          inc  hl
 11A4: 10 FA       djnz $11A0
-11A6: 3A 51 82    ld   a,($8251)
+11A6: 3A 51 82    ld   a,(nb_rocks_8251)
 11A9: 47          ld   b,a
 11AA: DD 2A 96 89 ld   ix,($8996)
 11AE: 0E 00       ld   c,$00
@@ -2351,7 +2356,7 @@ irq_0069:
 1203: CD 5F 12    call $125F
 1206: C1          pop  bc
 1207: 38 D9       jr   c,$11E2
-1209: 3A 51 82    ld   a,($8251)
+1209: 3A 51 82    ld   a,(nb_rocks_8251)
 120C: C5          push bc
 120D: 4F          ld   c,a
 120E: E5          push hl
@@ -2398,8 +2403,8 @@ irq_0069:
 1257: 32 8F 82    ld   ($828F),a    ; [uncovered] 
 125A: C9          ret    ; [uncovered] 
 
-125F: ??????????? ld   a,(de)
-1260: ??????????? inc  de
+125F: 1A          ld   a,(de)
+1260: 13          inc  de
 1261: FE FF       cp   $FF
 1263: 28 12       jr   z,$1277
 1265: 95          sub  l
@@ -2661,7 +2666,7 @@ irq_0069:
 13CC: 04          inc  b    ; [uncovered] 
 13CD: 18 F7       jr   $13C6    ; [uncovered] 
 
-13CF: 3A 4E 82    ld   a,($824E)
+13CF: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 13D2: A7          and  a
 13D3: C8          ret  z
 13D4: 21 F8 01    ld   hl,$01F8
@@ -2692,7 +2697,7 @@ irq_0069:
 1401: 18 FA       jr   $13FD
 
 1403: 32 4A 82    ld   ($824A),a
-1406: 3A 4E 82    ld   a,($824E)
+1406: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 1409: 47          ld   b,a
 140A: DD 21 93 80 ld   ix,$8093
 140E: 2A 52 80    ld   hl,($8052)
@@ -2966,7 +2971,7 @@ irq_0069:
 15D1: 1A          ld   a,(de)
 15D2: FE 03       cp   $03
 15D4: CA 96 19    jp   z,$1996
-15D7: DD 21 88 80 ld   ix,$8088
+15D7: DD 21 88 80 ld   ix,enemy_car_structs_8088
 15DB: FD 21 A8 80 ld   iy,$80A8
 15DF: 06 07       ld   b,$07
 15E1: C5          push bc
@@ -3001,7 +3006,7 @@ irq_0069:
 1623: FD 19       add  iy,de
 1625: 10 BA       djnz $15E1
 1627: 0E 08       ld   c,$08
-1629: DD 21 88 80 ld   ix,$8088
+1629: DD 21 88 80 ld   ix,enemy_car_structs_8088
 162D: DD 7E 13    ld   a,(ix+$13)
 1630: A7          and  a
 1631: 20 37       jr   nz,$166A
@@ -3388,7 +3393,7 @@ irq_0069:
 1942: ED 5B D2 82 ld   de,($82D2)
 1946: 19          add  hl,de
 1947: 7E          ld   a,(hl)
-1948: 32 4E 82    ld   ($824E),a
+1948: 32 4E 82    ld   (nb_enemy_cars_824e),a
 194B: 23          inc  hl
 194C: 7E          ld   a,(hl)
 194D: 32 6E 82    ld   ($826E),a
@@ -3397,7 +3402,7 @@ irq_0069:
 1952: 32 88 82    ld   ($8288),a
 1955: 23          inc  hl
 1956: 7E          ld   a,(hl)
-1957: 32 51 82    ld   ($8251),a
+1957: 32 51 82    ld   (nb_rocks_8251),a
 195A: 23          inc  hl
 195B: 3A 8A 82    ld   a,($828A)
 195E: 47          ld   b,a
@@ -3623,7 +3628,7 @@ irq_0069:
 1B27: F1          pop  af
 1B28: C9          ret
 
-1B76: ??????????? push hl
+1B76: E5          push hl
 1B77: C5          push bc
 1B78: 21 34 88    ld   hl,$8834
 1B7B: 06 0C       ld   b,$0C
@@ -3643,8 +3648,8 @@ irq_0069:
 
 1B8E: D9          exx
 1B8F: 06 FF       ld   b,$FF
-1B91: FD 21 88 80 ld   iy,$8088
-1B95: 3A 4E 82    ld   a,($824E)
+1B91: FD 21 88 80 ld   iy,enemy_car_structs_8088
+1B95: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 1B98: 47          ld   b,a
 1B99: DD 7E 08    ld   a,(ix+$08)
 1B9C: FD 96 08    sub  (iy+$08)
@@ -3686,17 +3691,20 @@ irq_0069:
 1BE6: A7          and  a
 1BE7: 28 08       jr   z,$1BF1
 1BE9: CB 79       bit  7,c
-1BEB: 28 0E       jr   z,$1BFB
+1BEB: 28 0E       jr   z,$1BFB	; jumps in the middle of an instruction
 1BED: 0E FD       ld   c,$FD
 1BEF: 18 0C       jr   $1BFD
 
 1BF1: CB 79       bit  7,c
-1BF3: 28 03       jr   z,$1BF8
+1BF3: 28 03       jr   z,$1BF8	; jumps in the middle of an instruction
 1BF5: 0E F2       ld   c,$F2
-1BF7: 11 0E F0    ld   de,$F00E
-1BF8: ??????????? ld   c,$F0
-1BFA: 11 0E FC    ld   de,$FC0E
-1BFB: ??????????? ld   c,$FC
+1BF7: 11 0E F0    ld   de,$F00E	; if executed, the next ld is skipped!
+; crazy code interleave!
+1BF8: 0E F0       ld   c,$F0
+1BFA: 11 0E FC    ld   de,$FC0E	; if executed, the next ld is skipped!
+; crazy code interleave!
+; anyway, probably a mistake, as register de set value is not used
+1BFB: 0E FC       ld   c,$FC
 1BFD: DD 7E 0F    ld   a,(ix+$0f)
 1C00: B9          cp   c
 1C01: 28 1A       jr   z,$1C1D
@@ -4002,7 +4010,7 @@ irq_0069:
 1E19: F1          pop  af
 1E1A: C9          ret
 
-1E1B: 3A 4E 82    ld   a,($824E)
+1E1B: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 1E1E: F5          push af
 1E1F: 3E 03       ld   a,$03
 1E21: 32 48 80    ld   ($8048),a
@@ -4016,7 +4024,7 @@ irq_0069:
 1E35: 67          ld   h,a
 1E36: 22 5A 80    ld   ($805A),hl
 1E39: 32 20 80    ld   ($8020),a
-1E3C: 32 4E 82    ld   ($824E),a
+1E3C: 32 4E 82    ld   (nb_enemy_cars_824e),a
 1E3F: DD 21 68 80 ld   ix,$8068
 1E43: D5          push de
 1E44: 3E 64       ld   a,$64
@@ -4094,7 +4102,7 @@ irq_0069:
 1EC9: 22 02 80    ld   ($8002),hl
 1ECC: EB          ex   de,hl
 1ECD: F1          pop  af
-1ECE: 32 4E 82    ld   ($824E),a
+1ECE: 32 4E 82    ld   (nb_enemy_cars_824e),a
 1ED1: C9          ret
 
 1ED2: E5          push hl
@@ -4819,7 +4827,7 @@ boot_3800:
 
 boot_sequence_384C:
 	.word	reset_3911
-	.word	resume_boot_3967
+	.word	resume_boot_3967		; jump to 0003 directly to skip boot
 	.word 	resume_boot_39b1
 	
 389E: 31 00 84    ld   sp,$8400
