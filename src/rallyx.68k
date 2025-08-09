@@ -447,8 +447,8 @@ l_024f:
 	move.l	(sp)+,a3                        	| [$026f: pop  iy]
 	cmp.b	#0x06,d0                         	| [$0271: cp   $06]
 	jeq	l_02a5                             	| [$0273: jr   z,$02A5]
-	LOAD_POINTER	l_8052(a6),a1             	| [$0275: ld   de,($8052)]
-
+	LOAD_WORD	value16_8052(a6),d3             	| [$0275: ld   de,($8052)]
+	LOAD_D3D4_FROM_D3_16
 	move.b	l_8055(a6),d0                   	| [$0279: ld   a,($8055)]
 	ror.b	#1,d0                            	| [$027c: rrca]
 	and.b	#0x01,d0                         	| [$027d: and  $01]
@@ -680,7 +680,7 @@ l_03bd:
 	move.b	l_8269(a6),d0                   	| [$03e6: ld   a,($8269)]
 	addq.b	#1,d0                           	| [$03e9: inc  a]
 	move.b	d0,l_8269(a6)                   	| [$03ea: ld   ($8269),a]
-	LOAD_POINTER	l_899A(a6),a0             	| [$03ed: ld   hl,($899A)]
+	LOAD_POINTER	pointer_899a(a6),a0             	| [$03ed: ld   hl,($899A)]
 
 	move.b	l_828C(a6),d0                   	| [$03f0: ld   a,($828C)]
 	                               	| [$03f3: and  a]
@@ -822,7 +822,7 @@ l_0490:
 l_04c7:
 	move.b	l_8020(a6),d0                   	| [$04c7: ld   a,($8020)]
 	move.b	#0x04,d1                        	| [$04ca: ld   b,$04]
-	LOAD_POINTER	l_8998(a6),a0             	| [$04cc: ld   hl,($8998)]
+	LOAD_POINTER	pointer_8998(a6),a0             	| [$04cc: ld   hl,($8998)]
 
 	cmp.b	#0x02,d0                         	| [$04cf: cp   $02]
 	beq.b	0f                               	| [...]
@@ -843,7 +843,7 @@ l_04db:
 	rts                                    	| [$04df: ret]
 l_04e0:
 	move.b	#0x04,d1                        	| [$04e0: ld   b,$04]
-	LOAD_POINTER	l_8998(a6),a0             	| [$04e2: ld   hl,($8998)]
+	LOAD_POINTER	pointer_8998(a6),a0             	| [$04e2: ld   hl,($8998)]
 
 	jra	l_04d2                             	| [$04e5: jr   $04D2]
 l_04e7:
@@ -920,7 +920,7 @@ l_0568:
 	                           	| [$0569: inc  hl]
 	move.b	(a0),d3                         	| [$056a: ld   d,(hl)]
 	LOAD_D3_16_FROM_D3D4
-	STORE_WORD	d3,l_81B3(a6)            	| [$056b: ld   ($81B3),de]
+	STORE_WORD	d3,pointer_81b3(a6)            	| [$056b: ld   ($81B3),de]
 	move.b	p2_a080(a6),d0            	| [$056f: ld   a,(watchdog_a080)]
 	or.b	#0xFE,d0                          	| [$0572: or   $FE]
 	not.b	d0                               	| [$0574: cpl]
@@ -1094,7 +1094,7 @@ ei
 	jbsr	l_1c29                            	| [$06d4: call $1C29]
 
 	move.l	a0,-(sp)                        	| [$06d7: push hl]
-	LOAD_POINTER	l_81B3(a6),a0             	| [$06d8: ld   hl,($81B3)]
+	LOAD_POINTER	pointer_81b3(a6),a0             	| [$06d8: ld   hl,($81B3)]
 
 	move.b	(a0),d0                         	| [$06db: ld   a,(hl)]
 	move.l	(sp)+,a0                        	| [$06dc: pop  hl]
@@ -1102,14 +1102,14 @@ ei
 	jeq	l_06fe                             	| [$06df: jr   z,$06FE]
 	lea	l_85E3(a6),a1                      	| [$06e1: ld   de,$85E3]
 	jbsr	l_1c29                            	| [$06e4: call $1C29]
-	LOAD_POINTER	l_81B3(a6),a0             	| [$06e7: ld   hl,($81B3)]
+	LOAD_POINTER	pointer_81b3(a6),a0             	| [$06e7: ld   hl,($81B3)]
 
 	move.w	#0x0007,d1                      	| [$06ea: ld   bc,$0007]
 	add.w	d1,a0                            	| [$06ed: add  hl,bc]
 	lea	l_85F1(a6),a1                      	| [$06ee: ld   de,$85F1]
 	move.b	#0x01,d2                        	| [$06f1: ld   c,$01]
 	jbsr	l_1c2b                            	| [$06f3: call $1C2B]
-	LOAD_POINTER	l_81B3(a6),a0             	| [$06f6: ld   hl,($81B3)]
+	LOAD_POINTER	pointer_81b3(a6),a0             	| [$06f6: ld   hl,($81B3)]
 
 	move.b	#0x04,d2                        	| [$06f9: ld   c,$04]
 	jbsr	l_1c2b                            	| [$06fb: call $1C2B]
@@ -1208,12 +1208,12 @@ l_07a8:
 	move.b	#0x01,d0                        	| [$07b8: ld   a,$01]
 	move.b	d0,l_81B7(a6)                   	| [$07ba: ld   ($81B7),a]
 l_07bd:
-	LOAD_POINTER	l_898A(a6),a0             	| [$07bd: ld   hl,($898A)]
+	LOAD_POINTER	pointer_898a(a6),a0             	| [$07bd: ld   hl,($898A)]
 
 	addq.b	#1,(a0)                         	| [$07c0: inc  (hl)]
 	CLEAR_XC_FLAGS                         	| [$07c1: xor  a]
 	clr.b	d0                               	| [$07c1: xor  a]
-	LOAD_POINTER	l_898C(a6),a0             	| [$07c2: ld   hl,($898C)]
+	LOAD_POINTER	pointer_898c(a6),a0             	| [$07c2: ld   hl,($898C)]
 
 	move.b	d0,(a0)                         	| [$07c5: ld   (hl),a]
 	move.b	d0,l_8292(a6)                   	| [$07c6: ld   ($8292),a]
@@ -1237,16 +1237,16 @@ l_07e5:
 	move.b	d0,(a0)                         	| [$07ec: ld   (hl),a]
 	addq.w	#1,a0                           	| [$07ed: inc  hl]
 	move.b	d0,(a0)                         	| [$07ee: ld   (hl),a]
-	LOAD_POINTER	l_899C(a6),a0             	| [$07ef: ld   hl,($899C)]
+	LOAD_POINTER	pointer_899c(a6),a0             	| [$07ef: ld   hl,($899C)]
 
 	move.b	d0,(a0)                         	| [$07f2: ld   (hl),a]
-	LOAD_POINTER	l_899A(a6),a0             	| [$07f3: ld   hl,($899A)]
+	LOAD_POINTER	pointer_899a(a6),a0             	| [$07f3: ld   hl,($899A)]
 
 	move.b	d0,(a0)                         	| [$07f6: ld   (hl),a]
-	LOAD_POINTER	l_898E(a6),a0             	| [$07f7: ld   hl,($898E)]
+	LOAD_POINTER	pointer_898e(a6),a0             	| [$07f7: ld   hl,($898E)]
 
-	move.b	d0,(a0)                         	| [$07fa: ld   (hl),a]
-	addq.w	#1,a0                           	| [$07fb: inc  hl]
+	move.b	d0,(a0)+                         	| [$07fa: ld   (hl),a]
+	                           	| [$07fb: inc  hl]
 	move.b	#0x3C,(a0)                      	| [$07fc: ld   (hl),$3C]
 	lea	l_828A(a6),a0                      	| [$07fe: ld   hl,$828A]
 	move.b	#0x04,(a0)                      	| [$0801: ld   (hl),$04]
@@ -1271,7 +1271,7 @@ l_0813:
 	ERROR	"review inc register d6 or a0"
 	subq.b	#1,d2                           	| [$0820: dec  c]
 	jne	l_0811                             	| [$0821: jr   nz,$0811]
-	LOAD_POINTER	l_8992(a6),a0             	| [$0823: ld   hl,($8992)]
+	LOAD_POINTER	pointer_8992(a6),a0             	| [$0823: ld   hl,($8992)]
 
 	move.b	#0x0A,d1                        	| [$0826: ld   b,$0A]
 	move.b	#0x01,d0                        	| [$0828: ld   a,$01]
@@ -1280,6 +1280,7 @@ l_082a:
 	                           	| [$082b: inc  hl]
 	move.b	(a0)+,d3                         	| [$082c: ld   d,(hl)]
 	                           	| [$082d: inc  hl]
+	LOAD_A1_FROM_D3D4
 	move.b	d0,(a1)                         	| [$082e: ld   (de),a]
 	subq.b	#1,d1                           	| [...]
 	jne	l_082a                             	| [$082f: djnz $082A]
@@ -1288,13 +1289,13 @@ l_082a:
 	move.b	nb_rocks_8251(a6),d0            	| [$0833: ld   a,(nb_rocks_8251)]
 	move.b	d0,d1                           	| [$0836: ld   b,a]
 	move.b	#0x03,d0                        	| [$0837: ld   a,$03]
-	LOAD_POINTER	l_8996(a6),a0             	| [$0839: ld   hl,($8996)]
+	LOAD_POINTER	pointer_8996(a6),a0             	| [$0839: ld   hl,($8996)]
 
 l_083c:
 	move.b	(a0)+,d4                         	| [$083c: ld   e,(hl)]
 	                           	| [$083d: inc  hl]
 	move.b	(a0)+,d3                         	| [$083e: ld   d,(hl)]
-	                           	| [$083f: inc  hl]
+	LOAD_A1_FROM_D3D4                           	| [$083f: inc  hl]
 	move.b	d0,(a1)                         	| [$0840: ld   (de),a]
 	subq.b	#1,d1                           	| [...]
 	jne	l_083c                             	| [$0841: djnz $083C]
@@ -1333,7 +1334,7 @@ l_0861:
 	jeq	l_08a1                             	| [$0882: jr   z,$08A1]
 l_0884:
 	jbsr	l_1c4e                            	| [$0884: call $1C4E]
-	LOAD_POINTER	l_898A(a6),a0             	| [$0887: ld   hl,($898A)]
+	LOAD_POINTER	pointer_898a(a6),a0             	| [$0887: ld   hl,($898A)]
 
 	move.b	(a0),d0                         	| [$088a: ld   a,(hl)]
 	subq.b	#1,d0                           	| [$088b: dec  a]
@@ -1361,7 +1362,7 @@ l_08a1:
 	CLEAR_XC_FLAGS                         	| [$08ad: xor  a]
 	clr.b	d0                               	| [$08ad: xor  a]
 	move.b	d0,l_82D0(a6)                   	| [$08ae: ld   ($82D0),a]
-	LOAD_POINTER	l_898A(a6),a0             	| [$08b1: ld   hl,($898A)]
+	LOAD_POINTER	pointer_898a(a6),a0             	| [$08b1: ld   hl,($898A)]
 
 	move.b	(a0),d0                         	| [$08b4: ld   a,(hl)]
 	and.b	#0x03,d0                         	| [$08b5: and  $03]
@@ -1385,7 +1386,7 @@ l_08dc:
 l_08e0:
 	jbsr	l_0aba                            	| [$08e0: call $0ABA]
 	lea	l_2D0A(a6),a0                      	| [$08e3: ld   hl,$2D0A]
-	STORE_POINTER	a0,l_8052(a6)            	| [$08e6: ld   ($8052),hl]
+	STORE_POINTER	a0,value16_8052(a6)            	| [$08e6: ld   ($8052),hl]
 	move.b	#0x03,d0                        	| [$08e9: ld   a,$03]
 	move.b	d0,l_8020(a6)                   	| [$08eb: ld   ($8020),a]
 	                   	| [$08ee: ld   ($A181),a]
@@ -1402,12 +1403,12 @@ l_08ff:
 	move.b	#0x05,d1                        	| [$0903: ld   b,$05]
 	move.w	#0x0020,d3                      	| [$0905: ld   de,$0020]
 	move.b	#0x0D,d2                        	| [$0908: ld   c,$0D]
-	LOAD_POINTER	car_speed_8027(a6),a0     	| [$090a: ld   hl,(car_speed_8027)]
+	LOAD_WORD	car_speed_8027(a6),d5     	| [$090a: ld   hl,(car_speed_8027)]
 
-	STORE_POINTER	a0,value16_802d(a6)            	| [$090d: ld   ($802D),hl]
-	LOAD_POINTER	l_8025(a6),a0             	| [$0910: ld   hl,($8025)]
+	STORE_WORD	d5,value16_802d(a6)            	| [$090d: ld   ($802D),hl]
+	LOAD_POINTER	value16_8025(a6),a0             	| [$0910: ld   hl,($8025)]
 
-	CLEAR_XC_FLAGS                         	| [$0913: xor  a]
+	                         	| [$0913: xor  a]
 	clr.b	d0                               	| [$0913: xor  a]
 l_0914:
 	add.w	d3,a2                            	| [$0914: add  ix,de]
@@ -1574,7 +1575,7 @@ l_0a40:
 	CLEAR_XC_FLAGS                         	| [$0a44: xor  a]
 	clr.b	d0                               	| [$0a44: xor  a]
 	move.b	d0,l_828C(a6)                   	| [$0a45: ld   ($828C),a]
-	LOAD_POINTER	l_899A(a6),a0             	| [$0a48: ld   hl,($899A)]
+	LOAD_POINTER	pointer_899a(a6),a0             	| [$0a48: ld   hl,($899A)]
 
 	move.b	(a0),d0                         	| [$0a4b: ld   a,(hl)]
 	cmp.b	#0x64,d0                         	| [$0a4c: cp   $64]
@@ -1591,7 +1592,7 @@ l_0a52:
 	move.b	#0x40,(a0)                      	| [$0a65: ld   (hl),$40]
 	addq.w	#1,a0                           	| [$0a67: inc  hl]
 	move.b	#0x10,(a0)                      	| [$0a68: ld   (hl),$10]
-	LOAD_POINTER	l_899C(a6),a0             	| [$0a6a: ld   hl,($899C)]
+	LOAD_POINTER	pointer_899c(a6),a0             	| [$0a6a: ld   hl,($899C)]
 
 	move.b	#0x01,(a0)                      	| [$0a6d: ld   (hl),$01]
 	jbsr	l_097d                            	| [$0a6f: call $097D]
@@ -1837,14 +1838,15 @@ l_0bf7:
 	clr.b	d0                               	| [$0bf9: xor  a]
 l_0bfa:
 	move.w	d0,-(sp)                        	| [$0bfa: push af]
-	move.b	l_81B5(a6),d0                   	| [$0bfb: ld   a,($81B5)]
 	                               	| [$0bfe: and  a]
-	LOAD_POINTER	l_8025(a6),a0             	| [$0bff: ld   hl,($8025)]
+	LOAD_WORD	value16_8025(a6),d5             	| [$0bff: ld   hl,($8025)]
 
+	move.b	l_81B5(a6),d0                   	| [$0bfb: ld   a,($81B5)]
 	jeq	l_0c07                             	| [$0c02: jr   z,$0C07]
-	LOAD_POINTER	l_8029(a6),a0             	| [$0c04: ld   hl,($8029)]
+	LOAD_WORD	value16_8029(a6),d5             	| [$0c04: ld   hl,($8029)]
 
 l_0c07:
+	LOAD_D5D6_FROM_D5_16
 	move.w	(sp)+,d0                        	| [$0c07: pop  af]
 	btst.b	#7,d3                           	| [$0c08: bit  7,d]
 	beq.b	0f                               	| [...]
@@ -1887,12 +1889,12 @@ l_0c4a:
 	jbsr	l_0cb1                            	| [$0c4a: call $0CB1]
 	jcc	l_0c7f                             	| [$0c4d: jr   nc,$0C7F]
 l_0c4f:
-	LOAD_POINTER	l_8025(a6),a0             	| [$0c4f: ld   hl,($8025)]
+	LOAD_POINTER	value16_8025(a6),a0             	| [$0c4f: ld   hl,($8025)]
 
 	move.b	l_81B5(a6),d0                   	| [$0c52: ld   a,($81B5)]
 	                               	| [$0c55: and  a]
 	jeq	l_0c5b                             	| [$0c56: jr   z,$0C5B]
-	LOAD_POINTER	l_8029(a6),a0             	| [$0c58: ld   hl,($8029)]
+	LOAD_POINTER	value16_8029(a6),a0             	| [$0c58: ld   hl,($8029)]
 
 l_0c5b:
 	move.b	(0x02,a2),d0                    	| [$0c5b: ld   a,(ix+$02)]
@@ -2156,7 +2158,7 @@ l_0db2:
 	move.l	a1,-(sp)                        	| [$0db3: push de]
 	movem.w	d1/d2,-(sp)                    	| [$0db4: push bc]
 	move.l	a4,-(sp)                        	| [$0db4: push bc]
-	LOAD_POINTER	l_899E(a6),a0             	| [$0db5: ld   hl,($899E)]
+	LOAD_POINTER	pointer_899e(a6),a0             	| [$0db5: ld   hl,($899E)]
 
 	move.b	(a0),d0                         	| [$0db8: ld   a,(hl)]
 	lea	l_8290(a6),a0                      	| [$0db9: ld   hl,$8290]
@@ -2173,7 +2175,7 @@ l_0db2:
 	move.b	(a0),d0                         	| [$0dc8: ld   a,(hl)]
 	                               	| [$0dc9: and  a]
 	jne	l_0df4                             	| [$0dca: jr   nz,$0DF4]
-	LOAD_POINTER	l_898A(a6),a1             	| [$0dcc: ld   de,($898A)]
+	LOAD_POINTER	pointer_898a(a6),a1             	| [$0dcc: ld   de,($898A)]
 
 	move.b	(a1),d0                         	| [$0dd0: ld   a,(de)]
 	and.b	#0x03,d0                         	| [$0dd1: and  $03]
@@ -2181,7 +2183,7 @@ l_0db2:
 	move.b	l_8021(a6),d0                   	| [$0dd5: ld   a,($8021)]
 	                               	| [$0dd8: and  a]
 	jeq	l_0df4                             	| [$0dd9: jr   z,$0DF4]
-	LOAD_POINTER	l_898E(a6),a1             	| [$0ddb: ld   de,($898E)]
+	LOAD_POINTER	pointer_898e(a6),a1             	| [$0ddb: ld   de,($898E)]
 
 	addq.w	#1,a1                           	| [$0ddf: inc  de]
 	move.b	(a1),d0                         	| [$0de0: ld   a,(de)]
@@ -2339,7 +2341,7 @@ l_0ea0:
 	bset.b	#6,(a0)                         	| [$0eb7: set  6,(hl)]
 	LOAD_POINTER	car_speed_8027(a6),a0     	| [$0eb9: ld   hl,(car_speed_8027)]
 
-	LOAD_POINTER	l_899E(a6),a4             	| [$0ebc: ld   bc,($899E)]
+	LOAD_POINTER	pointer_899e(a6),a4             	| [$0ebc: ld   bc,($899E)]
 
 	move.b	(a4),d0                         	| [$0ec0: ld   a,(bc)]
 	move.b	d0,d1                           	| [$0ec1: ld   b,a]
@@ -2373,11 +2375,11 @@ l_0ea0:
 	move.b	d3,d0                           	| [$0ef2: ld   a,d]
 	tst.b	d7
 	jeq	l_0f00                             	| [$0ef3: jr   z,$0F00]
-	LOAD_POINTER	l_8049(a6),a0             	| [$0ef5: ld   hl,($8049)]
+	LOAD_POINTER	value16_8049(a6),a0             	| [$0ef5: ld   hl,($8049)]
 
 	jbsr	l_0cb1                            	| [$0ef8: call $0CB1]
 	jcc	l_0f16                             	| [$0efb: jr   nc,$0F16]
-	LOAD_POINTER	value16_8069(a6),a0             	| [$0efd: ld   hl,($8069)] [uncovered]
+	LOAD_WORD	value16_8069(a6),d5             	| [$0efd: ld   hl,($8069)] [uncovered]
 
 l_0f00:
 	tst.b	d0                               	| [$0f00: and  a]
@@ -2450,9 +2452,9 @@ l_0f5c:
 	move.b	d0,l_804B(a6)                   	| [$0f69: ld   ($804B),a]
 	exg	d0,d7                              	| [$0f6c: ex   af,af']
 	ERROR	"review carry flags used below? if so, adapt"
-	LOAD_POINTER	value16_8069(a6),a1             	| [$0f6d: ld   de,($8069)]
+	LOAD_WORD	value16_8069(a6),d3             	| [$0f6d: ld   de,($8069)]
 
-	STORE_POINTER	a1,l_8049(a6)            	| [$0f71: ld   ($8049),de]
+	STORE_WORD	d3,value16_8049(a6)            	| [$0f71: ld   ($8049),de]
 	jra	l_0f16                             	| [$0f75: jp   $0F16]
 
 l_0f78:
@@ -2564,9 +2566,9 @@ di
 	CLEAR_XC_FLAGS                         	| [$1026: xor  a]
 	clr.b	d0                               	| [$1026: xor  a]
 	move.b	d0,l_8054(a6)                   	| [$1027: ld   ($8054),a]
-	move.b	l_8052(a6),d0                   	| [$102a: ld   a,($8052)]
+	move.b	value16_8052(a6),d0                   	| [$102a: ld   a,($8052)]
 	addq.b	#1,d0                           	| [$102d: inc  a]
-	move.b	d0,l_8052(a6)                   	| [$102e: ld   ($8052),a]
+	move.b	d0,value16_8052(a6)                   	| [$102e: ld   ($8052),a]
 	jra	l_10cc                             	| [$1031: jp   $10CC]
 
 l_1034:
@@ -2579,9 +2581,9 @@ l_1034:
 	jpl	l_10f6                             	| [$1043: jp   p,$10F6]
 	move.b	#0x02,d0                        	| [$1046: ld   a,$02]
 	move.b	d0,l_8054(a6)                   	| [$1048: ld   ($8054),a]
-	move.b	l_8052(a6),d0                   	| [$104b: ld   a,($8052)]
+	move.b	value16_8052(a6),d0                   	| [$104b: ld   a,($8052)]
 	subq.b	#1,d0                           	| [$104e: dec  a]
-	move.b	d0,l_8052(a6)                   	| [$104f: ld   ($8052),a]
+	move.b	d0,value16_8052(a6)                   	| [$104f: ld   ($8052),a]
 	jra	l_10f6                             	| [$1052: jp   $10F6]
 
 l_1055:
@@ -2726,7 +2728,7 @@ l_1104:
 
 l_1127:
 	jbsr	l_1497                            	| [$1127: call $1497]
-	LOAD_POINTER	l_8052(a6),a0             	| [$112a: ld   hl,($8052)]
+	LOAD_POINTER	value16_8052(a6),a0             	| [$112a: ld   hl,($8052)]
 
 	STORE_POINTER	a0,l_8058(a6)            	| [$112d: ld   ($8058),hl]
 	rts                                    	| [$1130: ret]
@@ -2810,7 +2812,7 @@ l_118d:
 	rts                                    	| [$1190: ret]
 
 l_1191:
-	LOAD_POINTER	l_8996(a6),a0             	| [$1191: ld   hl,($8996)]
+	LOAD_POINTER	pointer_8996(a6),a0             	| [$1191: ld   hl,($8996)]
 
 	move.w	#0x0020,d3                      	| [$1194: ld   de,$0020]
 	add.w	d3,a0                            	| [$1197: add  hl,de]
@@ -2828,7 +2830,7 @@ l_11a0:
 	jne	l_11a0                             	| [$11a4: djnz $11A0]
 	move.b	nb_rocks_8251(a6),d0            	| [$11a6: ld   a,(nb_rocks_8251)]
 	move.b	d0,d1                           	| [$11a9: ld   b,a]
-	LOAD_POINTER	l_8996(a6),a2             	| [$11aa: ld   ix,($8996)]
+	LOAD_POINTER	pointer_8996(a6),a2             	| [$11aa: ld   ix,($8996)]
 
 	clr.b	d2                               	| [$11ae: ld   c,$00]
 l_11b0:
@@ -2849,13 +2851,13 @@ l_11b0:
 
 l_11c5:
 	nop                                    	| [$11c5: nop]
-	LOAD_POINTER	l_8996(a6),a2             	| [$11c6: ld   ix,($8996)]
+	LOAD_POINTER	pointer_8996(a6),a2             	| [$11c6: ld   ix,($8996)]
 
 	move.w	#0x0020,d3                      	| [$11ca: ld   de,$0020]
 	add.w	d3,a2                            	| [$11cd: add  ix,de]
 	move.b	#0x01,d2                        	| [$11cf: ld   c,$01]
 	move.b	#0x0A,d1                        	| [$11d1: ld   b,$0A]
-	LOAD_POINTER	l_8992(a6),a2             	| [$11d3: ld   ix,($8992)]
+	LOAD_POINTER	pointer_8992(a6),a2             	| [$11d3: ld   ix,($8992)]
 
 	move.b	l_8020(a6),d0                   	| [$11d7: ld   a,($8020)]
 	                               	| [$11da: and  a]
@@ -2893,7 +2895,7 @@ l_11fc:
 	move.b	d0,d2                           	| [$120d: ld   c,a]
 
 	move.l	a0,-(sp)                        	| [$120e: push hl]
-	LOAD_POINTER	l_8996(a6),a0             	| [$120f: ld   hl,($8996)]
+	LOAD_POINTER	pointer_8996(a6),a0             	| [$120f: ld   hl,($8996)]
 
 	move.w	#0x0020,d3                      	| [$1212: ld   de,$0020]
 	add.w	d3,a0                            	| [$1215: add  hl,de]
@@ -3324,7 +3326,7 @@ l_1403:
 	move.b	d0,d1                           	| [$1409: ld   b,a]
 	lea	l_8093(a6),a2                      	| [$140a: ld   ix,$8093]
 l_140e:
-	LOAD_POINTER	l_8052(a6),a0             	| [$140e: ld   hl,($8052)]
+	LOAD_POINTER	value16_8052(a6),a0             	| [$140e: ld   hl,($8052)]
 
 	move.b	(-0x03,a2),d0                   	| [$1411: ld   a,(ix-$03)]
 	sub.b	d6,d0                            	| [$1414: sub  l]
@@ -3638,7 +3640,7 @@ l_15b4:
 l_15b7:
 	LOAD_A0_FROM_D5_16
 	exg	a0,a1                              	| [$15b7: ex   de,hl]
-	LOAD_POINTER	l_8992(a6),a0             	| [$15b8: ld   hl,($8992)]
+	LOAD_POINTER	pointer_8992(a6),a0             	| [$15b8: ld   hl,($8992)]
 
 	move.b	#0x0A,d1                        	| [$15bb: ld   b,$0A]
 l_15bd:
@@ -3848,7 +3850,7 @@ l_16f6:
 	jra	l_172a                             	| [$170d: jp   $172A] [uncovered]
 
 l_172a:
-	LOAD_POINTER	l_898A(a6),a0             	| [$172a: ld   hl,($898A)]
+	LOAD_POINTER	pointer_898a(a6),a0             	| [$172a: ld   hl,($898A)]
 
 	move.b	(a0),d0                         	| [$172d: ld   a,(hl)]
 	and.b	#0x03,d0                         	| [$172e: and  $03]
@@ -3915,7 +3917,7 @@ l_1792:
 	subq.b	#1,d2                           	| [$17a0: dec  c]
 	jne	l_178e                             	| [$17a1: jr   nz,$178E]
 l_17a3:
-	LOAD_POINTER	l_8998(a6),a0             	| [$17a3: ld   hl,($8998)]
+	LOAD_POINTER	pointer_8998(a6),a0             	| [$17a3: ld   hl,($8998)]
 
 	move.b	#0x04,d1                        	| [$17a6: ld   b,$04]
 	move.b	#0x66,d0                        	| [$17a8: ld   a,$66]
@@ -4075,7 +4077,7 @@ l_188d:
 	rts                                    	| [$1895: ret]
 
 l_1896:
-	LOAD_POINTER	l_898C(a6),a0             	| [$1896: ld   hl,($898C)]
+	LOAD_POINTER	pointer_898c(a6),a0             	| [$1896: ld   hl,($898C)]
 
 	addq.b	#1,(a0)                         	| [$1899: inc  (hl)]
 	move.b	(a0),d0                         	| [$189a: ld   a,(hl)]
@@ -4105,7 +4107,7 @@ l_18b2:
 	jne	l_18b0                             	| [$18bd: djnz $18B0]
 	jbsr	l_1d6f                            	| [$18bf: call $1D6F]
 	jbsr	l_190b                            	| [$18c2: call $190B]
-	LOAD_POINTER	l_898C(a6),a0             	| [$18c5: ld   hl,($898C)]
+	LOAD_POINTER	pointer_898c(a6),a0             	| [$18c5: ld   hl,($898C)]
 
 	move.b	(a0),d0                         	| [$18c8: ld   a,(hl)]
 	cmp.b	#0x0A,d0                         	| [$18c9: cp   $0A]
@@ -4147,7 +4149,7 @@ l_190b:
 	beq.b	0f                               	| [...]
 	rts                                    	| [$190f: ret  nz] [...]
 0:
-	LOAD_POINTER	l_898A(a6),a0             	| [$1910: ld   hl,($898A)]
+	LOAD_POINTER	pointer_898a(a6),a0             	| [$1910: ld   hl,($898A)]
 
 	move.b	(a0),d0                         	| [$1913: ld   a,(hl)]
 	subq.b	#1,d0                           	| [$1914: dec  a]
@@ -4199,7 +4201,7 @@ l_193a:
 	addq.w	#1,a0                           	| [$195a: inc  hl]
 	move.b	l_828A(a6),d0                   	| [$195b: ld   a,($828A)]
 	move.b	d0,d1                           	| [$195e: ld   b,a]
-	LOAD_POINTER	l_898C(a6),a1             	| [$195f: ld   de,($898C)]
+	LOAD_POINTER	pointer_898c(a6),a1             	| [$195f: ld   de,($898C)]
 
 	move.b	(a1),d0                         	| [$1963: ld   a,(de)]
 	subq.b	#1,d1                           	| [$1964: dec  b]
@@ -4220,7 +4222,7 @@ l_1978:
 	move.b	(a0),d3                         	| [$1978: ld   e,(hl)]
 	lea	l_214B(a6),a0                      	| [$197b: ld   hl,$214B]
 	add.w	d3,a0                            	| [$197e: add  hl,de]
-	lea	l_8025(a6),a1                      	| [$197f: ld   de,$8025]
+	lea	value16_8025(a6),a1                      	| [$197f: ld   de,$8025]
 	move.w	#0x0008,d1                      	| [$1982: ld   bc,$0008]
 	jbsr	ldir                              	| [$1985: ldir]
 	rts                                    	| [$1987: ret]
@@ -4420,7 +4422,7 @@ l_1ae3:
 	jne	l_16f6                             	| [$1aef: jp   nz,$16F6]
 	jra	l_068e                             	| [$1af2: jp   $068E]
 l_1af5:
-	LOAD_POINTER	l_8998(a6),a0             	| [$1af5: ld   hl,($8998)]
+	LOAD_POINTER	pointer_8998(a6),a0             	| [$1af5: ld   hl,($8998)]
 
 	move.w	#0x001C,d1                      	| [$1af8: ld   bc,$001C]
 	add.w	d1,a0                            	| [$1afb: add  hl,bc]
@@ -4434,7 +4436,7 @@ l_1b01:
 	jne	l_1b01                             	| [$1b03: djnz $1B01]
 	rts                                    	| [$1b05: ret]
 l_1b06:
-	LOAD_POINTER	l_8998(a6),a0             	| [$1b06: ld   hl,($8998)]
+	LOAD_POINTER	pointer_8998(a6),a0             	| [$1b06: ld   hl,($8998)]
 
 	move.w	#0x001C,d1                      	| [$1b09: ld   bc,$001C]
 	add.w	d1,a0                            	| [$1b0c: add  hl,bc]
@@ -4667,7 +4669,7 @@ l_1c6b:
 	bne.b	0f                               	| [...]
 	rts                                    	| [$1c70: ret  z] [...]
 0:
-	LOAD_POINTER	l_899C(a6),a0             	| [$1c71: ld   hl,($899C)]
+	LOAD_POINTER	pointer_899c(a6),a0             	| [$1c71: ld   hl,($899C)]
 
 	move.b	(a0),d0                         	| [$1c74: ld   a,(hl)]
 	                               	| [$1c75: and  a]
@@ -4684,7 +4686,7 @@ l_1c6b:
 	CLEAR_XC_FLAGS                         	| [$1c80: xor  a]
 	clr.b	d0                               	| [$1c80: xor  a]
 	move.b	d0,l_8269(a6)                   	| [$1c81: ld   ($8269),a]
-	LOAD_POINTER	l_898E(a6),a2             	| [$1c84: ld   ix,($898E)]
+	LOAD_POINTER	pointer_898e(a6),a2             	| [$1c84: ld   ix,($898E)]
 
 	move.b	(0x01,a2),d0                    	| [$1c88: ld   a,(ix+$01)]
 	lea	l_1FCB(a6),a0                      	| [$1c8b: ld   hl,$1FCB]
@@ -4705,7 +4707,7 @@ l_1c95:
 	or.b	#0x20,d0                          	| [$1cad: or   $20]
 	move.b	d0,l_89F4(a6)                   	| [$1caf: ld   ($89F4),a]
 l_1cb2:
-	LOAD_POINTER	l_898E(a6),a2             	| [$1cb2: ld   ix,($898E)]
+	LOAD_POINTER	pointer_898e(a6),a2             	| [$1cb2: ld   ix,($898E)]
 
 	move.b	(0x01,a2),d5                    	| [$1cb6: ld   h,(ix+$01)]
 	move.b	(0x00,a2),d6                    	| [$1cb9: ld   l,(ix+$00)]
@@ -4779,7 +4781,7 @@ l_1cf4:
 	rts                                    	| [$1d0f: ret]
 
 l_1d10:
-	LOAD_POINTER	l_899A(a6),a0             	| [$1d10: ld   hl,($899A)]
+	LOAD_POINTER	pointer_899a(a6),a0             	| [$1d10: ld   hl,($899A)]
 
 	move.b	#0xC7,(a0)                      	| [$1d13: ld   (hl),$C7]
 	lea	l_828C(a6),a0                      	| [$1d15: ld   hl,$828C]
@@ -4787,7 +4789,7 @@ l_1d10:
 	rts                                    	| [$1d1a: ret]
 
 l_1d1b:
-	LOAD_POINTER	l_898E(a6),a2             	| [$1d1b: ld   ix,($898E)]
+	LOAD_POINTER	pointer_898e(a6),a2             	| [$1d1b: ld   ix,($898E)]
 
 	lea	l_1FCB(a6),a0                      	| [$1d1f: ld   hl,$1FCB]
 	lea	l_8940(a6),a1                      	| [$1d22: ld   de,$8940]
@@ -4796,7 +4798,7 @@ l_1d1b:
 	jra	l_1cce                             	| [$1d2a: jp   $1CCE]
 
 l_1d2d:
-	LOAD_POINTER	l_898E(a6),a2             	| [$1d2d: ld   ix,($898E)]
+	LOAD_POINTER	pointer_898e(a6),a2             	| [$1d2d: ld   ix,($898E)]
 
 	move.b	l_8020(a6),d0                   	| [$1d31: ld   a,($8020)]
 	                               	| [$1d34: and  a]
@@ -4879,7 +4881,7 @@ l_1d9a:
 0:
 	LOAD_POINTER	pointer_8990(a6),a0             	| [$1da3: ld   hl,($8990)]
 
-	LOAD_POINTER	l_81B3(a6),a1             	| [$1da6: ld   de,($81B3)]
+	LOAD_POINTER	pointer_81b3(a6),a1             	| [$1da6: ld   de,($81B3)]
 
 	move.b	#0x08,d1                        	| [$1daa: ld   b,$08]
 l_1dac:
@@ -5038,7 +5040,7 @@ l_1e7e:
 	jne	l_1eb3                             	| [$1e91: jr   nz,$1EB3]
 
 	move.l	a0,-(sp)                        	| [$1e93: push hl] [uncovered]
-	LOAD_POINTER	l_898A(a6),a0             	| [$1e94: ld   hl,($898A)] [uncovered]
+	LOAD_POINTER	pointer_898a(a6),a0             	| [$1e94: ld   hl,($898A)] [uncovered]
 
 	move.b	(a0),d0                         	| [$1e97: ld   a,(hl)] [uncovered]
 	move.l	(sp)+,a0                        	| [$1e98: pop  hl] [uncovered]
