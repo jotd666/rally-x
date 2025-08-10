@@ -656,6 +656,7 @@ demo_game:
 	add.l	#0x10000,d0
 	move.l	d0,a6
 	move.l	a6,mem_start_0000
+	move.l	a6,a5
 	add.l	#0x8000,a5
 	move.l	a5,ram_start_8000
 	.endif
@@ -2647,6 +2648,7 @@ osd_cpu_logging_control:
 osd_log_cpu:
 
 	move.w	(6,a7),last_known_m6502_pc
+	move.w	(6,a7),0x100
 
 	move.l	a6,-(a7)
 	* check if cpu log is enabled

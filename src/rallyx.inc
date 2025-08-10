@@ -39,6 +39,16 @@
 	movem.w	(a7)+,d7
 	.endm
 
+	.macro	BREAK_IF_IN_SCREEN	reg
+	cmp.w	#0x8400,\reg
+	jcs		skip\@
+	cmp.w	#0x8800,\reg
+	jcc		skip\@
+	jbsr	osd_get_last_known_pc
+	BREAKPOINT	"loading 8400-8800 in \reg"
+skip\@:
+	.endm
+	
 * those macros use rol/ror instead of lsl/lsr
 * which doesn't clear MSB/LSB but matters much less than
 * leaving X untouched for next operations
@@ -73,10 +83,12 @@
 	.endm
 
 	.macro	LOAD_A0_FROM_D5_16
+	BREAK_IF_IN_SCREEN	d5
 	lea	(a6,d5.l),a0
 	.endm
 	
 	.macro	LOAD_A1_FROM_D3_16
+	BREAK_IF_IN_SCREEN	d3
 	lea	(a6,d3.l),a1
 	.endm
 	
