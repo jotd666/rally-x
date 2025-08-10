@@ -116,6 +116,7 @@ l_0000:
 * starting from here doesn't work, though
 * (stack is probably not positioned properly)
 l_0003:
+	ENABLE_LOG_REGS
 	                       	| [$0003: ld   sp,$8400]
 	jra	l_003a                             	| [$0006: jr   $003A]
 

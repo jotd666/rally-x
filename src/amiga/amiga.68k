@@ -180,7 +180,8 @@ w\@:
 	.global osd_blitz		| for debug
 	.global osd_read_dsw
 	.global	osd_sound_command
-	.global	osd_read_inputs
+	.global	osd_read_p1_inputs
+	.global	osd_read_p2_inputs
 	.global	osd_enable_interrupts
 	.global	osd_disable_interrupts
 	.global	osd_get_random
@@ -2125,8 +2126,12 @@ osd_debug_hook:
 osd_video_control:
 	rts
 	
-osd_read_inputs:
+osd_read_p1_inputs:
 	move.b	player_1_controls,d0
+	rts
+	
+osd_read_p2_inputs:
+	move.b	player_2_controls,d0
 	rts
 	
 
@@ -2645,30 +2650,36 @@ osd_cpu_logging_control:
 	rts
 	
 
+
 osd_log_cpu:
-
-	move.w	(6,a7),last_known_m6502_pc
-	move.w	(6,a7),0x100
-
 	move.l	a6,-(a7)
-	* check if cpu log is enabled
 	tst.b	cpu_log_enable
 	jeq		445f
+	* check if cpu log is enabled
 	move.l	log_ptr,a6
 	move.w	(10,a7),(a6)+	| the PC
-	move.l	d1,-(a7)
-	move.w	d0,(a6)+
-	move.w	d1,(a6)+
-	move.w	d2,(a6)+
+	move.b	d0,(a6)+
+	move.b	d1,(a6)+
+	move.b	d2,(a6)+
+	move.b	d3,(a6)+
+	move.b	d4,(a6)+
+	move.b	d5,(a6)+
+	move.b	d6,(a6)+
+	move.b	d7,(a6)+
+	move.l	a0,(a6)+
+	move.l	a1,(a6)+
+	move.l	a2,(a6)+
+	move.l	a3,(a6)+
 	move.w	#0xDEAD,(a6)+
 	move.l	a6,log_ptr
 	cmp.w	#0xCAFE,(a6)  | hitting the protection buffer
 	jne		444f
-	BREAKPOINT	"cpu log buffer full, dumping and exiting!"
+	* save log before hitting breakpoint
+	move.l	(a7)+,a6
 	jbsr	osd_dump_logs
+	BREAKPOINT	"cpu log buffer full!"
 	illegal
 444:
-	move.l	(a7)+,d1
 445:
 	move.l	(a7)+,a6
 	rts
@@ -2702,6 +2713,7 @@ osd_dump_logs:
 
 
 save_cpu_log:
+	GET_MEMORY_BLOCKS_IN_A5_A6
 	move.l	_resload,a2
 	lea		log_buffer,a1
 	move.l	log_ptr,d0
@@ -2710,7 +2722,7 @@ save_cpu_log:
 	move.l	log_ptr,a0
 	* add RAM & ROM base in the end
 	move.l	a6,(a0)+
-	move.l	#rom_base,(a0)+
+	move.l	a5,(a0)+
 	addq	#8,d0
 	lea		cpu_log_name(pc),a0
 	jbsr	resload_SaveFile(a2)
