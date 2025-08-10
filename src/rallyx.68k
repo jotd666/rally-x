@@ -87,6 +87,20 @@
 *	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
 *	PORT_SERVICE_DIPLOC( 0x01, 0x01, "DSW:1")
 
+* screen layout (intermixed with game variables!!):
+*
+* status right screen: 8 bytes every 32 bytes
+* 0x8044-47: start of status right screen (4 first chars)
+* 0x8040-43: end of status right screen (4 last chars)
+* next row: +0x20
+* +0x800: attributes
+*
+* main screen:
+* 0x8400: top left (at start 0x8440)
+* +0x20: next row
+* +0x800: attributes
+* wraps with scrolling
+
 	.global	rallyx_reset
 	.global	rallyx_irq
 	
@@ -739,7 +753,7 @@ l_043b:
 	addq.b	#1,d0                           	| [$0447: inc  a]
 l_0448:
 	move.b	d0,l_A186(a5)                   	| [$0448: ld   ($A186),a]
-	move.b	dsw_a100(a5),d0                 	| [$044b: ld   a,(dsw_a100)]
+	jbsr	osd_read_dsw                 	| [$044b: ld   a,(dsw_a100)]
 	and.b	#0x01,d0                         	| [$044e: and  $01]
 	jeq	boot_3800                          	| [$0450: jp   z,boot_3800]
 	move.b	#0x01,d0                        	| [$0453: ld   a,$01]
@@ -848,11 +862,11 @@ l_04e0:
 	jra	l_04d2                             	| [$04e5: jr   $04D2]
 l_04e7:
 	lea	l_1F8B(a6),a0                      	| [$04e7: ld   hl,$1F8B]
-	lea	l_8040(a5),a1                      	| [$04ea: ld   de,$8040]
+	lea	status_screen_start_8040(a5),a1                      	| [$04ea: ld   de,$8040]
 	move.b	#0x66,d2                        	| [$04ed: ld   c,$66]
 	jbsr	l_1c4e                            	| [$04ef: call $1C4E]
 	jbsr	l_1b76                            	| [$04f2: call $1B76]
-	move.b	dsw_a100(a5),d0                 	| [$04f5: ld   a,(dsw_a100)]
+	jbsr	osd_read_dsw                 	| [$04f5: ld   a,(dsw_a100)]
 	move.b	d0,d1                           	| [$04f8: ld   b,a]
 	lea	l_82AA(a5),a0                      	| [$04f9: ld   hl,$82AA]
 	and.b	#0xC0,d0                         	| [$04fc: and  $C0]
@@ -954,14 +968,14 @@ l_05a6:
 	move.w	#0x00FF,d1                      	| [$05b1: ld   bc,$00FF]
 	move.b	#0x47,(a0)                      	| [$05b4: ld   (hl),$47]
 	jbsr	ldir                              	| [$05b6: ldir]
-	lea	l_1FF3(a6),a0                      	| [$05b8: ld   hl,$1FF3]
+	lea	instructions_1FF3(a6),a0                      	| [$05b8: ld   hl,$1FF3]
 	jbsr	osd_enable_interrupts   | ei
-	jbsr	l_1e1b                            	| [$05bc: call $1E1B]
-	jbsr	l_1e1b                            	| [$05bf: call $1E1B]
-	jbsr	l_1e1b                            	| [$05c2: call $1E1B]
-	jbsr	l_1e1b                            	| [$05c5: call $1E1B]
-	jbsr	l_1e1b                            	| [$05c8: call $1E1B]
-	jbsr	l_1e1b                            	| [$05cb: call $1E1B]
+	jbsr	write_instructions_line_1e1b                            	| [$05bc: call $1E1B]
+	jbsr	write_instructions_line_1e1b                            	| [$05bf: call $1E1B]
+	jbsr	write_instructions_line_1e1b                            	| [$05c2: call $1E1B]
+	jbsr	write_instructions_line_1e1b                            	| [$05c5: call $1E1B]
+	jbsr	write_instructions_line_1e1b                            	| [$05c8: call $1E1B]
+	jbsr	write_instructions_line_1e1b                            	| [$05cb: call $1E1B]
 	move.b	#0x01,d0                        	| [$05ce: ld   a,$01]
 	move.b	d0,l_800F(a5)                   	| [$05d0: ld   ($800F),a]
 	move.b	d0,l_8020(a5)                   	| [$05d3: ld   ($8020),a]
@@ -1373,7 +1387,7 @@ l_08a1:
 	move.b	l_81A8(a5),d0                   	| [$08c4: ld   a,($81A8)] [uncovered]
 	move.b	d0,l_A183(a5)                   	| [$08c7: ld   ($A183),a] [uncovered]
 	lea	l_1FDB(a6),a0                      	| [$08ca: ld   hl,$1FDB] [uncovered]
-	jbsr	l_1e1b                            	| [$08cd: call $1E1B] [uncovered]
+	jbsr	write_instructions_line_1e1b                            	| [$08cd: call $1E1B] [uncovered]
 	move.b	#0x03,d0                        	| [$08d0: ld   a,$03] [uncovered]
 	move.b	d0,l_8020(a5)                   	| [$08d2: ld   ($8020),a] [uncovered]
 	                   	| [$08d5: ld   ($A181),a] [uncovered]
@@ -5036,7 +5050,7 @@ l_1e11:
 	move.w	(sp)+,d0                        	| [$1e19: pop  af]
 	rts                                    	| [$1e1a: ret]
 
-l_1e1b:
+write_instructions_line_1e1b:
 	move.b	nb_enemy_cars_824e(a5),d0       	| [$1e1b: ld   a,(nb_enemy_cars_824e)]
 	move.w	d0,-(sp)                        	| [$1e1e: push af]
 	move.b	#0x03,d0                        	| [$1e1f: ld   a,$03]
@@ -5132,11 +5146,11 @@ l_1eb2:
 	movem.w	(sp)+,d1/d2                    	| [$1eb2: pop  bc] [uncovered]
 l_1eb3:
 	subq.w	#1,a0                           	| [$1eb3: dec  hl]
-	move.b	d0,(a0)                         	| [$1eb4: ld   (hl),a]
+	jbsr	osd_w_videoram                         	| [$1eb4: ld   (hl),a]
 	addq.w	#1,a1                           	| [$1eb5: inc  de]
 	subq.b	#1,d1                           	| [...]
 	jne	l_1e7e                             	| [$1eb6: djnz $1E7E]
-	CLEAR_XC_FLAGS                         	| [$1eb8: xor  a]
+	                         	| [$1eb8: xor  a]
 	clr.b	d0                               	| [$1eb8: xor  a]
 l_1eb9:
 	cmp.b	(0x0c,a2),d0                     	| [$1eb9: cp   (ix+$0c)]
@@ -5995,7 +6009,7 @@ boot_sequence_384C:
 	move.b	d0,l_A182(a5)                   	| [$38db: ld   ($A182),a]
 	jbsr	osd_enable_interrupts   | ei
 l_38df:
-	move.b	dsw_a100(a5),d0                 	| [$38df: ld   a,(dsw_a100)]
+	jbsr	osd_read_dsw                 	| [$38df: ld   a,(dsw_a100)]
 	btst.b	#0,d0                           	| [$38e2: bit  0,a]
 	jeq	l_38df                             	| [$38e4: jr   z,$38DF]
 	jbsr	osd_disable_interrupts   | di
@@ -6017,7 +6031,7 @@ l_38f6:
 	jne	l_38f4                             	| [$38ff: djnz $38F4]
 l_3901:
 	            	| [$3901: ld   (watchdog_a080),a]
-	move.b	dsw_a100(a5),d0                 	| [$3904: ld   a,(dsw_a100)]
+	jbsr	osd_read_dsw                 	| [$3904: ld   a,(dsw_a100)]
 	btst.b	#0,d0                           	| [$3907: bit  0,a]
 	jeq	l_3901                             	| [$3909: jr   z,$3901]
 	jbsr	l_3959                            	| [$390b: call $3959]
@@ -6038,7 +6052,7 @@ l_391e:
 	move.w	#0x03FF,d1                      	| [$3924: ld   bc,$03FF]
 	move.b	#0x66,(a0)                      	| [$3927: ld   (hl),$66] fill attibs
 	jbsr	ldir                              	| [$3929: ldir]
-	lea	l_8040(a5),a0                      	| [$392b: ld   hl,$8040]
+	lea	status_screen_start_8040(a5),a0                      	| [$392b: ld   hl,$8040]
 	move.w	#0x1C08,d1                      	| [$392e: ld   bc,$1C08]
 	LOAD_D1D2_FROM_D1_16
 	move.b	#0x40,d0                        	| [$3931: ld   a,$40]
@@ -6147,7 +6161,7 @@ l_399a:
 * problem: reset
 l_39a4:
 	            	| [$39a4: ld   (watchdog_a080),a] [uncovered]
-	move.b	dsw_a100(a5),d0                 	| [$39a7: ld   a,(dsw_a100)] [uncovered]
+	jbsr	osd_read_dsw                 	| [$39a7: ld   a,(dsw_a100)] [uncovered]
 	btst.b	#0,d0                           	| [$39aa: bit  0,a] [uncovered]
 	jeq	l_39a4                             	| [$39ac: jr   z,$39A4] [uncovered]
 	jra	l_0000                             	| [$39ae: jp   $0000] [uncovered]
@@ -6244,7 +6258,7 @@ l_3dce:
 	move.w	#0x03FF,d1                      	| [$3dd9: ld   bc,$03FF]
 	move.b	#0x5B,(a0)                      	| [$3ddc: ld   (hl),$5B]
 	jbsr	ldir                              	| [$3dde: ldir]
-	lea	l_8040(a5),a0                      	| [$3de0: ld   hl,$8040]
+	lea	status_screen_start_8040(a5),a0                      	| [$3de0: ld   hl,$8040]
 	lea	l_1C08(a6),a4                      	| [$3de3: ld   bc,$1C08]
 	move.b	#0x5B,d0                        	| [$3de6: ld   a,$5B]
 	jbsr	l_3e20                            	| [$3de8: call $3E20]

@@ -179,8 +179,7 @@ w\@:
 	.global osd_interrupt_control
 	.global osd_break		| for debug	
 	.global osd_blitz		| for debug
-	.global osd_read_dsw1
-	.global osd_read_dsw2
+	.global osd_read_dsw
 	.global	osd_sound_command
 	.global	osd_read_inputs
 	.global	osd_enable_interrupts
@@ -725,7 +724,7 @@ _vblank:
 	move.w	#0x20,(intreq,a5)	
 	jra	3f
 1:
-	* has to be copper: set sync
+	* has to be copper
 
 	* we're going to ack copper & software/level 5 interrupt now
 	* do it twice (040/pistorm bug)
@@ -761,7 +760,12 @@ _vblank:
 
 	subq.w	#1,delay_timer
 		
+	
 	jbsr	rallyx_irq
+
+	.ifndef	RELEASE
+	jbsr	log_used_tiles
+	.endif
 
 	tst.b	frameskip
 	jeq		0f
@@ -769,7 +773,7 @@ _vblank:
 	jeq		23f
 0:
 
-	jbsr		really_update_sprites
+	*jbsr		really_update_sprites
 	
 	.ifne	OPT_ENABLE_DOUBLE_BUFFERING
 	jbsr		switch_screen_buffers
@@ -783,6 +787,9 @@ _vblank:
     movem.l (a7)+,d0-d7/a0-a6
     rte
 
+log_used_tiles:
+	* scan the whole screen, see what was updated
+	rts
 	
 osd_blitz:
 	blitz
@@ -1831,40 +1838,52 @@ mirrored_videoram:
 * a5=ram base
 * d0=value
 * should preserve all registers
-* allows 8000-8FFF range
+* allows 8040-8FFF range
 
 osd_w_videoram:
-
+	cmp.b	(a0),d0
+	jne		0f
+	rts
+0:
+	* only update if needed
+	move.b	d0,(a0)
+	
 	movem.l	d0-d7/a0-a2,-(a7)
 	move.l	a0,d7		| save address
-	sub.l	a5,d7
-	.ifndef	RELEASE
-	jmi		2f
-	.endif
-
-	* not in/back from the mirrored zone
-	* we now suppose that we're in 3C00-3FFF
-	* check that in debug mode
-	.ifndef		RELEASE
-	cmp.w	#SPRITE_ADDRESS,d7
+	sub.l	a5,d7		| start of video RAM
+	cmp.w	#0x40,d7
 	jcc		0f
-1:
-	BREAKPOINT	"write videoram out of range (D7)"
-	bra.b	osd_w_videoram_out	
+	* writing to 8000-803F: not screen
+	jra		osd_w_videoram_out
 0:
-	* we should update mirror zone now TODO
-	
-	cmp.w	#SPRITE_ADDRESS+0x400,d7
-	jcc		1b
-	.endif
-	* now check if not in sprite memory (start)
-	* else skip
-	
-	sub.w	#SCREEN_TILE_ADDRESS,d7
-	jmi		osd_w_videoram_out		| sprite memory: out
-	
-
-	jbsr	update_bg_tile
+	cmp.w	#0x400,d7
+	jcc		0f
+	* status panel tiles TODO
+	* only addresses 80x0->80x7 are displayed
+	jra		osd_w_videoram_out
+0:
+	cmp.w	#0x800,d7
+	jcc		0f
+	* between 0x8400 and 0x87ff: main tiles
+	sub.w	#0x400,d7		| 0->3FF
+	* main attributes
+	move.b	(0x800,a0),d1		| tile attribute
+	jbsr	update_main_tile
+	jra		osd_w_videoram_out
+0:
+	cmp.w	#0xC00,d7
+	jcc		0f
+	* between 0x8800 and 0x8bff: status panel attributes
+	* only addresses 88x0->88x7 are displayed
+	jra		osd_w_videoram_out
+0:
+	cmp.w	#0x1000,d7
+	jcc		osd_w_videoram_out
+	* main attributes
+	move.b	d0,d1				| tile attribute
+	move.b	(-0x800,a0),d0		| tile code
+	sub.w	#0x800,d7		| 0->3FF
+	jbsr	update_main_tile
 
 osd_w_videoram_out:
 	movem.l	(a7)+,d0-d7/a0-a2
@@ -1886,18 +1905,6 @@ osd_w_videoram_out:
 	add.w	d5,a1
 	.endm
 
-	
-	.macro	COPY_TILE16_PLANE_ROW
-	move.w	d0,(offset,a1)  | buffer
-	.endm
-	
-	.macro	CLEAR_TILE16_PLANE
-	.set	offset,0
-	.rept	16
-	clr.w	(offset,a1)
-	.set	offset,offset+NB_BYTES_PER_ROW
-	.endr	
-	.endm
 
 
 * < D7: 0-0x400
@@ -1930,14 +1937,17 @@ compute_tile_xy:
 
 
 * each column has 0x20*8 = 256 pixels
-* each visible row has 28*8 = 244 pixels
 
 * < D7: 0-0x400 address
-* < D0: extended tile code
+* < D0: tile code
+* < D1: tile attribute
 
-update_bg_tile:
-	move.w	d0,d2	| code
-	
+update_main_tile:
+	move.b	d0,d2	| code
+	move.b	d1,d3	| attribute
+	and.w	#0x1F,d3	| color  ???
+	* flip X/Y = bits 6 and 7 (to clarify)
+
 	bsr		compute_tile_xy
 	
 	lea		character_table,a0
@@ -1946,7 +1956,7 @@ update_bg_tile:
 	* updating bitplanes
 	move.l	#SCREEN_PLANE_SIZE,d5
 	move.w	#NB_PLAYFIELD_PLANES-1,d4
-	move.l	background_screen_ptr,a1
+	move.l	playfield_drawed_screen_ptr,a1
 
 
 	lea		mulNB_BYTES_PER_ROW_table,A2
@@ -1954,24 +1964,60 @@ update_bg_tile:
 	move.w	(a2,d1.w),d1
 	add.w	d1,d0
 	add.w	d0,a1
+
+
 	
 	add.w	d2,d2
-	jeq		11f				| optimize
 	add.w	d2,d2	
 	move.l	(a0,d2.w),d0		| tile pointer
-	
-	jeq		11f 	| can happen when tile code is read when screen is being erased	
-*	.ifndef	RELEASE
-*	jne		12f
-*	add.w	#0x1400,d7
-*	lsr.w	#2,d2
-*	BREAKPOINT	"game tile (in D2) not registered"	
-*	.endif
-*
-*	jra		11f
+	.ifndef	RELEASE
+	jne		12f
+	add.w	#0x8400,d7
+	lsr.w	#2,d2
+	*BREAKPOINT	"game_tile_not_registered_error"
+	move.w	#0x0F0,_custom+color
+
+	jra		11f
 12:
-	move.l	d0,a2		| directly pointer on tile bitplanes
+	.endif
+	move.l	d0,a2
+	move.b	d3,d1
+	and.w	#0xF,d3
+	add.w	d3,d3
+	add.w	d3,d3
+	move.l	(a2,d3.w),d0			| pointer on tile bitplanes for that CLUT
+	jeq		11f						| not necessarily a problem
+
+	move.l	d0,a2					| pointer on bitplanes
+	rol.b	#2,d1			        | modifiers on first bits
+	and.w	#3,d1
+	jeq		standard_tile
 	
+
+	add.w	d1,d1
+	add.w	d1,d1
+	lea		mirror_jump_table(pc),a4
+	move.l	(a4,d1.w),a4
+0:
+	BTST	#6,(_custom+dmaconr)
+	BNE.S	0b
+	jmp		(a4)
+	
+	.macro	COPY_TILE_PLANE_ROW
+	move.b	d0,(offset,a1)  | buffer
+	.endm
+	
+	.macro	CLEAR_TILE_PLANE
+	.set	offset,0
+	.rept	8
+	clr.b	(offset,a1)
+	.set	offset,offset+NB_BYTES_PER_ROW
+	.endr	
+	.endm
+	
+	.macro	TILE_NEXT_PLANE
+	add.w	d5,a1
+	.endm
 	
 standard_tile:
 
@@ -1984,32 +2030,104 @@ standard_tile:
 	.set	offset,0
 	.rept	8
 	move.b	(a0)+,d0
-	COPY_TILE8_PLANE_ROW
+	COPY_TILE_PLANE_ROW
 	.set	offset,offset+NB_BYTES_PER_ROW
 	.endr
 41:
-	TILE8_NEXT_PLANE
+	TILE_NEXT_PLANE
 	dbf		d4,4b
 0:
 	rts
 5:
-	CLEAR_TILE8_PLANE
+	CLEAR_TILE_PLANE
 	jra		41b
+
+flipped_tile:	
+4:
+	move.l	(a2)+,d0		| next plane
+	jeq		5f
+	move.l	d0,a0
+	.set	offset,8*NB_BYTES_PER_ROW
+	.rept	8
+	.set	offset,offset-NB_BYTES_PER_ROW
+	move.b	(a0)+,d0
+	COPY_TILE_PLANE_ROW
+	.endr
 41:
-	TILE8_NEXT_PLANE
+	TILE_NEXT_PLANE
 	dbf		d4,4b
 0:
 	rts
+5:
+	CLEAR_TILE_PLANE
+	jra		41b
+	
+mirror_tile:
+	lea		mirror_bits(pc),a4
+	moveq	#0,d1
+4:
+	move.l	(a2)+,d0		| next plane
+	jeq		5f
+	move.l	d0,a0
+	.set	offset,0
+	.rept	8
+	move.b	(a0)+,d1
+	move.b	(a4,d1.w),d0	| mirror
+	COPY_TILE_PLANE_ROW
+
+	.set	offset,offset+NB_BYTES_PER_ROW
+	.endr
+41:
+	TILE_NEXT_PLANE
+	dbf		d4,4b
+0:
+	rts
+5:
+	CLEAR_TILE_PLANE
+	jra		41b
+	
+mirror_flipped_tile:
+	lea		mirror_bits(pc),a4
+	moveq	#0,d1
+4:
+	move.l	(a2)+,d0		| next plane
+	jeq		5f
+	move.l	d0,a0
+	.set	offset,8*NB_BYTES_PER_ROW
+	.rept	8
+	.set	offset,offset-NB_BYTES_PER_ROW
+	move.b	(a0)+,d1
+	move.b	(a4,d1.w),d0	| mirror
+	COPY_TILE_PLANE_ROW
+
+	.endr
+41:
+	TILE_NEXT_PLANE
+	dbf		d4,4b
+0:
+	rts
+5:
+	CLEAR_TILE_PLANE
+	jra		41b
 
 	* clear tile
+
 11:
-	CLEAR_TILE8_PLANE
-	TILE8_NEXT_PLANE
-	dbf		d4,11b
+111:
+	CLEAR_TILE_PLANE
+	TILE_NEXT_PLANE
+	dbf		d4,111b
 2:
 	rts
 	
-
+mirror_jump_table:
+	.long	standard_tile
+	.long	flipped_tile
+	.long	mirror_tile
+	.long	mirror_flipped_tile
+	
+mirror_bits:
+	.include "mirror_bits.68k"
 
 	
 * < d0.w: x
@@ -2180,10 +2298,10 @@ direction_table:
 
 
 
-osd_read_dsw1:
+osd_read_dsw:
 	* actual dipswitches
 	not.b	d0		| active low
-	move.b	#0xBF,d0	| what MAME returns
+	move.b	#0xCB,d0	| temp default MAME
 	rts
 	
 osd_read_system:
@@ -2217,11 +2335,6 @@ osd_read_system:
 	rts
 
 	
-osd_read_dsw2:
-	* actual dipswitches
-	move.b	dip_switches_2(pc),d0
-	
-	rts
 
 
 	
