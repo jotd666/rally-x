@@ -1253,6 +1253,7 @@ irq_0069:
 09AD: DD 6F       ld   ixl,a
 09AF: 18 E3       jr   $0994
 
+09B1: DD 36 08 0B ld   (ix+$08),$0B
 09B5: AF          xor  a
 09B6: 0E 0F       ld   c,$0F
 09B8: 06 03       ld   b,$03

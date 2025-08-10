@@ -1,3 +1,4 @@
+	.include	"breakpoint.inc"
 	.include	"rallyx.inc"
 	.include	"data.inc"
 *	map(0x0000, 0x3fff).rom();
@@ -86,18 +87,7 @@
 *	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
 *	PORT_SERVICE_DIPLOC( 0x01, 0x01, "DSW:1")
 
-nb_enemy_cars_824e = $824e
-nb_rocks_8251 = $8251
-p1_a000 = $a000
-p2_a080 = $a080
-scrollx_a130 = $a130
-scrolly_a140 = $a140
-watchdog_a080 = $a080
-dsw_a100 = $a100
-sound_a100 = $a100
-unknown_8080 = $8080
-enemy_car_structs_8088 = $8088
-car_speed_8027 = $8027
+
 
 l_0000:
 	jra	boot_3800                          	| [$0000: jp   boot_3800]
@@ -646,7 +636,7 @@ l_039c:
 l_03aa:
 	cmp.b	#0x0B,d0                         	| [$03aa: cp   $0B]
 	jcc	l_03b7                             	| [$03ac: jr   nc,$03B7]
-ei
+	jbsr	osd_enable_interrupts   | ei
 	move.b	#0x01,d0                        	| [$03af: ld   a,$01]
 	                   	| [$03b1: ld   ($A181),a]
 	jra	l_16d3                             	| [$03b4: jp   $16D3]
@@ -754,11 +744,11 @@ l_0448:
 	move.l	(sp)+,a1                        	| [$045e: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$045e: pop  de]
 	move.l	(sp)+,a0                        	| [$045f: pop  hl]
-ei
+	jbsr	osd_enable_interrupts   | ei
 	rts                                    	| [$0461: ret]
 
 l_0462:
-	LOAD_WORD	value16_802d(a6),d5             	| [$0462: ld   hl,($802D)]
+	LOAD_WORD	previous_car_speed_802d(a6),d5             	| [$0462: ld   hl,($802D)]
 	LOAD_WORD	value16_8069(a6),d3             	| [$0465: ld   de,($8069)]
 	add.w	d3,d5                            	| [$0469: add  hl,de]
 	asr.w	#1,d5                            	| [$046a: sra  h]
@@ -941,7 +931,7 @@ l_057b:
 	                   	| [$0592: ld   ($A181),a]
 	move.b	d0,l_8020(a6)                   	| [$0595: ld   ($8020),a]
 	move.b	#0xF7,d0                        	| [$0598: ld   a,$F7]
-out  ($00),a
+*out  ($00),a
 	move.b	#0x49,d0                        	| [$059c: ld   a,$49]
 	jbsr	clear_screen_and_reset_scroll_1dcb                            	| [$059e: call $1DCB]
 	lea	l_8C40(a6),a0                      	| [$05a1: ld   hl,$8C40]
@@ -957,7 +947,7 @@ l_05a6:
 	move.b	#0x47,(a0)                      	| [$05b4: ld   (hl),$47]
 	jbsr	ldir                              	| [$05b6: ldir]
 	lea	l_1FF3(a6),a0                      	| [$05b8: ld   hl,$1FF3]
-ei
+	jbsr	osd_enable_interrupts   | ei
 	jbsr	l_1e1b                            	| [$05bc: call $1E1B]
 	jbsr	l_1e1b                            	| [$05bf: call $1E1B]
 	jbsr	l_1e1b                            	| [$05c2: call $1E1B]
@@ -1078,7 +1068,7 @@ l_06ab:
 	subq.b	#1,d0                           	| [$06b3: dec  a]
 	move.b	d0,l_8020(a6)                   	| [$06b4: ld   ($8020),a]
 	                   	| [$06b7: ld   ($A181),a]
-ei
+	jbsr	osd_enable_interrupts   | ei
 	move.b	d0,l_81B0(a6)                   	| [$06bb: ld   ($81B0),a]
 	move.b	d0,l_81B1(a6)                   	| [$06be: ld   ($81B1),a]
 	lea	l_800E(a6),a0                      	| [$06c1: ld   hl,$800E]
@@ -1168,8 +1158,8 @@ l_074c:
 	                   	| [$075c: ld   ($A181),a]
 	            	| [$075f: ld   (watchdog_a080),a]
 	move.b	#0xF7,d0                        	| [$0762: ld   a,$F7]
-out  ($00),a
-ei
+*out  ($00),a
+	jbsr	osd_enable_interrupts   | ei
 	move.b	#0x80,d0                        	| [$0767: ld   a,$80]
 	move.b	d0,l_89F5(a6)                   	| [$0769: ld   ($89F5),a]
 	jbsr	l_1741                            	| [$076c: call $1741]
@@ -1222,7 +1212,7 @@ l_07bd:
 	jbsr	l_11c5                            	| [$07cf: call $11C5]
 	move.b	#0x03,d0                        	| [$07d2: ld   a,$03]
 	                   	| [$07d4: ld   ($A181),a]
-ei
+	jbsr	osd_enable_interrupts   | ei
 	move.b	d0,l_8020(a6)                   	| [$07d8: ld   ($8020),a]
 	move.b	d0,l_824B(a6)                   	| [$07db: ld   ($824B),a]
 l_07de:
@@ -1252,26 +1242,27 @@ l_07e5:
 	move.b	#0x04,(a0)                      	| [$0801: ld   (hl),$04]
 	jbsr	l_1b76                            	| [$0803: call $1B76]
 	jbsr	l_190b                            	| [$0806: call $190B]
-	move.w	#0x0000,d5                      	| [$0809: ld   hl,$0000]
+	moveq	#0x0000,d5                      	| [$0809: ld   hl,$0000]
 	lea	l_9800(a6),a1                      	| [$080c: ld   de,$9800]
 	move.b	#0x38,d2                        	| [$080f: ld   c,$38]
 l_0811:
 	move.b	#0x20,d1                        	| [$0811: ld   b,$20]
 l_0813:
+	* uses D5.W
 	jbsr	l_12c5                            	| [$0813: call $12C5]
 	move.b	d0,(a1)+                         	| [$0816: ld   (de),a]
 											| [$0817: inc  de]
-	addq.b	#0x100,d5                           	| [$0818: inc  h]
+	add.w	#0x100,d5                           	| [$0818: inc  h]
 	subq.b	#1,d1                           	| [...]
 	jne	l_0813                             	| [$0819: djnz $0813]
 	            	| [$081b: ld   (watchdog_a080),a]
+	rol.w	#8,d5
 	move.b	d1,d5                           	| [$081e: ld   h,b]
-	ERROR	"review hl / h or l mixup"
-	addq.w	#1,a0                           	| [$081f: inc  l]
-	ERROR	"review inc register d6 or a0"
+	rol.w	#8,d5
+	addq.b	#1,d5                           	| [$081f: inc  l]
 	subq.b	#1,d2                           	| [$0820: dec  c]
 	jne	l_0811                             	| [$0821: jr   nz,$0811]
-	LOAD_POINTER	pointer_8992(a6),a0             	| [$0823: ld   hl,($8992)]
+	LOAD_POINTER	pointer_8992(a6),a0       | [$0823: ld   hl,($8992)]
 
 	move.b	#0x0A,d1                        	| [$0826: ld   b,$0A]
 	move.b	#0x01,d0                        	| [$0828: ld   a,$01]
@@ -1378,7 +1369,7 @@ l_08a1:
 	move.b	#0x03,d0                        	| [$08d0: ld   a,$03] [uncovered]
 	move.b	d0,l_8020(a6)                   	| [$08d2: ld   ($8020),a] [uncovered]
 	                   	| [$08d5: ld   ($A181),a] [uncovered]
-ei    ; [uncovered]
+	jbsr	osd_enable_interrupts   | ei    ; [uncovered]
 	lea	l_89F5(a6),a0                      	| [$08d9: ld   hl,$89F5] [uncovered]
 l_08dc:
 	btst.b	#0,(a0)                         	| [$08dc: bit  0,(hl)] [uncovered]
@@ -1390,7 +1381,7 @@ l_08e0:
 	move.b	#0x03,d0                        	| [$08e9: ld   a,$03]
 	move.b	d0,l_8020(a6)                   	| [$08eb: ld   ($8020),a]
 	                   	| [$08ee: ld   ($A181),a]
-ei
+	jbsr	osd_enable_interrupts   | ei
 	CLEAR_XC_FLAGS                         	| [$08f2: xor  a]
 	clr.b	d0                               	| [$08f2: xor  a]
 	jbsr	osd_set_scroll_y             	| [$08f3: ld   (scrolly_a140),a]
@@ -1405,7 +1396,7 @@ l_08ff:
 	move.b	#0x0D,d2                        	| [$0908: ld   c,$0D]
 	LOAD_WORD	car_speed_8027(a6),d5     	| [$090a: ld   hl,(car_speed_8027)]
 
-	STORE_WORD	d5,value16_802d(a6)            	| [$090d: ld   ($802D),hl]
+	STORE_WORD	d5,previous_car_speed_802d(a6)            	| [$090d: ld   ($802D),hl]
 	LOAD_WORD	value16_8025(a6),d5             	| [$0910: ld   hl,($8025)]
 	LOAD_D5D6_FROM_D5_16
 	                         	| [$0913: xor  a]
@@ -1695,9 +1686,10 @@ l_0b08:
 	exg	a1,a0                              	| [$0b1c: ex   de,hl] [uncovered]
 	move.l	(sp)+,a4                        	| [$0b1d: pop  bc] [uncovered]
 	movem.w	(sp)+,d1/d2                    	| [$0b1d: pop  bc] [uncovered]
-	exg	(sp),a0                            	| [$0b1e: ex   (sp),hl] [uncovered]
-	addq.w	#3,a0                           	| [$0b1f: inc  hl] [uncovered] * 3
-	exg	(sp),a0                            	| [$0b22: ex   (sp),hl] [uncovered]
+	BREAKPOINT	"service mode?"
+*	exg	(sp),a0                            	| [$0b1e: ex   (sp),hl] [uncovered]
+*	addq.w	#3,a0                           	| [$0b1f: inc  hl] [uncovered] * 3
+*	exg	(sp),a0                            	| [$0b22: ex   (sp),hl] [uncovered]
 	rts                                    	| [$0b23: ret] [uncovered]
 
 l_0b24:
@@ -1837,7 +1829,7 @@ l_0bda:
 l_0bf7:
 	move.b	d3,d2                           	| [$0bf7: ld   c,d]
 	move.b	d5,d3                           	| [$0bf8: ld   d,h]
-	CLEAR_XC_FLAGS                         	| [$0bf9: xor  a]
+	                         	| [$0bf9: xor  a]
 	clr.b	d0                               	| [$0bf9: xor  a]
 l_0bfa:
 	move.w	d0,-(sp)                        	| [$0bfa: push af]
@@ -2346,7 +2338,7 @@ l_0ea0:
 	move.b	d0,d1                           	| [$0ec1: ld   b,a]
 
 	jbsr	osd_disable_interrupts			| di
-	STORE_POINTER	d5,value16_802d(a6)            	| [$0ec3: ld   ($802D),hl]
+	STORE_WORD	d5,previous_car_speed_802d(a6)            	| [$0ec3: ld   ($802D),hl]
 	                         	| [$0ec6: xor  a]
 	clr.b	d0                               	| [$0ec6: xor  a]
 	move.b	d0,l_8068(a6)                   	| [$0ec7: ld   ($8068),a]
@@ -2381,6 +2373,7 @@ l_0ea0:
 	LOAD_WORD	value16_8069(a6),d5             	| [$0efd: ld   hl,($8069)] [uncovered]
 
 l_0f00:
+	LOAD_D5D6_FROM_D5_16
 	tst.b	d0                               	| [$0f00: and  a]
 	bne.b	0f                               	| [...]
 	jbsr	l_1e11                            	| [$0f01: call z,$1E11]
@@ -2397,10 +2390,12 @@ l_0f00:
 	not.b	d0                               	| [$0f15: cpl] [uncovered]
 l_0f16:
 	move.b	d0,l_806B(a6)                   	| [$0f16: ld   ($806B),a]
-	STORE_POINTER	a0,value16_8069(a6)            	| [$0f19: ld   ($8069),hl]
-	exg	a1,a0                              	| [$0f1c: ex   de,hl]
-	LOAD_POINTER	value16_802d(a6),a0             	| [$0f1d: ld   hl,($802D)]
-
+	LOAD_D5_16_FROM_D5D6
+	STORE_WORD	d5,value16_8069(a6)            	| [$0f19: ld   ($8069),hl]
+	exg	d3,d5                              	| [$0f1c: ex   de,hl]
+	LOAD_WORD	previous_car_speed_802d(a6),d5             	| [$0f1d: ld   hl,($802D)]
+	LOAD_D5D6_FROM_D5_16
+	LOAD_D3D4_FROM_D3_16
 	move.w	d0,-(sp)                        	| [$0f20: push af]
 	move.b	d3,d0                           	| [$0f21: ld   a,d]
 	eor.b	d5,d0                            	| [$0f22: xor  h]
@@ -2409,8 +2404,9 @@ l_0f16:
 	jbsr	l_1e11                            	| [$0f25: call nz,$1E11]
 0:
 	move.w	(sp)+,d0                        	| [$0f28: pop  af]
-	STORE_POINTER	a0,value16_802d(a6)            	| [$0f29: ld   ($802D),hl]
-ei
+	LOAD_D5_16_FROM_D5D6
+	STORE_WORD	d5,previous_car_speed_802d(a6)            	| [$0f29: ld   ($802D),hl]
+	jbsr	osd_enable_interrupts
 	move.w	#0x0080,d5                      	| [$0f2d: ld   hl,$0080]
 	tst.b	d0                               	| [$0f30: and  a]
 	jeq	l_0f78                             	| [$0f31: jp   z,$0F78]
@@ -2430,27 +2426,27 @@ ei
 	jra	l_0f94                             	| [$0f53: jr   $0F94]
 
 l_0f55:
+	* save condition codes
 	exg	d0,d7                              	| [$0f55: ex   af,af']
-	ERROR	"review carry flags used below? if so, adapt"
+	*ERROR	"review carry flags used below? if so, adapt"
 	jcs	l_0f5c                             	| [$0f56: jr   c,$0F5C]
 	exg	d0,d7                              	| [$0f58: ex   af,af']
-	ERROR	"review carry flags used below? if so, adapt"
+	*ERROR	"review carry flags used below? if so, adapt"
 	jra	l_0f16                             	| [$0f59: jp   $0F16]
 
 l_0f5c:
+	* restore d0 from d7
 	exg	d0,d7                              	| [$0f5c: ex   af,af']
-	ERROR	"review carry flags used below? if so, adapt"
+	
 	movem.w	d1/d2,-(sp)                    	| [$0f5d: push bc]
 	move.b	(0x03,a2),d1                    	| [$0f5e: ld   b,(ix+$03)]
 	cmp.b	d1,d0                            	| [$0f61: cp   b]
 	movem.w	(sp)+,d1/d2                    	| [$0f62: pop  bc]
 	jeq	l_0f16                             	| [$0f63: jp   z,$0F16]
-	exg	d0,d7                              	| [$0f66: ex   af,af']
-	ERROR	"review carry flags used below? if so, adapt"
-	move.b	#0x01,d0                        	| [$0f67: ld   a,$01]
-	move.b	d0,l_804B(a6)                   	| [$0f69: ld   ($804B),a]
-	exg	d0,d7                              	| [$0f6c: ex   af,af']
-	ERROR	"review carry flags used below? if so, adapt"
+	                              	| [$0f66: ex   af,af']
+	                        	| [$0f67: ld   a,$01]
+	move.b	#1,l_804B(a6)                   	| [$0f69: ld   ($804B),a]
+	                              	| [$0f6c: ex   af,af']
 	LOAD_WORD	value16_8069(a6),d3             	| [$0f6d: ld   de,($8069)]
 
 	STORE_WORD	d3,value16_8049(a6)            	| [$0f71: ld   ($8049),de]
@@ -2513,6 +2509,7 @@ l_0fce:
 	jpl	l_0f94                             	| [$0fd3: jp   p,$0F94]
 	jra	l_0f99                             	| [$0fd6: jr   $0F99]
 
+* > C
 l_0fd8:
 	move.b	d1,d0                           	| [$0fd8: ld   a,b]
 	btst.b	#5,d0                           	| [$0fd9: bit  5,a]
@@ -2586,7 +2583,7 @@ l_1034:
 	jra	l_10f6                             	| [$1052: jp   $10F6]
 
 l_1055:
-di
+	jbsr	osd_disable_interrupts   | di
 	btst.b	#7,d0                           	| [$1056: bit  7,a]
 	jeq	l_107c                             	| [$1058: jr   z,$107C]
 	move.b	l_8051(a6),d0                   	| [$105a: ld   a,($8051)]
@@ -2705,7 +2702,7 @@ l_1104:
 	rts                                    	| [$1109: ret  z] [...]
 0:
 
-	move.l	a0,-(sp)                        	| [$110a: push hl]
+	                        	| [$110a: push hl]
 	* it's a pointer but here it's processed as data (MSB address)
 	LOAD_WORD	pointer_8056(a6),d5             	| [$110b: ld   hl,($8056)]
 	move.b	d1,d0                           	| [$110e: ld   a,b]
@@ -2719,7 +2716,7 @@ l_1104:
 	move.b	d0,d5                           	| [$1118: ld   h,a]
 	LOAD_D5_16_FROM_D5D6
 	STORE_WORD	d5,pointer_8056(a6)            	| [$1119: ld   ($8056),hl]
-	move.l	(sp)+,a0                        	| [$111c: pop  hl]
+	                        	| [$111c: pop  hl]
 	move.b	d3,d0                           	| [$111d: ld   a,d]
 	cmp.b	#0x03,d0                         	| [$111e: cp   $03]
 	jne	l_1104                             	| [$1120: jr   nz,$1104]
@@ -2767,7 +2764,6 @@ l_113a:
 
 l_1162:
 	movem.w	d1/d2,-(sp)                    	| [$1162: push bc]
-	move.l	a4,-(sp)                        	| [$1162: push bc]
 	movem.w	d3/d4,-(sp)                    	| [$1163: push de]
 	move.l	a1,-(sp)                        	| [$1163: push de]
 	move.b	#0x20,d1                        	| [$1164: ld   b,$20]
@@ -2798,13 +2794,11 @@ l_117c:
 	jne	l_1169                             	| [$1186: jr   nz,$1169]
 	clr.b	d4                               	| [$1188: ld   e,$00]
 	addq.w	#1,a0                           	| [$118a: inc  l]
-	ERROR	"review inc register d6 or a0"
 	jra	l_1169                             	| [$118b: jr   $1169]
 
 l_118d:
 	move.l	(sp)+,a1                        	| [$118d: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$118d: pop  de]
-	move.l	(sp)+,a4                        	| [$118e: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$118e: pop  bc]
 	addq.b	#1,d3                           	| [$118f: inc  d]
 	rts                                    	| [$1190: ret]
@@ -3275,7 +3269,7 @@ l_13cf:
 	move.b	d0,d1                           	| [$13e1: ld   c,a]
 	btst.b	#7,d0                           	| [$13e2: bit  7,a]
 	jeq	l_13e7                             	| [$13e4: jr   z,$13E7]
-	subq.w	#0x100,d1                           	| [$13e6: dec  b]
+	sub.w	#0x100,d1                           	| [$13e6: dec  b]
 l_13e7:
 	add.w	d1,d5                            	| [$13e7: add  hl,bc]
 	move.w	#-0x08,d1                       	| [$13e8: ld   bc,$FFF8]
@@ -3322,7 +3316,7 @@ l_1426:
 	add.w	d3,a2                            	| [$1426: add  ix,de]
 	subq.b	#1,d1                           	| [...]
 	jne	l_140e                             	| [$1428: djnz $140E]
-ei
+	jbsr	osd_enable_interrupts   | ei
 	rts                                    	| [$142b: ret]
 
 l_142c:
@@ -4019,18 +4013,18 @@ l_183d:
 l_184b:
 	add.b	#0x9F,d0                         	| [$184b: add  a,$9F]
 	move.b	d0,(a0)                         	| [$184d: ld   (hl),a]
-	; TODO write to screen?
+	* TODO write to screen?
 	jbsr	l_188d                            	| [$184e: call $188D]
 	jbsr	move_wrap_pointer_1988                            	| [$1851: call $1988]
 	move.b	#0xAA,(a0)                      	| [$1854: ld   (hl),$AA]
-	; TODO write to screen?
+	* TODO write to screen?
 	jbsr	l_188d                            	| [$1856: call $188D]
 	move.b	l_8250(a6),d0                   	| [$1859: ld   a,($8250)]
 	cmp.b	#0x0A,d0                         	| [$185c: cp   $0A]
 	jne	l_1868                             	| [$185e: jr   nz,$1868]
 	jbsr	move_wrap_pointer_1988                            	| [$1860: call $1988] [uncovered]
 	move.b	#0xAB,(a0)                      	| [$1863: ld   (hl),$AB] [uncovered]
-	; TODO write to screen?
+	* TODO write to screen?
 	jbsr	l_188d                            	| [$1865: call $188D] [uncovered]
 l_1868:
 	move.b	l_8023(a6),d0                   	| [$1868: ld   a,($8023)]
@@ -4043,7 +4037,7 @@ l_1868:
 	cmp.b	#0x81,d0                         	| [$1873: cp   $81]
 	jne	l_187f                             	| [$1875: jr   nz,$187F]
 	move.b	#0xAC,(a0)                      	| [$1877: ld   (hl),$AC]
-	; TODO write to screen?
+	* TODO write to screen?
 	jbsr	l_188d                            	| [$1879: call $188D]
 	move.l	(sp)+,a0                        	| [$187c: pop  hl]
 	jra	l_1896                             	| [$187d: jr   $1896]
@@ -4052,7 +4046,7 @@ l_188d:
 	add.w	#0x800,a0                           	| [$188d: set  3,h]
 	bset.b	#6,(a0)                         	| [$188f: set  6,(hl)]
 	bclr.b	#7,(a0)                         	| [$1891: res  7,(hl)]
-	; TODO write to screen?
+	* TODO write to screen?
 	sub.w	#0x800,a0                           	| [$1893: res  3,h]
 	rts                                    	| [$1895: ret]
 
@@ -4964,7 +4958,7 @@ l_1e1b:
 	exg	a1,a0                              	| [$1e2a: ex   de,hl]
 	move.w	#0x0400,d5                      	| [$1e2b: ld   hl,$0400]
 	STORE_WORD	d5,value16_8069(a6)            	| [$1e2e: ld   ($8069),hl]
-	STORE_WORD	d5,value16_802d(a6)            	| [$1e31: ld   ($802D),hl]
+	STORE_WORD	d5,previous_car_speed_802d(a6)            	| [$1e31: ld   ($802D),hl]
 	                         	| [$1e34: xor  a]
 	clr.b	d0                               	| [$1e34: xor  a]
 	clr.w	d5                           	| [$1e35: ld   h,a]
@@ -5062,7 +5056,7 @@ l_1eb9:
 	move.b	d0,d5                           	| [$1ebe: ld   h,a]
 	move.b	d0,d6                           	| [$1ebf: ld   l,a]
 	LOAD_D5_16_FROM_D5D6
-	STORE_WORD	d5,value16_802d(a6)            	| [$1ec0: ld   ($802D),hl]
+	STORE_WORD	d5,previous_car_speed_802d(a6)            	| [$1ec0: ld   ($802D),hl]
 	STORE_WORD	d5,value16_8069(a6)            	| [$1ec3: ld   ($8069),hl]
 	lea	l_8073(a6),a0                      	| [$1ec6: ld   hl,$8073]
 	STORE_POINTER	a0,pointer_8002(a6)            	| [$1ec9: ld   ($8002),hl]
@@ -5902,20 +5896,20 @@ boot_sequence_384C:
 	move.b	d0,l_A185(a6)                   	| [$38c3: ld   ($A185),a]
 	lea	l_02A0(a6),a0                      	| [$38c6: ld   hl,$02A0]
 	STORE_POINTER	a0,value16_8069(a6)            	| [$38c9: ld   ($8069),hl]
-im   2
+*im   2
 	move.b	#0x3F,d0                        	| [$38ce: ld   a,$3F]
 	move.b	d0,i                            	| [$38d0: ld   i,a]
 	move.b	#0xFE,d0                        	| [$38d2: ld   a,$FE]
-out  ($00),a
+*out  ($00),a
 	move.b	#0x01,d0                        	| [$38d6: ld   a,$01]
 	                   	| [$38d8: ld   ($A181),a]
 	move.b	d0,l_A182(a6)                   	| [$38db: ld   ($A182),a]
-ei
+	jbsr	osd_enable_interrupts   | ei
 l_38df:
 	move.b	dsw_a100(a6),d0                 	| [$38df: ld   a,(dsw_a100)]
 	btst.b	#0,d0                           	| [$38e2: bit  0,a]
 	jeq	l_38df                             	| [$38e4: jr   z,$38DF]
-di
+	jbsr	osd_disable_interrupts   | di
 	CLEAR_XC_FLAGS                         	| [$38e7: xor  a]
 	clr.b	d0                               	| [$38e7: xor  a]
 	                   	| [$38e8: ld   ($A181),a]
@@ -5997,18 +5991,19 @@ l_3951:
 	subq.b	#1,d1                           	| [...]
 	jne	l_3950                             	| [$3957: djnz $3950]
 l_3959:
-	lea	p1_a000(a6),a0                     	| [$3959: ld   hl,p1_a000]
-	move.b	#2,d1                      	| [$395c: ld   bc,$0200]
-	moveq	#0,d2                      	| [$395c: ld   bc,$0200]
-l_395f:
-	move.b	d2,(a0)+                         	| [$395f: ld   (hl),c]
-	                           	| [$3960: inc  l]
-	jne	l_395f                             	| [$3961: jr   nz,$395F]
-	addq.b	#1,d5                           	| [$3963: inc  h]
-	ERROR "D5/A0"
-	subq.b	#1,d1                           	| [...]
-	jne	l_395f                             	| [$3964: djnz $395F]
-	rts                                    	| [$3966: ret] [disabled] continues to 3967
+	rts
+	* reset registers, not needed
+*	lea	p1_a000(a6),a0                     	| [$3959: ld   hl,p1_a000]
+*	move.b	#2,d1                      	| [$395c: ld   bc,$0200]
+*	moveq	#0,d2                      	| [$395c: ld   bc,$0200]
+*l_395f:
+*	move.b	d2,(a0)+                         	| [$395f: ld   (hl),c]
+*	                           	| [$3960: inc  l]
+*	jne	l_395f                             	| [$3961: jr   nz,$395F]
+*	add.w	#0x100,a0                           	| [$3963: inc  h]
+*	subq.b	#1,d1                           	| [...]
+*	jne	l_395f                             	| [$3964: djnz $395F]
+*	rts                                    	| [$3966: ret] [disabled] continues to 3967
 
 * another memory copy sequence
 resume_boot_3967:
@@ -6032,7 +6027,7 @@ l_3973:
 	cmp.b	d2,d0                            	| [$397d: cp   c]
 	jne	l_398f                             	| [$397e: jr   nz,$398F]
 	addq.w	#1,a1                           	| [$3980: inc  de]
-	ERROR	"review de / d or e mixup"
+	LOAD_D3D4_FROM_A1
 	move.b	d4,d0                           	| [$3981: ld   a,e]
 	cmp.b	#0xFD,d0                         	| [$3982: cp   $FD]
 	jcs	l_396d                             	| [$3984: jr   c,$396D]
@@ -6048,15 +6043,15 @@ l_3992:
 	lea	l_8486(a6),a0                      	| [$3997: ld   hl,$8486]
 l_399a:
 	move.b	#0x4D,(a0)                      	| [$399a: ld   (hl),$4D]
-	subq.w	#1,a0                           	| [$399c: dec  l]
-	move.b	d1,(a0)                         	| [$399d: ld   (hl),b]
-	subq.w	#1,a0                           	| [$399e: dec  l]
-	move.b	#0x52,(a0)                      	| [$399f: ld   (hl),$52]
+	                           	| [$399c: dec  l]
+	move.b	d1,-(a0)                         	| [$399d: ld   (hl),b]
+	                           	| [$399e: dec  l]
+	move.b	#0x52,-(a0)                      	| [$399f: ld   (hl),$52]
 	cmp.b	#0x4B,d0                         	| [$39a1: cp   $4B]
 	bne.b	0f                               	| [...]
 	rts                                    	| [$39a3: ret  z] jumps to 39B1 [...]
 0:
-* error: reset
+* problem: reset
 l_39a4:
 	            	| [$39a4: ld   (watchdog_a080),a] [uncovered]
 	move.b	dsw_a100(a6),d0                 	| [$39a7: ld   a,(dsw_a100)] [uncovered]
@@ -6074,6 +6069,7 @@ l_39b3:
 l_39b6:
 	            	| [$39b6: ld   (watchdog_a080),a]
 l_39b9:
+	ILLEGAL
 	move.b	d4,d0                           	| [$39b9: ld   a,e]
 	ror.b	#4,d0                            	| [$39ba: rrca] * 4
 	add.b	d4,d0                            	| [$39be: add  a,e]
@@ -6088,11 +6084,10 @@ l_39b9:
 	move.b	d0,d4                           	| [$39c7: ld   e,a]
 	addq	#1,a0											| [$39c8: inc  l]
 	jne	l_39b9                             	| [$39c9: jr   nz,$39B9]
-	ERROR		"mixup D5/A0"
 	addq.b	#1,d5                           	| [$39cb: inc  h]
 	subq.b	#1,d1                           	| [...]
 	jne	l_39b6                             	| [$39cc: djnz $39B6]
-	subq.b	#4,sp                           	| [$39ce: dec  sp] * 4
+	                           	| [$39ce: dec  sp] * 4
 	move.l	(sp)+,a0                        	| [$39d2: pop  hl]
 	move.l	(sp)+,a4                        	| [$39d3: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$39d3: pop  bc]

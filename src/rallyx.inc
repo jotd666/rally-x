@@ -76,19 +76,38 @@
 	lea	(a6,d5.l),a0
 	.endm
 	
+	.macro	LOAD_A1_FROM_D3_16
+	lea	(a6,d3.l),a1
+	.endm
+	
 	.macro	LOAD_D5_16_FROM_A0
 	move.l	a0,d5
 	sub.l	a6,d5
 	.ifndef	RELEASE
 	jpl		okay\@
 	BREAKPOINT	"invalid a0 base"
-okay\@
+okay\@:
+	.endif
+	.endm
+	
+	.macro	LOAD_D3_16_FROM_A1
+	move.l	a1,d3
+	sub.l	a6,d3
+	.ifndef	RELEASE
+	jpl		okay\@
+	BREAKPOINT	"invalid a1 base"
+okay\@:
 	.endif
 	.endm
 	
 	.macro	LOAD_D5D6_FROM_A0
 	LOAD_D5_16_FROM_A0
 	LOAD_D5D6_FROM_D5_16
+	.endm
+
+	.macro	LOAD_D3D4_FROM_A1
+	LOAD_D3_16_FROM_A1
+	LOAD_D3D4_FROM_D3_16
 	.endm
 
 	.macro	LOAD_A0_FROM_D5D6
