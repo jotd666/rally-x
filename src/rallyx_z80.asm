@@ -1773,6 +1773,12 @@ irq_0069:
 0DA7: 20 E7       jr   nz,$0D90
 0DA9: C9          ret
 
+0DAA: E5          push hl
+0DAB: 21 F4 89    ld   hl,$89F4
+0DAE: CB EE       set  5,(hl)
+0DB0: E1          pop  hl
+0DB1: C9          ret
+
 0DB2: E5          push hl
 0DB3: D5          push de
 0DB4: C5          push bc
@@ -3119,6 +3125,18 @@ irq_0069:
 170A: 32 B7 81    ld   ($81B7),a    ; [uncovered] 
 170D: C3 2A 17    jp   $172A    ; [uncovered] 
 
+1710: CD 54 17 call $1754           ; [uncovered]
+1713: 3E 01    ld   a,$01           ; [uncovered]
+1715: 32 B7 81 ld   ($81B7),a       ; [uncovered]
+1718: 21 0E 80 ld   hl,$800E        ; [uncovered]
+171B: 3A B2 81 ld   a,($81B2)       ; [uncovered]
+171E: CB 47    bit  0,a             ; [uncovered]
+1720: C2 2A 17 jp   nz,$172A        ; [uncovered]
+1723: 7E       ld   a,(hl)          ; [uncovered]
+1724: 23       inc  hl              ; [uncovered]
+1725: 23       inc  hl              ; [uncovered]
+1726: BE       cp   (hl)            ; [uncovered]
+1727: CA BD 07 jp   z,$07BD         ; [uncovered]
 172A: 2A 8A 89    ld   hl,($898A)
 172D: 7E          ld   a,(hl)
 172E: E6 03       and  $03
@@ -3297,6 +3315,15 @@ irq_0069:
 187C: E1          pop  hl
 187D: 18 17       jr   $1896
 
+187F: E1       pop  hl           ; [uncovered]
+1880: 11 20 00 ld   de,$0020     ; [uncovered]
+1883: 19       add  hl,de        ; [uncovered]
+1884: 7C       ld   a,h          ; [uncovered]
+1885: E6 07    and  $07          ; [uncovered]
+1887: F6 84    or   $84          ; [uncovered]
+1889: 67       ld   h,a          ; [uncovered]
+188A: E5       push hl           ; [uncovered]
+188B: 18 E5    jr   $1872        ; [uncovered]
 188D: CB DC       set  3,h
 188F: CB F6       set  6,(hl)
 1891: CB BE       res  7,(hl)
@@ -4959,6 +4986,9 @@ resume_boot_3967:
 3988: 32 8B 84    ld   ($848B),a
 398B: 3E 4B       ld   a,$4B
 398D: 18 03       jr   $3992
+
+398F: 7B       ld   a,e
+3990: D6 F8    sub  $F8
 
 ; displays "ROM OK"
 3992: 32 8C 84    ld   ($848C),a
