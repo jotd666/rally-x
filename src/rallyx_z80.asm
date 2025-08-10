@@ -1604,6 +1604,20 @@ irq_0069:
 0C94: 34          inc  (hl)
 0C95: C3 7A 0A    jp   $0A7A
 
+0C98: FD 7E 0C    ld   a,(iy+$0c)      ; [uncovered]
+0C9B: DD 96 0C    sub  (ix+$0c)        ; [uncovered]
+0C9E: 57          ld   d,a             ; [uncovered]
+0C9F: 30 02       jr   nc,$0CA3        ; [uncovered]
+0CA1: ED 44       neg                  ; [uncovered]
+0CA3: 5F          ld   e,a             ; [uncovered]
+0CA4: FD 7E 0E    ld   a,(iy+$0e)      ; [uncovered]
+0CA7: DD 96 0E    sub  (ix+$0e)        ; [uncovered]
+0CAA: 67          ld   h,a             ; [uncovered]
+0CAB: 30 02       jr   nc,$0CAF        ; [uncovered]
+0CAD: ED 44       neg                  ; [uncovered]
+0CAF: 6F          ld   l,a             ; [uncovered]
+0CB0: C9          ret                  ; [uncovered]
+
 0CB1: C5          push bc
 0CB2: 4F          ld   c,a
 0CB3: E5          push hl
@@ -3159,6 +3173,24 @@ irq_0069:
 174E: 01 18 00    ld   bc,$0018
 1751: ED B0       ldir
 1753: C9          ret
+
+1754: 2B          dec  hl
+1755: 36 01       ld   (hl),$01
+1757: 2B          dec  hl
+1758: 46          ld   b,(hl)
+1759: 2B          dec  hl
+175A: AF          xor  a
+175B: 77          ld   (hl),a
+175C: 21 18 1F    ld   hl,$1F18
+175F: 11 88 89    ld   de,$8988
+1762: 78          ld   a,b
+1763: 01 16 00    ld   bc,$0016
+1766: A7          and  a
+1767: 28 02       jr   z,$176B
+1769: 03          inc  bc
+176A: 03          inc  bc
+176B: ED B0       ldir
+176D: C9          ret
 
 176E: 3E 20       ld   a,$20
 1770: 90          sub  b

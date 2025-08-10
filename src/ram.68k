@@ -1,0 +1,105 @@
+	.global infinite_lives_flag
+	.global invincible_flag
+	.global start_level
+	.global vb_ticks_count
+	.global break_at_startup_flag
+	.global log_ptr
+	.global	i_reg
+	.global	iyl
+	.global	iyh
+	.global	ixl
+	.global highscore_needs_saving_flag
+	.global	regscopy
+	.global	mem_buffer
+	.global vbl_sync_counter
+	.global vbl_sync_flag
+	.global no_sync_flag
+	.ifndef	RELEASE
+	.global ram_start_8000
+	.global mem_start_0000
+	.endif
+	
+	.ifdef   __amiga__
+	.ascii	"RAM_STRT"
+	.ifndef	RELEASE
+	.endif
+	.else
+	* Neogeo: needs different writable section from ROM code
+    .bss
+	.endif
+
+	.align	2
+
+	
+
+mem_buffer:
+	.ifdef	RELEASE
+	.skip	0x10000
+	.else
+	.skip	0x20000
+mem_start_0000:
+	.long	0
+ram_start_8000:
+	.long	0
+	.endif
+
+	
+
+high_score_beaten:
+	.word	0
+stack_top:
+	.long	0
+sprite_ram_9000:
+	.skip	0x500
+	
+regscopy:
+	.skip	56
+
+i_reg:
+	.byte	0
+skip_intro_flag:
+	.byte	0
+
+invincible_flag:
+	.byte	0
+infinite_lives_flag:
+	.byte	0
+infinite_time_flag:
+	.byte	0
+music_off_flag:
+	.byte 	0
+
+	.ifndef	RELEASE
+log_ptr:
+	.long	0x100
+	.endif
+	
+highscore_needs_saving_flag:
+	.byte	0
+vb_ticks_count:
+	.byte	0
+current_ticks_count:
+	.byte	0
+vbl_sync_flag:
+	.byte	0
+vbl_sync_counter:
+	.byte	0
+iyh:
+	.byte	0
+iyl:
+	.byte	0
+ixl:
+	.byte	0
+no_sync_flag:
+	.byte 	0
+break_at_startup_flag:
+	.byte	0
+
+* maybe sound-related?? maybe useless
+
+start_level:
+	.byte	0
+	.ascii	"RAM_END!"
+
+
+	
