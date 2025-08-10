@@ -5,7 +5,7 @@
 
 ;CHIP_ONLY
 
-EXPMEM = $70000
+EXPMEM = $80000
 CHIPSIZE = $80000
 
 _base	SLAVE_HEADER					; ws_security + ws_id
@@ -67,10 +67,10 @@ DECL_VERSION:MACRO
 	ENDC
 	ENDM
 _data   dc.b    0
-_name	dc.b	"Lock'N'Chase",0
+_name	dc.b	"Rally'X",0
 _copy	dc.b	'2025 JOTD',0
 _info
-    dc.b    "Original by Data East 1981",0
+    dc.b    "Original by Namco 1980",0
 	dc.b	0
 _kickname   dc.b    0
 ;--- version id
@@ -135,9 +135,8 @@ _resload:
 	dc.l	0
 progstart
     dc.l    0
-	; 020 exe just uses CCR instead of SR. Not a problem in
-	; supervisor mode
+
 exe:
-	dc.b	"locknchase_000",0
+	dc.b	"rallyx",0
 
 	

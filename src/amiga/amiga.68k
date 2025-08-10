@@ -176,7 +176,6 @@ w\@:
 	.global		_dosbase
 	.global		cheat_used
 * osd layer		
-	.global osd_interrupt_control
 	.global osd_break		| for debug	
 	.global osd_blitz		| for debug
 	.global osd_read_dsw
@@ -367,23 +366,23 @@ _user:
 	bsr		set_background_bitplanes
 	bsr		set_bobs_bitplanes
 
-	move.w	#TOTAL_NB_COLORS,d0
-	lea		playfield_palette,a0
-	lea		game_colors,a1
-	bsr		load_palette
-	move.w	#TOTAL_NB_COLORS,d0
-	lea		playfield_palette,a0
-	lea		background_colors,a1
-	bsr		load_palette
-	move.w	#TOTAL_NB_COLORS,d0
-	lea		playfield_palette,a0
-	lea		sprite_colors,a1
-	bsr		load_palette
-	* load same colors again to be safe
-	move.w	#TOTAL_NB_COLORS,d0
-	lea		playfield_palette,a0	| skip 8 copper writes
-	lea		sprite_colors+32,a1
-	bsr		load_palette
+*	move.w	#TOTAL_NB_COLORS,d0
+*	lea		playfield_palette,a0
+*	lea		game_colors,a1
+*	bsr		load_palette
+*	move.w	#TOTAL_NB_COLORS,d0
+*	lea		playfield_palette,a0
+*	lea		background_colors,a1
+*	bsr		load_palette
+*	move.w	#TOTAL_NB_COLORS,d0
+*	lea		playfield_palette,a0
+*	lea		sprite_colors,a1
+*	bsr		load_palette
+*	* load same colors again to be safe
+*	move.w	#TOTAL_NB_COLORS,d0
+*	lea		playfield_palette,a0	| skip 8 copper writes
+*	lea		sprite_colors+32,a1
+*	bsr		load_palette
 	
 
 	move.l	cheat_flags,d0
@@ -673,8 +672,8 @@ demo_game:
 	* enable interrupts. Game doesn't use them
 	* but relies on vbl sync flags
 	*jbsr	cpu_init		| zero all registers
-	moveq	#1,d0
-	jbsr	osd_interrupt_control
+
+	jbsr	osd_disable_interrupts
 	jmp			rallyx_reset					| pass control to the mpatrol core
 		
 	
@@ -789,6 +788,21 @@ _vblank:
 
 log_used_tiles:
 	* scan the whole screen, see what was updated
+	GET_MEMORY_BLOCKS_IN_A5_A6
+	add.w	#0x400,a5
+	lea	(0x800,a5),a4
+	* main screen
+	lea	main_tile_log_table,a0
+	move.w	#0x3FF,d7
+0:
+	moveq	#0,d1
+	moveq	#0,d0
+	move.b	(a5,d7.w),d0	| tile code
+	move.b	(a4,d7.w),d1	| tile attribute
+	lsl.w	#5,d0			| tile code * 32
+	add.w	d1,d0			| add clut
+	st.b	(a0,d0.w)
+	dbf		d7,0b
 	rts
 	
 osd_blitz:
@@ -973,8 +987,8 @@ update_bobs_and_hw_sprites:
 	lea	sprite_memory,a0
 	lea	HW_SpriteYTable_16,a1
 	lea	game_sprites+2,a3
-	lea	sprite_type_table,a2
-	lea	sprite_table,a4
+	*lea	sprite_type_table,a2
+	*lea	sprite_table,a4
 	moveq	#0,d6
 	moveq	#NB_TARGET_SPRITES-1,d7
 1:
@@ -1039,7 +1053,7 @@ update_bobs_and_hw_sprites:
     lea _custom,A5
 	move.l	bob_previous_drawed_sprites(pc),a6
 	lea		bob_table,a4
-	lea	sprite_type_table,a2
+	*lea	sprite_type_table,a2
 	
 	moveq	#NB_TARGET_SPRITES-1,d7
 1:
@@ -1721,118 +1735,8 @@ load_palette:
 
 	
 	
-
-* 60Hz VBLANK interrupt (also keyboard)
-* only called at bootup, not from interrupts (at least!!)
-osd_interrupt_control:
-	tst.b	d0
-	jeq		0f
-	move.w	#0xC038,_custom+intena
-	rts
-0:
-	move.w	#0x0030,_custom+intena
-	rts
 	
-	
-* write to 0x4003 to issue a sound
-* track down those writes in MAME debugger: wpset 4003,1,W,,{printf "%d",A;g}
-* < D0: sound code
-osd_sound_command:
-	move.w	d0,-(a7)
-	and.w	#0x3F,d0	| just in case
-	jne		0f
-	jbsr	force_sound_stop
-	jra		1f
-0:
-	lea		sound_indirection_table(pc),a1
-	move.b	(a1,d0.w),d0
-	jmi		1f
 
-	* avoid enemy spray sound repeat (plays continuously)
-*	cmp.b	#ENEMY_SPRAYED_SND,d0
-*	jne		2f
-*	cmp.b	previous_sound,d0
-*	jeq		1f
-*2:
-	move.b	d0,previous_sound
-	jbsr	osd_sound_start
-1:
-	.ifndef	RELEASE
-	cmp.b	#-1,d0
-	jne		1f
-	move.w	d2,-(a7)
-	move.w	(2,a7),d2
-	BREAKPOINT	"unmapped sound (in D2)"
-	move.w	(a7)+,d2
-1:
-	.endif
-	move.w	(a7)+,d0
-	rts
-
-previous_sound:
-	.word	-1
-	
-sound_indirection_table:
-    .byte    -1   | 0
-
-    .byte    -1   | 31
-    .byte    -2   | 32 climbing, order is given but sound is silent!
-    .byte    -2   | 33 walking, order is given but sound is silent!
-    .byte    -1   | 34
-    .byte    -1   | 35
-    .byte    -1   | 36
-    .byte    -1   | 37
-    .byte    -1   | 38
-    .byte    -1   | 39
-    .byte    -1   | 40
-    .byte    -1   | 41
-    .byte    -1   | 42
-    .byte    -1   | 43
-    .byte    -1   | 44
-    .byte    -1   | 45
-    .byte    -1   | 46
-    .byte    -1   | 47
-    .byte    -1   | 48
-    .byte    -1   | 49
-    .byte    -1   | 50
-    .byte    -1   | 51
-    .byte    -1   | 52
-    .byte    -1   | 53
-    .byte    -1   | 54
-    .byte    -1   | 55
-    .byte    -1   | 56
-    .byte    -1   | 57
-    .byte    -1   | 58
-    .byte    -1   | 59
-    .byte    -1   | 60
-    .byte    -1   | 61
-    .byte    -1   | 62
-    .byte    -1   | 63
-	
-* python code to switch between 0x1000-0x17FF <=> 0x1800-0x2000
-*def wrap_address(a):
-*    # 0x1182 => 0x184C
-*    q,r = divmod(a&0xFFF,32)
-*    return (0x1800+(32*r)+(q))
-*
-*def unwrap_address(a):
-*    offset = a-0x1800
-*    q,r = divmod(offset,32)
-*    return (0x1000+(32*r)+q)
-
-mirrored_videoram:
-	* compute valid 0x3C00-0x3FFF un-mirror
-	sub.w	#MIRROR_ADDRESS,d7
-	move.w	d7,d1		| save
-	lsr.w	#5,d7		| quotient
-	and.w	#0x1F,d1
-	lsl.w	#5,d1
-	add.w	d1,d7
-	* update A0 as well to unmirrored ram 
-	move.l	a6,a0
-	add.w	#SPRITE_ADDRESS,d7
-	add.w	d7,a0
-	rts
 	
 * a0=screen tile/attr address (preserved)
 * a5=ram base
@@ -2770,17 +2674,30 @@ osd_log_cpu:
 	
 
 
-
 osd_dump_logs:
 	move.w	sr,-(a7)
 	move.w	#0x2700,SR
 	movem.l	d0-a6,-(a7)
+	move.l	_resload,a2
+*	lea		sprite_log_table,a1
+*	lea		sprite_log_name(pc),a0
+*	move.l	#16*NB_POSSIBLE_SPRITES,d0
+*	jbsr	resload_SaveFile(a2)
+	
+	move.l	_resload,a2
+	lea		main_tile_log_table,a1
+	lea		character_log_name(pc),a0
+	move.l	#32*256,d0
+	jbsr	resload_SaveFile(a2)
+		
 	
 	jbsr	save_cpu_log
 	
     movem.l (a7)+,d0-a6
 	move.w	(a7)+,SR
 	rts
+
+
 
 save_cpu_log:
 	move.l	_resload,a2
@@ -2801,6 +2718,11 @@ save_cpu_log:
 
 cpu_log_name:
 	.asciz	"cpu_log"
+
+sprite_log_name:
+	.asciz	"used_sprites"
+character_log_name:
+	.asciz	"used_tiles"
 	.align	2
 	.endif	
 
@@ -3018,21 +2940,16 @@ _end_of_ng_code:
 	.ifndef	RELEASE
 	* easier to debug game to have memory aligned on 0x10000
 	.align	0x10000
-
-	.ifne	OPT_ENABLE_LOGGING
-	.section	.bss
-	.ascii	"TILE"
-tile_log_table:
-	* 32 cluts, 1024 tiles
-	* a lot of combinations aren't used (fortunately!)
-	ds.w	0x10000
-	.endif
-	.endif
-	.ascii	"CODE_END"
-
-	.ifndef	RELEASE
 log_ptr:
 	.long	log_buffer
+
+	.section	.bss
+
+main_tile_log_table:
+	* 32 cluts, 256 tiles
+	* a lot of combinations aren't used (fortunately!)
+	.skip	32*256
+
 
 log_buffer:
 	.skip	LOG_BUFFER_SIZE
