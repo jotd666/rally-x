@@ -70,7 +70,7 @@ OPT_ENABLE_LOGGING = 0
 	.endif
 	
 
-OPT_ENABLE_DOUBLE_BUFFERING = 1
+OPT_ENABLE_DOUBLE_BUFFERING = 0
 
 _custom = 0xDFF000
 
@@ -367,14 +367,15 @@ _user:
 	bsr		set_background_bitplanes
 	bsr		set_bobs_bitplanes
 
-*	move.w	#TOTAL_NB_COLORS,d0
-*	lea		playfield_palette,a0
-*	lea		game_colors,a1
-*	bsr		load_palette
-*	move.w	#TOTAL_NB_COLORS,d0
-*	lea		playfield_palette,a0
-*	lea		background_colors,a1
-*	bsr		load_palette
+	move.w	#TOTAL_NB_COLORS,d0
+	lea		main_palette,a0
+	lea		main_colors,a1
+	bsr		load_palette
+	move.w	#TOTAL_NB_COLORS,d0
+	lea		main_palette,a0
+	lea		status_colors,a1
+	bsr		load_palette
+	
 *	move.w	#TOTAL_NB_COLORS,d0
 *	lea		playfield_palette,a0
 *	lea		sprite_colors,a1
@@ -800,7 +801,9 @@ log_used_tiles:
 	moveq	#0,d1
 	moveq	#0,d0
 	move.b	(a5,d7.w),d0	| tile code
+
 	move.b	(a4,d7.w),d1	| tile attribute
+	and.b	#0x1F,d1		| remove flip/mirror
 	lsl.w	#5,d0			| tile code * 32
 	add.w	d1,d0			| add clut
 	st.b	(a0,d0.w)
@@ -1753,6 +1756,7 @@ osd_w_videoram:
 0:
 	* only update if needed
 	move.b	d0,(a0)
+
 	
 	movem.l	d0-d7/a0-a2,-(a7)
 	move.l	a0,d7		| save address
@@ -1849,6 +1853,8 @@ compute_tile_xy:
 * < D1: tile attribute
 
 update_main_tile:
+	moveq	#0,d2
+	moveq	#0,d3
 	move.b	d0,d2	| code
 	move.b	d1,d3	| attribute
 	and.w	#0x1F,d3	| color  ???
@@ -1856,7 +1862,6 @@ update_main_tile:
 
 	bsr		compute_tile_xy
 	
-	lea		character_table,a0
 
 	
 	* updating bitplanes
@@ -1871,6 +1876,11 @@ update_main_tile:
 	add.w	d1,d0
 	add.w	d0,a1
 
+	* optim: 0x40 is blank
+	cmp.b	#0x40,d2
+	jeq		111f
+
+	lea		character_table,a0
 
 	
 	add.w	d2,d2
@@ -2026,6 +2036,8 @@ mirror_flipped_tile:
 2:
 	rts
 	
+empty_tile:
+
 mirror_jump_table:
 	.long	standard_tile
 	.long	flipped_tile
@@ -3045,9 +3057,9 @@ background_bitplanes:
 	* priority: BOBs playfield on top
 	.word	bplcon2,BASE_BPLCON2_VALUE
 
-background_colors:
+status_colors:
 	DECL_COLORS	0,8
-game_colors:
+main_colors:
 	DECL_COLORS	8,8
 	
 sprite_colors:

@@ -1,9 +1,10 @@
 from PIL import Image,ImageOps
-import os,sys,bitplanelib,pathlib
+import os,sys,bitplanelib,pathlib,json
 
 this_dir = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
 
 src_dir = this_dir / ".." / ".." / "src" / "amiga"
+used_graphics_dir = this_dir / "used_graphics"
 
 sprite_names = dict()
 
@@ -19,6 +20,48 @@ if dump_it:
         os.mkdir(dump_dir)
         with open(dump_dir / ".gitignore","w") as f:
             f.write("*")
+
+def add_tile(table,index,cluts=[0]):
+    if isinstance(index,range):
+        pass
+    elif not isinstance(index,(list,tuple)):
+        index = [index]
+    for idx in index:
+        table[idx] = cluts
+
+sprite_cluts = {}
+tile_cluts = {}
+
+try:
+    with open(used_graphics_dir / "used_sprites","rb") as f:
+        for index in range(NB_SPRITES):
+            d = f.read(16)
+            cluts = [i for i,c in enumerate(d) if c]
+            if cluts:
+                add_tile(sprite_cluts,index,cluts=cluts)
+except OSError:
+    print("Cannot find used_sprites")
+
+
+try:
+    with open(used_graphics_dir / "used_tiles","rb") as f:
+        for index in range(NB_TILES):
+            d = f.read(32)  # nb cluts aligned with 32
+            cluts = [i for i,c in enumerate(d) if c]
+            if cluts:
+                add_tile(tile_cluts,index,cluts=cluts)
+except OSError:
+    pass
+
+
+if dump_it:
+
+        with open(dump_dir / "used_sprites.json","w") as f:
+            sprite_cluts_dict = {hex(k):[hex(x) for x in v] for k,v in sprite_cluts.items() if v}
+            json.dump(sprite_cluts_dict,f,indent=2)
+        with open(dump_dir / "used_tiles.json","w") as f:
+            tile_cluts_dict = {hex(k):[hex(x) for x in v] for k,v in tile_cluts.items() if v}
+            json.dump(tile_cluts_dict,f,indent=2)
 
 
 def dump_asm_bytes(*args,**kwargs):
@@ -56,11 +99,10 @@ def load_tileset(image_name,palette_index,side,tileset_name,dumpdir,dump=False,n
     for j in range(nb_rows):
         for i in range(nb_cols):
 
-            if cluts and palette_index not in cluts[tile_number]:
+            if cluts and palette_index not in cluts.get(tile_number,[]):
                 # no clut declared for that tile
                 tileset_1.append(None)
             else:
-
                 img = Image.new("RGB",(side,side))
                 img.paste(tiles_1,(-i*side,-j*side))
 
@@ -145,7 +187,7 @@ tile_palette = set()
 tile_set_list = []
 
 for i,tsd in tile_sheet_dict.items():
-    tp,tile_set = load_tileset(tsd,i,8,"tiles",dump_dir,dump=dump_it,name_dict=None)
+    tp,tile_set = load_tileset(tsd,i,8,"tiles",dump_dir,dump=dump_it,name_dict=None,cluts=tile_cluts)
     tile_set_list.append(tile_set)
     tile_palette.update(tp)
 
@@ -164,8 +206,12 @@ hw_sprite_set_list = []
 ##    _,hw_sprite_set = load_tileset(tsd,i,16,"hw_sprites",dump_dir,dump=dump_it,name_dict=sprite_names,cluts=cluts)
 ##    hw_sprite_set_list.append(hw_sprite_set)
 
+orange = (222,151,71)
+tile_palette = sorted(tile_palette)
+tile_palette.remove(orange)
+tile_palette = [orange]+tile_palette
 
-full_palette = sorted(sprite_palette | tile_palette)[1:]
+full_palette = sorted(sprite_palette)
 
 
 #full_palette_rgb4 = {(x>>4,y>>4,z>>4) for x,y,z in full_palette}
@@ -243,13 +289,16 @@ def read_tileset(img_set_list,palette,plane_orientation_flags,cache,is_bob):
     return new_tile_table
 
 tile_plane_cache = {}
-tile_table = read_tileset(tile_set_list,full_palette,[True,False,False,False],cache=tile_plane_cache, is_bob=False)
+tile_table = read_tileset(tile_set_list,tile_palette,[True,False,False,False],cache=tile_plane_cache, is_bob=False)
 
 ##bob_plane_cache = {}
 ##sprite_table = read_tileset(sprite_set_list,full_palette,[True,False,True,False],cache=bob_plane_cache, is_bob=True)
 
 with open(os.path.join(src_dir,"palette.68k"),"w") as f:
-    bitplanelib.palette_dump(full_palette,f,bitplanelib.PALETTE_FORMAT_ASMGNU)
+    f.write("main_palette:\n")
+    bitplanelib.palette_dump(tile_palette,f,bitplanelib.PALETTE_FORMAT_ASMGNU)
+    f.write("status_palette:\n")
+    #bitplanelib.palette_dump(tile_palette,f,bitplanelib.PALETTE_FORMAT_ASMGNU)
 
 with open(os.path.join(src_dir,"graphics.68k"),"w") as f:
     f.write("\t.global\tcharacter_table\n")
@@ -259,14 +308,14 @@ with open(os.path.join(src_dir,"graphics.68k"),"w") as f:
 
     for i,tile_entry in enumerate(tile_table):
         f.write("\t.long\t")
-        if tile_entry:
+        if any(tile_entry):
             f.write(f"tile_{i:02x}")
         else:
             f.write("0")
         f.write("\n")
 
     for i,tile_entry in enumerate(tile_table):
-        if tile_entry:
+        if any(tile_entry):
             f.write(f"tile_{i:02x}:\n")
             for j,t in enumerate(tile_entry):
                 f.write("\t.long\t")
