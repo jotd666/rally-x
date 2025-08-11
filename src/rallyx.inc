@@ -86,6 +86,11 @@ skip\@:
 	BREAK_IF_IN_SCREEN	d5
 	lea	(a6,d5.l),a0
 	.endm
+
+	* no "not in screen" macro load check
+	.macro	LOAD_A0_FROM_D5_16_SCREEN
+	lea	(a6,d5.l),a0
+	.endm
 	
 	.macro	LOAD_A1_FROM_D3_16
 	BREAK_IF_IN_SCREEN	d3
@@ -125,6 +130,11 @@ okay\@:
 	.macro	LOAD_A0_FROM_D5D6
 	LOAD_D5_16_FROM_D5D6
 	LOAD_A0_FROM_D5_16
+	.endm
+
+	.macro	LOAD_A0_FROM_D5D6_SCREEN
+	LOAD_D5_16_FROM_D5D6
+	LOAD_A0_FROM_D5_16_SCREEN
 	.endm
 
 

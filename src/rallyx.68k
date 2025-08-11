@@ -241,6 +241,7 @@ l_0108:
 	LOAD_D3_16_FROM_D3D4
 	add.w	d3,d5                            	| [$010e: add  hl,de]
 	LOAD_D5D6_FROM_D5_16
+	LOAD_D3D4_FROM_D3_16
 	move.b	d6,(0x03,a2)                    	| [$010f: ld   (ix+$03),l]
 	move.b	d5,(0x04,a2)                    	| [$0112: ld   (ix+$04),h]
 	move.b	d5,d0                           	| [$0115: ld   a,h]
@@ -265,6 +266,7 @@ l_012d:
 	jeq	l_0136                             	| [$0131: jr   z,$0136]
 	addq.b	#1,(0x0a,a2)                    	| [$0133: inc  (ix+$0a)]
 l_0136:
+	* TODO optimize
 	add.b	(0x0b,a2),d0                     	| [$0136: add  a,(ix+$0b)]
 	scs		d7
 	move.b	d0,(0x0b,a2)                    	| [$0139: ld   (ix+$0b),a]
@@ -2356,6 +2358,7 @@ advance_hl_and_de_0e6c:
 	movem.w	(sp)+,d1/d2                    	| [$0e7d: pop  bc]
 	rts                                    	| [$0e7e: ret]
 
+* > D5/D6
 l_0e7f:
 	move.b	l_804D(a5),d0                   	| [$0e7f: ld   a,($804D)]
 	add.b	d1,d0                            	| [$0e82: add  a,b]
@@ -5054,6 +5057,7 @@ write_instructions_text_1e1b:
 	move.b	d0,l_8048(a5)                   	| [$1e21: ld   ($8048),a]
 	                   	| [$1e24: ld   ($A181),a]
 	move.b	d0,l_806B(a5)                   	| [$1e27: ld   ($806B),a]
+	* get input (text to display) in A1
 	exg	a1,a0                              	| [$1e2a: ex   de,hl]
 	move.w	#0x0400,d5                      	| [$1e2b: ld   hl,$0400]
 	STORE_WORD	d5,value16_8069(a5)            	| [$1e2e: ld   ($8069),hl]
@@ -5080,9 +5084,9 @@ l_1e4b:
 	lea	l_8068(a5),a2                      	| [$1e53: ld   ix,$8068]
 	move.b	#0x01,(0x0b,a2)                 	| [$1e57: ld   (ix+$0b),$01]
 	move.b	#0xF0,(0x0c,a2)                 	| [$1e5b: ld   (ix+$0c),$F0]
-	move.b	(a1),d0                         	| [$1e5f: ld   a,(de)]
+	move.b	(a1)+,d0                         	| [$1e5f: ld   a,(de)]
 	move.b	d0,d2                           	| [$1e60: ld   c,a]
-	addq.w	#1,a1                           	| [$1e61: inc  de]
+										| [$1e61: inc  de]
 	move.b	(a1),d0                         	| [$1e62: ld   a,(de)]
 	move.b	d0,(0x0e,a2)                    	| [$1e63: ld   (ix+$0e),a]
 	move.b	#0xFC,(0x0f,a2)                 	| [$1e66: ld   (ix+$0f),$FC]
@@ -5094,21 +5098,23 @@ l_1e4b:
 	                           	| [$1e76: inc  de]
 	move.b	d0,d1                           	| [$1e77: ld   b,a]
 	move.b	d2,d0                           	| [$1e78: ld   a,c]
+	* sync
 l_1e79:
 	cmp.b	(0x0c,a2),d0                     	| [$1e79: cp   (ix+$0c)]
 	jne	l_1e79                             	| [$1e7c: jr   nz,$1E79]
 l_1e7e:
 	movem.w	d1/d2,-(sp)                    	| [$1e7e: push bc]
-	move.l	a4,-(sp)                        	| [$1e7e: push bc]
 	move.b	(0x0c,a2),d1                    	| [$1e7f: ld   b,(ix+$0c)]
 	move.b	(0x0e,a2),d2                    	| [$1e82: ld   c,(ix+$0e)]
 	jbsr	l_0e7f                            	| [$1e85: call $0E7F]
-	move.l	(sp)+,a4                        	| [$1e88: pop  bc]
 	movem.w	(sp)+,d1/d2                    	| [$1e88: pop  bc]
+	* get screen address in A0
+	LOAD_A0_FROM_D5D6_SCREEN
 	move.b	d6,d0                           	| [$1e89: ld   a,l]
 	cmp.b	d2,d0                            	| [$1e8a: cp   c]
 	jeq	l_1e7e                             	| [$1e8b: jr   z,$1E7E]
 	move.b	d6,d2                           	| [$1e8d: ld   c,l]
+	* pick a letter to write to screen
 	move.b	(a1),d0                         	| [$1e8e: ld   a,(de)]
 	cmp.b	#0x25,d0                         	| [$1e8f: cp   $25]
 	jne	l_1eb3                             	| [$1e91: jr   nz,$1EB3]
