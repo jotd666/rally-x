@@ -78,10 +78,10 @@ OPT_ENABLE_MULTIPLEXED_SPRITES = 0
 
 NB_PLAYFIELD_PLANES = 3
 TOTAL_NB_COLORS = 1<<NB_PLAYFIELD_PLANES
-NB_BYTES_PER_ROW = 40
+NB_BYTES_PER_ROW = 80
 
 
-NB_LINES = 256
+NB_LINES = 512
 NB_PLAYFIELD_LINES = NB_LINES
 
 
@@ -1339,9 +1339,9 @@ blit_planes_any_internal_cookie_cut:
     lea		mulNB_BYTES_PER_ROW_table(pc),a4
 	.ifdef	NO68020
 	add.w	d1,d1
-    move.w  (a4,d1.w),d1	| y times 40
+    move.w  (a4,d1.w),d1	| y times NB_BYTES_PER_ROW
 	.else
-    move.w  (a4,d1.w*2),d1	| y times 40
+    move.w  (a4,d1.w*2),d1	| y times NB_BYTES_PER_ROW
 	.endif
 2:
 	lea		cookie_cut_blit_table(pc),a4
@@ -1803,21 +1803,7 @@ osd_w_videoram_out:
 	movem.l	(a7)+,d0-d7/a0-a2
 	rts	
 	
-	.macro	COPY_TILE8_PLANE_ROW
-	move.b	d0,(offset,a1)  | buffer
-	.endm
-	
-	.macro	CLEAR_TILE8_PLANE
-	.set	offset,0
-	.rept	8
-	clr.b	(offset,a1)
-	.set	offset,offset+NB_BYTES_PER_ROW
-	.endr	
-	.endm
-	
-	.macro	TILE8_NEXT_PLANE
-	add.w	d5,a1
-	.endm
+
 
 
 
@@ -1825,6 +1811,7 @@ osd_w_videoram_out:
 * > D0: 
 compute_tile_xy:
 	moveq	#0,d0
+	moveq	#0,d1
 	move.b	d7,d0
 	
 	and.b	#0x1F,d0	| x
@@ -1872,12 +1859,12 @@ update_main_tile:
 	move.w	#NB_PLAYFIELD_PLANES-1,d4
 	move.l	playfield_drawed_screen_ptr,a1
 
-
+	move.b	#0,0x100
 	lea		mulNB_BYTES_PER_ROW_table,A2
 	add.w	d1,d1
 	move.w	(a2,d1.w),d1
-	add.w	d1,d0
-	add.w	d0,a1
+	add.l	d1,d0
+	add.l	d0,a1
 
 	* optim: 0x40 is blank
 	cmp.b	#0x40,d2
@@ -1921,20 +1908,27 @@ update_main_tile:
 	BNE.S	0b
 	jmp		(a4)
 	
-	.macro	COPY_TILE_PLANE_ROW
+	* do it 4 times because of wrapping scrolling
+	.macro	COPY_MAIN_TILE_PLANE_ROW
 	move.b	d0,(offset,a1)  | buffer
+	move.b	d0,(offset+NB_BYTES_PER_ROW/2,a1)  | buffer
+	move.b	d0,(offset+NB_BYTES_PER_ROW/2+SCREEN_PLANE_SIZE/2,a1)  | buffer
+	move.b	d0,(offset+SCREEN_PLANE_SIZE/2,a1)  | buffer
 	.endm
 	
-	.macro	CLEAR_TILE_PLANE
+	.macro	CLEAR_MAIN_TILE_PLANE
 	.set	offset,0
 	.rept	8
 	clr.b	(offset,a1)
+	clr.b	(offset+NB_BYTES_PER_ROW/2,a1)
+	clr.b	(offset+NB_BYTES_PER_ROW/2+SCREEN_PLANE_SIZE/2,a1)
+	clr.b	(offset+SCREEN_PLANE_SIZE/2,a1)
 	.set	offset,offset+NB_BYTES_PER_ROW
 	.endr	
 	.endm
 	
-	.macro	TILE_NEXT_PLANE
-	add.w	d5,a1
+	.macro	MAIN_TILE_NEXT_PLANE
+	add.l	d5,a1		| needs long because of big screen size
 	.endm
 	
 standard_tile:
@@ -1948,16 +1942,16 @@ standard_tile:
 	.set	offset,0
 	.rept	8
 	move.b	(a0)+,d0
-	COPY_TILE_PLANE_ROW
+	COPY_MAIN_TILE_PLANE_ROW
 	.set	offset,offset+NB_BYTES_PER_ROW
 	.endr
 41:
-	TILE_NEXT_PLANE
+	MAIN_TILE_NEXT_PLANE
 	dbf		d4,4b
 0:
 	rts
 5:
-	CLEAR_TILE_PLANE
+	CLEAR_MAIN_TILE_PLANE
 	jra		41b
 
 flipped_tile:	
@@ -1969,15 +1963,15 @@ flipped_tile:
 	.rept	8
 	.set	offset,offset-NB_BYTES_PER_ROW
 	move.b	(a0)+,d0
-	COPY_TILE_PLANE_ROW
+	COPY_MAIN_TILE_PLANE_ROW
 	.endr
 41:
-	TILE_NEXT_PLANE
+	MAIN_TILE_NEXT_PLANE
 	dbf		d4,4b
 0:
 	rts
 5:
-	CLEAR_TILE_PLANE
+	CLEAR_MAIN_TILE_PLANE
 	jra		41b
 	
 mirror_tile:
@@ -1991,17 +1985,17 @@ mirror_tile:
 	.rept	8
 	move.b	(a0)+,d1
 	move.b	(a4,d1.w),d0	| mirror
-	COPY_TILE_PLANE_ROW
+	COPY_MAIN_TILE_PLANE_ROW
 
 	.set	offset,offset+NB_BYTES_PER_ROW
 	.endr
 41:
-	TILE_NEXT_PLANE
+	MAIN_TILE_NEXT_PLANE
 	dbf		d4,4b
 0:
 	rts
 5:
-	CLEAR_TILE_PLANE
+	CLEAR_MAIN_TILE_PLANE
 	jra		41b
 	
 mirror_flipped_tile:
@@ -2016,24 +2010,24 @@ mirror_flipped_tile:
 	.set	offset,offset-NB_BYTES_PER_ROW
 	move.b	(a0)+,d1
 	move.b	(a4,d1.w),d0	| mirror
-	COPY_TILE_PLANE_ROW
+	COPY_MAIN_TILE_PLANE_ROW
 
 	.endr
 41:
-	TILE_NEXT_PLANE
+	MAIN_TILE_NEXT_PLANE
 	dbf		d4,4b
 0:
 	rts
 5:
-	CLEAR_TILE_PLANE
+	CLEAR_MAIN_TILE_PLANE
 	jra		41b
 
 	* clear tile
 
 11:
 111:
-	CLEAR_TILE_PLANE
-	TILE_NEXT_PLANE
+	CLEAR_MAIN_TILE_PLANE
+	MAIN_TILE_NEXT_PLANE
 	dbf		d4,111b
 2:
 	rts

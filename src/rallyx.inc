@@ -177,3 +177,12 @@ okay\@:
 	move.b	\src,\dest
 	.endm
 
+	.macro	WRITE_IMM_TO_SCREEN_A2	value,offset
+	move.b	#\value,d0
+	WRITE_D0_TO_SCREEN_A2	offset
+	.endm
+	
+	.macro	WRITE_D0_TO_SCREEN_A2	offset
+	lea	(\offset,a2),a0
+	jbsr	osd_w_videoram
+	.endm
