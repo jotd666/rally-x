@@ -178,11 +178,34 @@ okay\@:
 	.endm
 
 	.macro	WRITE_IMM_TO_SCREEN_A2	value,offset
+	move.w	d0,-(a7)
 	move.b	#\value,d0
-	WRITE_D0_TO_SCREEN_A2	offset
+	WRITE_D0_TO_SCREEN_A2	\offset
+	move.w	(a7)+,d0
 	.endm
 	
+
+	* preserves a0
+	.macro	WRITE_D0_TO_SCREEN_A0	offset
+	lea	(\offset,a0),a0
+	jbsr	osd_w_videoram
+	lea	(-\offset,a0),a0
+	.endm
+
+	.macro	WRITE_IMM_TO_SCREEN_A0	value,offset
+	move.w	d0,-(a7)
+	move.b	#\value,d0
+	.ifeq	\offset
+	jbsr	osd_w_videoram
+	.else
+	WRITE_D0_TO_SCREEN_A0	\offset
+	.endif
+	move.w	(a7)+,d0
+	.endm
+	
+	* does NOT preserve a0 (a lot of calls are done in sequence)
 	.macro	WRITE_D0_TO_SCREEN_A2	offset
 	lea	(\offset,a2),a0
 	jbsr	osd_w_videoram
 	.endm
+

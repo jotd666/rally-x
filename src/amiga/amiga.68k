@@ -26,6 +26,10 @@ CURRENT_SPRITE_SIZE = 4
 
 TILE_PLANE_X_SHIFT = 8
 
+NB_CLUTS_POW = 6
+NB_CLUTS = 1<<NB_CLUTS_POW
+NB_TILES = 256
+
 SPRITE_X_CORRECTION = -1
 SPRITE_Y_CORRECTION = -8
 HW_SPRITE_X_CORRECTION = 0
@@ -791,23 +795,48 @@ _vblank:
 
 log_used_tiles:
 	* scan the whole screen, see what was updated
+	* main screen
 	GET_MEMORY_BLOCKS_IN_A5_A6
 	add.w	#0x400,a5
 	lea	(0x800,a5),a4
-	* main screen
 	lea	main_tile_log_table,a0
 	move.w	#0x3FF,d7
 0:
 	moveq	#0,d1
 	moveq	#0,d0
 	move.b	(a5,d7.w),d0	| tile code
-
 	move.b	(a4,d7.w),d1	| tile attribute
-	and.b	#0x1F,d1		| remove flip/mirror
-	lsl.w	#5,d0			| tile code * 32
+
+	and.b	#NB_CLUTS-1,d1		| remove flip/mirror
+	lsl.w	#NB_CLUTS_POW,d0			| tile code * NB_CLUTS
 	add.w	d1,d0			| add clut
 	st.b	(a0,d0.w)
 	dbf		d7,0b
+	* status screen
+	GET_MEMORY_BLOCKS_IN_A5_A6
+	add.w	#0x40,a5		| starts at 8040
+	lea	(0x800,a5),a4
+	lea	status_tile_log_table,a0
+	moveq	#0,d7
+	move.w	#0x20-1,d6
+
+0:
+	moveq	#0,d1
+	moveq	#0,d0
+	move.b	(a5,d7.w),d0	| tile code
+	move.b	(a4,d7.w),d1	| tile attribute
+	and.b	#NB_CLUTS-1,d1		| remove flip/mirror
+	lsl.w	#NB_CLUTS_POW,d0			| tile code * NB_CLUTS
+	add.w	d1,d0			| add clut
+	st.b	(a0,d0.w)
+	addq	#1,d7
+	and.w	#7,d7
+	jne		1f
+	* skip 1 line each 8 chars
+	add.w	#0x20,a4
+	add.w	#0x20,a5
+1:
+	dbf		d6,0b
 	rts
 	
 osd_blitz:
@@ -1087,6 +1116,27 @@ compute_sprite_xy_code:
 	move.b	(TARGET_SPRITE_CODE,a0),d2
 	rts
 	
+*void rallyx_state::rallyx_draw_sprites( screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect )
+*{
+*	for (int offs = 0x20 - 2; offs >= m_spriteram_base; offs -= 2)
+*	{
+*		int sx = m_spriteram[offs + 1] + ((m_spriteram2[offs + 1] & 0x80) << 1);
+*		int sy = 241 - m_spriteram2[offs];
+*		int color = m_spriteram2[offs + 1] & 0x3f;
+*		int flipx = m_spriteram[offs] & 1;
+*		int flipy = m_spriteram[offs] & 2;
+*
+*		m_gfxdecode->gfx(1)->prio_transmask(bitmap,cliprect,
+*				(m_spriteram[offs] & 0xfc) >> 2,
+*				color,
+*				flipx,flipy,
+*				sx,sy,
+*				screen.priority(),0x02,
+*				m_palette->transpen_mask(*m_gfxdecode->gfx(1), color, 0));
+*	}
+*}
+
+
 * < A0,A1
 * < A2: sprite type table
 * < A4
@@ -1859,7 +1909,6 @@ update_main_tile:
 	move.w	#NB_PLAYFIELD_PLANES-1,d4
 	move.l	playfield_drawed_screen_ptr,a1
 
-	move.b	#0,0x100
 	lea		mulNB_BYTES_PER_ROW_table,A2
 	add.w	d1,d1
 	move.w	(a2,d1.w),d1
@@ -1888,7 +1937,7 @@ update_main_tile:
 	.endif
 	move.l	d0,a2
 	move.b	d3,d1
-	and.w	#0x1F,d3
+	and.w	#0x3F,d3
 	add.w	d3,d3
 	add.w	d3,d3
 	move.l	(a2,d3.w),d0			| pointer on tile bitplanes for that CLUT
@@ -2648,7 +2697,7 @@ osd_sound_start:
 	.ifndef	RELEASE
 
 osd_get_last_known_pc:
-	move.w	last_known_m6502_pc,d6
+	move.w	last_known_z80_pc,d6
 	rts
 	
 	
@@ -2661,6 +2710,7 @@ osd_cpu_logging_control:
 
 osd_log_cpu:
 	move.l	a6,-(a7)
+	move.w	(10,a7),last_known_z80_pc
 	tst.b	cpu_log_enable
 	jeq		445f
 	* check if cpu log is enabled
@@ -2708,7 +2758,12 @@ osd_dump_logs:
 	move.l	_resload,a2
 	lea		main_tile_log_table,a1
 	lea		character_log_name(pc),a0
-	move.l	#32*256,d0
+	move.l	#NB_CLUTS*NB_TILES,d0
+	jbsr	resload_SaveFile(a2)
+		
+	lea		status_tile_log_table,a1
+	lea		status_log_name(pc),a0
+	move.l	#NB_CLUTS*NB_TILES,d0
 	jbsr	resload_SaveFile(a2)
 		
 	
@@ -2744,7 +2799,9 @@ cpu_log_name:
 sprite_log_name:
 	.asciz	"used_sprites"
 character_log_name:
-	.asciz	"used_tiles"
+	.asciz	"used_main_tiles"
+status_log_name:
+	.asciz	"used_status_tiles"
 	.align	2
 	.endif	
 
@@ -2772,7 +2829,7 @@ music_pattern:
 	.word	0
 music_tick:
 	.word	0
-last_known_m6502_pc:
+last_known_z80_pc:
 	.word	0xFFFF
 music_duration:
 	.word	0
@@ -2970,7 +3027,12 @@ log_ptr:
 main_tile_log_table:
 	* 32 cluts, 256 tiles
 	* a lot of combinations aren't used (fortunately!)
-	.skip	32*256
+	.skip	NB_CLUTS*NB_TILES
+
+status_tile_log_table:
+	* 32 cluts, 256 tiles
+	* a lot of combinations aren't used (fortunately!)
+	.skip	NB_CLUTS*NB_TILES
 
 
 log_buffer:

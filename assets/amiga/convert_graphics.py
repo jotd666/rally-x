@@ -10,7 +10,7 @@ sprite_names = dict()
 
 NB_TILES = 256
 NB_SPRITES = 64
-NB_CLUTS = 0x17
+NB_CLUTS = 64
 
 dump_it = True
 dump_dir = this_dir/"dumps"
@@ -44,9 +44,9 @@ except OSError:
 
 
 try:
-    with open(used_graphics_dir / "used_tiles","rb") as f:
+    with open(used_graphics_dir / "used_main_tiles","rb") as f:
         for index in range(NB_TILES):
-            d = f.read(32)  # nb cluts aligned with 32
+            d = f.read(NB_CLUTS)  # nb cluts aligned with 32
             cluts = [i for i,c in enumerate(d) if c]
             if cluts:
                 add_tile(tile_cluts,index,cluts=cluts)
@@ -59,7 +59,7 @@ if dump_it:
         with open(dump_dir / "used_sprites.json","w") as f:
             sprite_cluts_dict = {hex(k):[hex(x) for x in v] for k,v in sprite_cluts.items() if v}
             json.dump(sprite_cluts_dict,f,indent=2)
-        with open(dump_dir / "used_tiles.json","w") as f:
+        with open(dump_dir / "used_main_tiles.json","w") as f:
             tile_cluts_dict = {hex(k):[hex(x) for x in v] for k,v in tile_cluts.items() if v}
             json.dump(tile_cluts_dict,f,indent=2)
 
@@ -183,8 +183,12 @@ def remove_colors(imgname):
     return img
 
 #sprite_sheet_dict = {i:Image.open(os.path.join(sprites_path,f"sprites_pal_{i:02x}.png")) for i in range(16)}
-tile_sheet_dict = {i:Image.open(sheets_path / "tiles" / f"pal_{i:02x}.png") for i in range(1,NB_CLUTS)}
+tile_sheet_dict = {i:Image.open(sheets_path / "tiles" / f"pal_{i:02x}.png") for i in range(1,0x17)}
 tile_sheet_dict[0] = None
+for x in range(0x17,0x20):
+    tile_sheet_dict[x] = None
+for x in range(0x20,0x40):
+    tile_sheet_dict[x] = tile_sheet_dict[x-0x20]
 
 tile_palette = set()
 tile_set_list = []
