@@ -1,5 +1,5 @@
 from PIL import Image,ImageOps
-import os,sys,bitplanelib,pathlib,json
+import os,sys,bitplanelib,pathlib,json,collections
 
 this_dir = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -27,10 +27,10 @@ def add_tile(table,index,cluts=[0]):
     elif not isinstance(index,(list,tuple)):
         index = [index]
     for idx in index:
-        table[idx] = cluts
+        table[idx].extend(cluts)
 
-sprite_cluts = {}
-tile_cluts = {}
+sprite_cluts = collections.defaultdict(list)
+tile_cluts = collections.defaultdict(list)
 
 try:
     with open(used_graphics_dir / "used_sprites","rb") as f:
@@ -64,6 +64,11 @@ if dump_it:
             json.dump(tile_cluts_dict,f,indent=2)
 
 
+# add all letters & digits for some known cluts
+for tile_index in range(ord('A'),ord('Z')+1):
+    for clut in [9,0xA]:
+        tile_cluts[clut].append(tile_index)
+
 def dump_asm_bytes(*args,**kwargs):
     bitplanelib.dump_asm_bytes(*args,**kwargs,mit_format=True)
 
@@ -78,19 +83,18 @@ def ensure_empty(d):
 def load_tileset(image_name,palette_index,side,tileset_name,dumpdir,dump=False,name_dict=None,cluts=None):
 
     if not image_name:
-        # blank
+        # some cluts are blank, but we need to count them
         image_name = Image.new("RGB",(256,64))
 
     tiles_1 = image_name
     nb_rows = tiles_1.size[1] // side
     nb_cols = tiles_1.size[0] // side
 
-
     tileset_1 = []
 
     if dump:
         dump_subdir = os.path.join(dumpdir,tileset_name)
-        if palette_index == 1:
+        if palette_index == 0:
             ensure_empty(dump_subdir)
 
     tile_number = 0
@@ -186,7 +190,7 @@ tile_sheet_dict[0] = None
 tile_palette = set()
 tile_set_list = []
 
-for i,tsd in tile_sheet_dict.items():
+for i,tsd in sorted(tile_sheet_dict.items()):
     tp,tile_set = load_tileset(tsd,i,8,"tiles",dump_dir,dump=dump_it,name_dict=None,cluts=tile_cluts)
     tile_set_list.append(tile_set)
     tile_palette.update(tp)
@@ -289,6 +293,9 @@ def read_tileset(img_set_list,palette,plane_orientation_flags,cache,is_bob):
     return new_tile_table
 
 tile_plane_cache = {}
+
+# pad if needed
+tile_palette += [(0X10,0x20,0x30)]*(nb_colors-len(tile_palette))
 tile_table = read_tileset(tile_set_list,tile_palette,[True,False,False,False],cache=tile_plane_cache, is_bob=False)
 
 ##bob_plane_cache = {}

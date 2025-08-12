@@ -78,10 +78,10 @@ OPT_ENABLE_MULTIPLEXED_SPRITES = 0
 
 NB_PLAYFIELD_PLANES = 3
 TOTAL_NB_COLORS = 1<<NB_PLAYFIELD_PLANES
-NB_BYTES_PER_ROW = 40
+NB_BYTES_PER_ROW = 80
 
 
-NB_LINES = 256
+NB_LINES = 512
 NB_PLAYFIELD_LINES = NB_LINES
 
 
@@ -958,8 +958,8 @@ blit_background:
 	move.w  d4,bltsize(a5)	|rectangle size, starts blit
 	
 	.rept	NB_PLAYFIELD_PLANES-1
-	lea	(SCREEN_PLANE_SIZE,a0),a0
-	lea	(SCREEN_PLANE_SIZE,a1),a1
+	add.l	#SCREEN_PLANE_SIZE,a0
+	add.l	#SCREEN_PLANE_SIZE,a1
 	WAIT_BLIT
 	* second bitplane
 	move.l a0,bltapt(a5)	|source graphic top left corner
@@ -1290,7 +1290,7 @@ clear_planes_any_blitter_internal:
 	move.l a1,bltdpt(a5)	|destination top left corner
 	move.w  d4,bltsize(a5)	|rectangle size, starts blit
 32:
-	lea		(SCREEN_PLANE_SIZE,a1),a1
+	add.l	#SCREEN_PLANE_SIZE,a1
 	dbf		d3,3b
 4:
 	rts
@@ -1403,7 +1403,7 @@ blit_planes_any_internal_cookie_cut:
 	move.l	a1,bltcpt(a5)	|pristine background top (bottom) left corner
 	move.l	a1,bltdpt(a5)	|destination top (bottom) left corner
 	move.w  d4,bltsize(a5)	|rectangle size, starts blit
-	lea		(SCREEN_PLANE_SIZE,a1),a1
+	add.l	#SCREEN_PLANE_SIZE,a1
 	WAIT_BLIT
 	dbf		d3,6b
 7:
@@ -1667,7 +1667,7 @@ platform_init:
     move.w #TILE_PLANE_X_SHIFT,bplcon1(a5)
 	
 	# 0 modulo (OCS)
-	moveq	#0,d0
+	moveq	#NB_BYTES_PER_ROW-40,d0
     move.w d0,bpl1mod(a5)
     move.w d0,bpl2mod(a5)
 
@@ -1761,6 +1761,20 @@ osd_w_videoram:
 	movem.l	d0-d7/a0-a2,-(a7)
 	move.l	a0,d7		| save address
 	sub.l	a5,d7		| start of video RAM
+
+	cmp.w	#0x487,d7
+	jne		0f
+	BREAKPOINT	"I"
+0:
+	cmp.w	#0x4E4,d7
+	jne		0f
+	BREAKPOINT	"B"
+0:
+	cmp.w	#0x4F3,d7
+	jne		0f
+	BREAKPOINT	"C"
+0:
+
 	cmp.w	#0x40,d7
 	jcc		0f
 	* writing to 8000-803F: not screen
@@ -2793,11 +2807,11 @@ player_1_controls:
 player_2_controls:
 	.byte	0
 normal_hiscorename:
-	.asciz	"locknchase.high"
+	.asciz	"rallyx.high"
 	.align	2
 
 
-	MUL_TABLE	NB_BYTES_PER_ROW,NB_LINES*2
+	MUL_TABLE	NB_BYTES_PER_ROW,NB_LINES
 
 	.align	4		| leave this long word alignment
 program_args:	ds.l	64,0
