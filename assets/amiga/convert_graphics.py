@@ -66,8 +66,7 @@ if dump_it:
 
 # add all letters & digits for some known cluts
 for tile_index in range(ord('A'),ord('Z')+1):
-    for clut in [9,0xA]:
-        tile_cluts[clut].append(tile_index)
+    tile_cluts[tile_index].extend([9,0xA])
 
 def dump_asm_bytes(*args,**kwargs):
     bitplanelib.dump_asm_bytes(*args,**kwargs,mit_format=True)

@@ -78,10 +78,10 @@ OPT_ENABLE_MULTIPLEXED_SPRITES = 0
 
 NB_PLAYFIELD_PLANES = 3
 TOTAL_NB_COLORS = 1<<NB_PLAYFIELD_PLANES
-NB_BYTES_PER_ROW = 80
+NB_BYTES_PER_ROW = 40
 
 
-NB_LINES = 512
+NB_LINES = 256
 NB_PLAYFIELD_LINES = NB_LINES
 
 
@@ -1762,18 +1762,8 @@ osd_w_videoram:
 	move.l	a0,d7		| save address
 	sub.l	a5,d7		| start of video RAM
 
-	cmp.w	#0x487,d7
-	jne		0f
-	BREAKPOINT	"I"
-0:
-	cmp.w	#0x4E4,d7
-	jne		0f
-	BREAKPOINT	"B"
-0:
-	cmp.w	#0x4F3,d7
-	jne		0f
-	BREAKPOINT	"C"
-0:
+
+
 
 	cmp.w	#0x40,d7
 	jcc		0f
@@ -1871,7 +1861,6 @@ update_main_tile:
 	moveq	#0,d3
 	move.b	d0,d2	| code
 	move.b	d1,d3	| attribute
-	and.w	#0x1F,d3	| color  ???
 	* flip X/Y = bits 6 and 7 (to clarify)
 
 	bsr		compute_tile_xy
@@ -1912,7 +1901,7 @@ update_main_tile:
 	.endif
 	move.l	d0,a2
 	move.b	d3,d1
-	and.w	#0xF,d3
+	and.w	#0x1F,d3
 	add.w	d3,d3
 	add.w	d3,d3
 	move.l	(a2,d3.w),d0			| pointer on tile bitplanes for that CLUT
@@ -1921,7 +1910,6 @@ update_main_tile:
 	move.l	d0,a2					| pointer on bitplanes
 	rol.b	#2,d1			        | modifiers on first bits
 	and.w	#3,d1
-	jeq		standard_tile
 	
 
 	add.w	d1,d1
@@ -2053,9 +2041,9 @@ mirror_flipped_tile:
 empty_tile:
 
 mirror_jump_table:
+	.long	mirror_tile
 	.long	standard_tile
 	.long	flipped_tile
-	.long	mirror_tile
 	.long	mirror_flipped_tile
 	
 mirror_bits:
