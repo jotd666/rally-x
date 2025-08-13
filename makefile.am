@@ -4,6 +4,10 @@ MAIN = ..\$(PROGNAME)
 
 ifdef RELEASE_BUILD
 OPT_RELEASE = --defsym RELEASE=1
+OPT_RELEASE_LINK = -s
+else
+OPT_RELEASE = 
+OPT_RELEASE_LINK = 
 endif
 
 # Bebbo's package usually installs itself there
@@ -44,7 +48,7 @@ $(AMIGASRC)/graphics.68k: $(ASSETS)/convert_graphics.py
 #	del $(OBJS)\sound_entries.o
 	
 $(MAIN): $(OBJS)
-	$(GCC_BIN)/m68k-amigaos-ld -s -o $(MAIN) $(OBJS)
+	$(GCC_BIN)/m68k-amigaos-ld $(OPT_RELEASE_LINK) -o $(MAIN) $(OBJS)
 
 ram.o: ram.68k
 	$(ASM) ram.68k -o ram.o

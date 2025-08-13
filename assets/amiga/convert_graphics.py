@@ -182,13 +182,13 @@ def remove_colors(imgname):
                 img.putpixel((x,y),(0,0,0))
     return img
 
+def imgopen(i):
+    p = sheets_path / "tiles" / f"pal_{i:02x}.png"
+    return Image.open(p) if p.exists() else None
+
 #sprite_sheet_dict = {i:Image.open(os.path.join(sprites_path,f"sprites_pal_{i:02x}.png")) for i in range(16)}
-tile_sheet_dict = {i:Image.open(sheets_path / "tiles" / f"pal_{i:02x}.png") for i in range(1,0x17)}
-tile_sheet_dict[0] = None
-for x in range(0x17,0x20):
-    tile_sheet_dict[x] = None
-for x in range(0x20,0x40):
-    tile_sheet_dict[x] = tile_sheet_dict[x-0x20]
+tile_sheet_dict = {i:imgopen(i) for i in range(NB_CLUTS)}
+
 
 tile_palette = set()
 tile_set_list = []

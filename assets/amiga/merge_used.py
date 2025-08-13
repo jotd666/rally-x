@@ -36,3 +36,4 @@ def merge(used_name,nb_items,nb_cluts):
 
 #merge("used_sprites",256)
 merge("used_main_tiles",256,64)
+merge("used_status_tiles",256,64)
