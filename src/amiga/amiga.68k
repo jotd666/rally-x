@@ -83,16 +83,19 @@ OPT_ENABLE_MULTIPLEXED_SPRITES = 0
 
 NB_PLAYFIELD_PLANES = 4
 TOTAL_NB_COLORS = 1<<NB_PLAYFIELD_PLANES
-NB_BYTES_PER_ROW = 80
+NB_BYTES_PER_MAIN_ROW = 80
 
-
+NB_STATUS_LINES = 256
+NB_BYTES_PER_STATUS_ROW = 40
 NB_LINES = 512
 NB_PLAYFIELD_LINES = NB_LINES
 
 
-SCREEN_PLANE_SIZE = NB_BYTES_PER_ROW*NB_PLAYFIELD_LINES
+MAIN_SCREEN_PLANE_SIZE = NB_BYTES_PER_MAIN_ROW*NB_PLAYFIELD_LINES
+STATUS_SCREEN_PLANE_SIZE = NB_BYTES_PER_STATUS_ROW*NB_STATUS_LINES
 
-SCREEN_SIZE = SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
+STATUS_SCREEN_SIZE = STATUS_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
+SCREEN_SIZE = MAIN_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
 NB_HOST_SPRITES = 8
 
 NB_TARGET_SPRITES = 8
@@ -954,7 +957,7 @@ blit_background:
 	lea		_custom,a5
 	* adjust offset X: X//8
 	lsr.w	#3,d0
-	lea		mulNB_BYTES_PER_ROW_table(pc),a4
+	lea		mulNB_BYTES_PER_MAIN_ROW_table(pc),a4
 	add.w	d1,d1
 	* add Y offset: Y*40
 	add.w	(a4,d1.w),d0
@@ -964,7 +967,7 @@ blit_background:
 	
 
     move.l  #0x09f00000,d3    | A->D copy, ascending mode	
-	move.w	#NB_BYTES_PER_ROW,d1		| blit modulo
+	move.w	#NB_BYTES_PER_MAIN_ROW,d1		| blit modulo
 
     sub.w   d2,d1       | blit modulo
     lsl.w   #6,d4
@@ -988,8 +991,8 @@ blit_background:
 	move.w  d4,bltsize(a5)	|rectangle size, starts blit
 	
 	.rept	NB_PLAYFIELD_PLANES-1
-	add.l	#SCREEN_PLANE_SIZE,a0
-	add.l	#SCREEN_PLANE_SIZE,a1
+	add.l	#MAIN_SCREEN_PLANE_SIZE,a0
+	add.l	#MAIN_SCREEN_PLANE_SIZE,a1
 	WAIT_BLIT
 	* second bitplane
 	move.l a0,bltapt(a5)	|source graphic top left corner
@@ -1303,7 +1306,7 @@ clear_planes_any_blitter_internal:
 	* null or negative height after clipping: out
 	rts
 0:
-    lea mulNB_BYTES_PER_ROW_table(pc),a2
+    lea mulNB_BYTES_PER_MAIN_ROW_table(pc),a2
     add.w   d1,d1
     move.w  (a2,d1.w),d1
 1:
@@ -1318,7 +1321,7 @@ clear_planes_any_blitter_internal:
 	moveq	#1,d1
 	ror.l	#8,d1     | AKA move.l  #0x01000000,d1   | minterm useD & rect clear (0xA) 
 
-	move.w #NB_BYTES_PER_ROW,d0
+	move.w #NB_BYTES_PER_MAIN_ROW,d0
 	bclr	#0,d2		| make sure D2 is even (else strange things occur!)
     sub.w   d2,d0       | blit width
 
@@ -1341,7 +1344,7 @@ clear_planes_any_blitter_internal:
 	move.l a1,bltdpt(a5)	|destination top left corner
 	move.w  d4,bltsize(a5)	|rectangle size, starts blit
 32:
-	add.l	#SCREEN_PLANE_SIZE,a1
+	add.l	#MAIN_SCREEN_PLANE_SIZE,a1
 	dbf		d3,3b
 4:
 	rts
@@ -1387,12 +1390,12 @@ blit_planes_any_internal_cookie_cut:
 1:	
 	tst	d1
     beq.b   2f    | optim
-    lea		mulNB_BYTES_PER_ROW_table(pc),a4
+    lea		mulNB_BYTES_PER_MAIN_ROW_table(pc),a4
 	.ifdef	NO68020
 	add.w	d1,d1
-    move.w  (a4,d1.w),d1	| y times NB_BYTES_PER_ROW
+    move.w  (a4,d1.w),d1	| y times NB_BYTES_PER_MAIN_ROW
 	.else
-    move.w  (a4,d1.w*2),d1	| y times NB_BYTES_PER_ROW
+    move.w  (a4,d1.w*2),d1	| y times NB_BYTES_PER_MAIN_ROW
 	.endif
 2:
 	lea		cookie_cut_blit_table(pc),a4
@@ -1419,7 +1422,7 @@ blit_planes_any_internal_cookie_cut:
     * but a 68000 CPU doesn't and since we RETURN A1...
     *bclr    #0,d1
     add.w   d1,a1       | plane position (D1 < 0x7FFF, 288*40=0x2D00)
-	move.w	#NB_BYTES_PER_ROW,d0
+	move.w	#NB_BYTES_PER_MAIN_ROW,d0
 	tst.w	d4
 	bpl.b	5f
 	neg.w	d0
@@ -1454,7 +1457,7 @@ blit_planes_any_internal_cookie_cut:
 	move.l	a1,bltcpt(a5)	|pristine background top (bottom) left corner
 	move.l	a1,bltdpt(a5)	|destination top (bottom) left corner
 	move.w  d4,bltsize(a5)	|rectangle size, starts blit
-	add.l	#SCREEN_PLANE_SIZE,a1
+	add.l	#MAIN_SCREEN_PLANE_SIZE,a1
 	WAIT_BLIT
 	dbf		d3,6b
 7:
@@ -1720,7 +1723,7 @@ platform_init:
     move.w #TILE_PLANE_X_SHIFT,bplcon1(a5)
 	
 	# 0 modulo (OCS)
-	moveq	#NB_BYTES_PER_ROW-40,d0
+	moveq	#NB_BYTES_PER_MAIN_ROW-40,d0
     move.w d0,bpl1mod(a5)
     move.w d0,bpl2mod(a5)
 
@@ -1908,11 +1911,11 @@ update_main_tile:
 
 	
 	* updating bitplanes
-	move.l	#SCREEN_PLANE_SIZE,d5
+	move.l	#MAIN_SCREEN_PLANE_SIZE,d5
 	move.w	#NB_PLAYFIELD_PLANES-1,d4
 	move.l	playfield_drawed_screen_ptr,a1
 
-	lea		mulNB_BYTES_PER_ROW_table,A2
+	lea		mulNB_BYTES_PER_MAIN_ROW_table,A2
 	add.w	d1,d1
 	move.w	(a2,d1.w),d1
 	add.l	d1,d0
@@ -1922,7 +1925,7 @@ update_main_tile:
 	cmp.b	#0x40,d2
 	jeq		111f
 
-	lea		character_table,a0
+	lea		main_tile_table,a0
 
 	
 	add.w	d2,d2
@@ -1953,7 +1956,7 @@ update_main_tile:
 
 	add.w	d1,d1
 	add.w	d1,d1
-	lea		mirror_jump_table(pc),a4
+	lea		main_mirror_jump_table(pc),a4
 	move.l	(a4,d1.w),a4
 0:
 	BTST	#6,(_custom+dmaconr)
@@ -1963,19 +1966,19 @@ update_main_tile:
 	* do it 4 times because of wrapping scrolling
 	.macro	COPY_MAIN_TILE_PLANE_ROW
 	move.b	d0,(offset,a1)  | buffer
-	move.b	d0,(offset+NB_BYTES_PER_ROW/2,a1)  | buffer
-	move.b	d0,(offset+NB_BYTES_PER_ROW/2+SCREEN_PLANE_SIZE/2,a1)  | buffer
-	move.b	d0,(offset+SCREEN_PLANE_SIZE/2,a1)  | buffer
+	move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2,a1)  | buffer
+	move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
+	move.b	d0,(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
 	.endm
 	
 	.macro	CLEAR_MAIN_TILE_PLANE
 	.set	offset,0
 	.rept	8
 	clr.b	(offset,a1)
-	clr.b	(offset+NB_BYTES_PER_ROW/2,a1)
-	clr.b	(offset+NB_BYTES_PER_ROW/2+SCREEN_PLANE_SIZE/2,a1)
-	clr.b	(offset+SCREEN_PLANE_SIZE/2,a1)
-	.set	offset,offset+NB_BYTES_PER_ROW
+	clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2,a1)
+	clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)
+	clr.b	(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
 	.endr	
 	.endm
 	
@@ -1983,7 +1986,23 @@ update_main_tile:
 	add.l	d5,a1		| needs long because of big screen size
 	.endm
 	
-standard_tile:
+	.macro	COPY_STATUS_TILE_PLANE_ROW
+	move.b	d0,(offset,a1)  | buffer
+	.endm
+	
+	.macro	CLEAR_STATUS_TILE_PLANE
+	.set	offset,0
+	.rept	8
+	clr.b	(offset,a1)
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
+	.endr	
+	.endm
+	
+	.macro	STATUS_TILE_NEXT_PLANE
+	add.w	d5,a1
+	.endm
+	
+main_standard_tile:
 
 	* just copy
 
@@ -1995,7 +2014,7 @@ standard_tile:
 	.rept	8
 	move.b	(a0)+,d0
 	COPY_MAIN_TILE_PLANE_ROW
-	.set	offset,offset+NB_BYTES_PER_ROW
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
 	.endr
 41:
 	MAIN_TILE_NEXT_PLANE
@@ -2006,14 +2025,14 @@ standard_tile:
 	CLEAR_MAIN_TILE_PLANE
 	jra		41b
 
-flipped_tile:	
+main_flipped_tile:	
 4:
 	move.l	(a2)+,d0		| next plane
 	jeq		5f
 	move.l	d0,a0
-	.set	offset,8*NB_BYTES_PER_ROW
+	.set	offset,8*NB_BYTES_PER_MAIN_ROW
 	.rept	8
-	.set	offset,offset-NB_BYTES_PER_ROW
+	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
 	move.b	(a0)+,d0
 	COPY_MAIN_TILE_PLANE_ROW
 	.endr
@@ -2026,7 +2045,7 @@ flipped_tile:
 	CLEAR_MAIN_TILE_PLANE
 	jra		41b
 	
-mirror_tile:
+main_mirror_tile:
 	lea		mirror_bits(pc),a4
 	moveq	#0,d1
 4:
@@ -2039,7 +2058,7 @@ mirror_tile:
 	move.b	(a4,d1.w),d0	| mirror
 	COPY_MAIN_TILE_PLANE_ROW
 
-	.set	offset,offset+NB_BYTES_PER_ROW
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
 	.endr
 41:
 	MAIN_TILE_NEXT_PLANE
@@ -2050,16 +2069,16 @@ mirror_tile:
 	CLEAR_MAIN_TILE_PLANE
 	jra		41b
 	
-mirror_flipped_tile:
+main_mirror_flipped_tile:
 	lea		mirror_bits(pc),a4
 	moveq	#0,d1
 4:
 	move.l	(a2)+,d0		| next plane
 	jeq		5f
 	move.l	d0,a0
-	.set	offset,8*NB_BYTES_PER_ROW
+	.set	offset,8*NB_BYTES_PER_MAIN_ROW
 	.rept	8
-	.set	offset,offset-NB_BYTES_PER_ROW
+	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
 	move.b	(a0)+,d1
 	move.b	(a4,d1.w),d0	| mirror
 	COPY_MAIN_TILE_PLANE_ROW
@@ -2084,13 +2103,189 @@ mirror_flipped_tile:
 2:
 	rts
 	
-empty_tile:
+* < D7: 0-0x400 address
+* < D0: tile code
+* < D1: tile attribute
 
-mirror_jump_table:
-	.long	mirror_tile
-	.long	standard_tile
-	.long	flipped_tile
-	.long	mirror_flipped_tile
+update_status_tile:
+	moveq	#0,d2
+	moveq	#0,d3
+	move.b	d0,d2	| code
+	move.b	d1,d3	| attribute
+	* flip X/Y = bits 6 and 7 (to clarify)
+
+	bsr		compute_tile_xy
+	
+
+	
+	* updating bitplanes
+	move.l	#STATUS_SCREEN_PLANE_SIZE,d5
+	move.w	#NB_PLAYFIELD_PLANES-1,d4
+	move.l	background_screen_ptr,a1
+
+	lea		mulNB_BYTES_PER_STATUS_ROW_table,A2
+	add.w	d1,d1
+	move.w	(a2,d1.w),d1
+	add.l	d1,d0
+	add.l	d0,a1
+
+	* optim: 0x40 is blank
+	cmp.b	#0x40,d2
+	jeq		111f
+
+	lea		status_tile_table,a0
+
+	
+	add.w	d2,d2
+	add.w	d2,d2	
+	move.l	(a0,d2.w),d0		| tile pointer
+	.ifndef	RELEASE
+	jne		12f
+	add.w	#0x8400,d7
+	lsr.w	#2,d2
+	*BREAKPOINT	"game_tile_not_registered_error"
+	move.w	#0x0F0,_custom+color
+
+	jra		11f
+12:
+	.endif
+	move.l	d0,a2
+	move.b	d3,d1
+	and.w	#0x3F,d3
+	add.w	d3,d3
+	add.w	d3,d3
+	move.l	(a2,d3.w),d0			| pointer on tile bitplanes for that CLUT
+	jeq		11f						| not necessarily a problem
+
+	move.l	d0,a2					| pointer on bitplanes
+	rol.b	#2,d1			        | modifiers on first bits
+	and.w	#3,d1
+	
+
+	add.w	d1,d1
+	add.w	d1,d1
+	lea		status_mirror_jump_table(pc),a4
+	move.l	(a4,d1.w),a4
+0:
+	BTST	#6,(_custom+dmaconr)
+	BNE.S	0b
+	jmp		(a4)
+	
+
+	
+
+status_standard_tile:
+
+	* just copy
+
+4:
+	move.l	(a2)+,d0		| next plane
+	jeq		5f
+	move.l	d0,a0
+	.set	offset,0
+	.rept	8
+	move.b	(a0)+,d0
+	COPY_STATUS_TILE_PLANE_ROW
+	.set	offset,offset+NB_BYTES_PER_STATUS_ROW
+	.endr
+41:
+	MAIN_TILE_NEXT_PLANE
+	dbf		d4,4b
+0:
+	rts
+5:
+	CLEAR_MAIN_TILE_PLANE
+	jra		41b
+
+status_flipped_tile:	
+4:
+	move.l	(a2)+,d0		| next plane
+	jeq		5f
+	move.l	d0,a0
+	.set	offset,8*NB_BYTES_PER_STATUS_ROW
+	.rept	8
+	.set	offset,offset-NB_BYTES_PER_STATUS_ROW
+	move.b	(a0)+,d0
+	COPY_STATUS_TILE_PLANE_ROW
+	.endr
+41:
+	STATUS_TILE_NEXT_PLANE
+	dbf		d4,4b
+0:
+	rts
+5:
+	CLEAR_STATUS_TILE_PLANE
+	jra		41b
+	
+status_mirror_tile:
+	lea		mirror_bits(pc),a4
+	moveq	#0,d1
+4:
+	move.l	(a2)+,d0		| next plane
+	jeq		5f
+	move.l	d0,a0
+	.set	offset,0
+	.rept	8
+	move.b	(a0)+,d1
+	move.b	(a4,d1.w),d0	| mirror
+	COPY_STATUS_TILE_PLANE_ROW
+
+	.set	offset,offset+NB_BYTES_PER_STATUS_ROW
+	.endr
+41:
+	STATUS_TILE_NEXT_PLANE
+	dbf		d4,4b
+0:
+	rts
+5:
+	CLEAR_STATUS_TILE_PLANE
+	jra		41b
+	
+status_mirror_flipped_tile:
+	lea		mirror_bits(pc),a4
+	moveq	#0,d1
+4:
+	move.l	(a2)+,d0		| next plane
+	jeq		5f
+	move.l	d0,a0
+	.set	offset,8*NB_BYTES_PER_STATUS_ROW
+	.rept	8
+	.set	offset,offset-NB_BYTES_PER_STATUS_ROW
+	move.b	(a0)+,d1
+	move.b	(a4,d1.w),d0	| mirror
+	COPY_STATUS_TILE_PLANE_ROW
+
+	.endr
+41:
+	STATUS_TILE_NEXT_PLANE
+	dbf		d4,4b
+0:
+	rts
+5:
+	CLEAR_STATUS_TILE_PLANE
+	jra		41b
+
+	* clear tile
+
+11:
+111:
+	CLEAR_STATUS_TILE_PLANE
+	STATUS_TILE_NEXT_PLANE
+	dbf		d4,111b
+2:
+	rts
+	
+
+main_mirror_jump_table:
+	.long	main_mirror_tile
+	.long	main_standard_tile
+	.long	main_flipped_tile
+	.long	main_mirror_flipped_tile
+status_mirror_jump_table:
+	.long	status_mirror_tile
+	.long	status_standard_tile
+	.long	status_flipped_tile
+	.long	status_mirror_flipped_tile
 	
 mirror_bits:
 	.include "mirror_bits.68k"
@@ -2158,14 +2353,14 @@ set_background_bitplanes:
 	move.l	background_screen_ptr,d0
 	lea	background_bitplanes+2,a0
     moveq #NB_PLAYFIELD_PLANES-1,d1
- 	move.l	#SCREEN_PLANE_SIZE,d2
+ 	move.l	#STATUS_SCREEN_PLANE_SIZE,d2
  	jra		set_bitplanes
 
 set_bobs_bitplanes:
 	movem.l	a0-a1/d0-d2,-(a7)
  	lea	bobs_bitplanes+2,a0
     moveq #NB_PLAYFIELD_PLANES-1,d1
- 	move.l	#SCREEN_PLANE_SIZE,d2
+ 	move.l	#MAIN_SCREEN_PLANE_SIZE,d2
     move.l	playfield_displayed_screen_ptr(pc),d0
 set_bitplanes:
 1:
@@ -2854,7 +3049,8 @@ normal_hiscorename:
 	.align	2
 
 
-	MUL_TABLE	NB_BYTES_PER_ROW,NB_LINES
+	MUL_TABLE	NB_BYTES_PER_MAIN_ROW,NB_LINES
+	MUL_TABLE	NB_BYTES_PER_STATUS_ROW,NB_STATUS_LINES
 
 	.align	4		| leave this long word alignment
 program_args:	ds.l	64,0
@@ -3161,18 +3357,18 @@ pal_wait:
 		
 
 bg_screen_buffer:
-	.skip	SCREEN_SIZE
+	.skip	STATUS_SCREEN_SIZE
 	.skip	8
 	.skip	8	
 
 		
 bobs_screen_buffer_1:
 	.skip	SCREEN_SIZE
-	*.skip	NB_BYTES_PER_ROW*12*3
+	*.skip	NB_BYTES_PER_MAIN_ROW*12*3
 	.ifne	OPT_ENABLE_DOUBLE_BUFFERING
 bobs_screen_buffer_2:
 	.skip	SCREEN_SIZE
-	.skip	NB_BYTES_PER_ROW*12*3
+	.skip	NB_BYTES_PER_MAIN_ROW*12*3
 	.endif
 
 

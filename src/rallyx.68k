@@ -591,7 +591,7 @@ l_0323:
 	add.b	#0x9D,d0                         	| [$0330: add  a,$9D]
 l_0332:
 	add.w	#0x800,a1                           	| [$0332: set  3,d]
-	jbsr	write_d0_in_a1_videoram                         	| [$0334: ld   (de),a]
+	WRITE_DO_TO_SCREEN_A1                         	| [$0334: ld   (de),a]
 l_0335:
 	move.b	d1,d0                           	| [$0335: ld   a,b]
 	addq.w	#1,a0                           	| [$0336: inc  hl]
@@ -622,7 +622,7 @@ l_0350:
 	add.b	#0x5F,d0                         	| [$0365: add  a,$5F]
 l_0367:
 	add.w	#0x800,a1                           	| [$0367: set  3,d]
-	jbsr	write_d0_in_a1_videoram                      | [$0369: ld   (de),a]
+	WRITE_DO_TO_SCREEN_A1                      | [$0369: ld   (de),a]
 	jra	l_0335                             	| [$036a: jp   $0335]
 l_036d:
 	move.b	#0x05,d1                        	| [$036d: ld   b,$05]
@@ -3236,12 +3236,13 @@ l_136d:
 	                           	| [$1375: ld   l,a]
 	move.b	(a0),d2                         	| [$1376: ld   c,(hl)]
 	LOAD_POINTER	pointer_8056(a5),a0             	| [$1377: ld   hl,($8056)]
-	BREAKPOINT	"137A screen??"
-	move.b	d2,(a0)                         	| [$137a: ld   (hl),c]
+	exg	d2,d0
+	jbsr	osd_w_videoram                         	| [$137a: ld   (hl),c]
+	exg	d2,d0
 	add.w	#0x800,a0                           	| [$137b: set  3,h] screen?
 	move.b	l_82B1(a5),d0                   	| [$137d: ld   a,($82B1)]
 	or.b	d1,d0                             	| [$1380: or   b]
-	move.b	d0,(a0)                         	| [$1381: ld   (hl),a] screen?
+	jbsr	osd_w_videoram                         	| [$1381: ld   (hl),a] screen?
 	                        	| [$1382: pop  hl]
 	movem.l	(sp)+,a0/a1                        	| [$1383: pop  de]
 	movem.w	(sp)+,d1-d5                    	| [$1383: pop  de]
@@ -3284,13 +3285,13 @@ l_1386:
 l_13a8:
 	and.b	#0x1F,d0                         	| [$13a8: and  $1F]
 	bset.b	#7,d0                           	| [$13aa: set  7,a]
-	move.b	d0,(a1)                         	| [$13ac: ld   (de),a]
+	WRITE_DO_TO_SCREEN_A1                       	| [$13ac: ld   (de),a]
 l_13ad:
 	exg	a1,a0                              	| [$13ad: ex   de,hl]
 	LOAD_D5D6_FROM_A0
 	bset.b	#3,d5                           	| [$13ae: set  3,h]
 	LOAD_A0_FROM_D5D6
-	move.b	d1,(a0)                         	| [$13b0: ld   (hl),b]
+	WRITE_DO_TO_SCREEN_A1                         	| [$13b0: ld   (hl),b]
 	movem.l	(sp)+,a0/a1                        	| [$13b1: pop  hl]
 											| [$13b2: pop  de]
 										| [$13b2: pop  de]
@@ -6336,11 +6337,8 @@ l_3e27:
 	jne	l_3e26                             	| [$3e2d: djnz $3E26]
 	rts                                    	| [$3e2f: ret]
 
-write_d0_in_a1_videoram:
-	exg	a0,a1
-	jbsr	osd_w_videoram
-	exg	a0,a1
-	rts
+
+
 	
 * extract ixl value from a2
 a2_to_ixl:
