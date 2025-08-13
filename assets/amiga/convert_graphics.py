@@ -162,7 +162,7 @@ def add_hw_sprite(index,name,cluts=[0]):
         sprite_names[idx] = name
         hw_sprite_cluts[idx] = cluts
 
-nb_planes = 3
+nb_planes = 4
 nb_colors = 1<<nb_planes
 
 sprite_names = {}
@@ -261,7 +261,8 @@ def read_tileset(img_set_list,palette,plane_orientation_flags,cache,is_bob):
                         else:
                             height = 8
                             y_start = 0
-                            bitplane_data = bitplanelib.palette_image2raw(wtile,None,palette)
+                            # use a mask color which is not 0, 0,0,0 is a used color
+                            bitplane_data = bitplanelib.palette_image2raw(wtile,None,palette,mask_color=(0x1,0x1,0x1))
 
                         plane_size = len(bitplane_data) // actual_nb_planes
                         bitplane_plane_ids = []

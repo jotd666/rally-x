@@ -1,3 +1,6 @@
+# pre-process for tiles, as I generally use the tile sheets that mame gfx save
+# dumps. Here there are 64 cluts, and the gfx save features only saves 32 sheets
+# so we have to rebuild them. It's not very difficult when the palette is properly dumped
 import glob,shutil,os,re,pathlib
 from PIL import Image
 from shared import *

@@ -41,7 +41,8 @@ NTSC_Y_SHIFT = 12
 
 Y_MAX = 256
 
-
+BORDERBLANK = 0
+BASE_BPLCON3_VALUE = (1<<12)+(BORDERBLANK<<5)  | dpf second playfield palette starts at color 16!
 BASE_BPLCON2_VALUE = 0x0064		| sprites above all playfields
 SPRITE_ADDRESS = 0x3C00
 MIRROR_ADDRESS = 0x7C00
@@ -80,7 +81,7 @@ _custom = 0xDFF000
 
 OPT_ENABLE_MULTIPLEXED_SPRITES = 0
 
-NB_PLAYFIELD_PLANES = 3
+NB_PLAYFIELD_PLANES = 4
 TOTAL_NB_COLORS = 1<<NB_PLAYFIELD_PLANES
 NB_BYTES_PER_ROW = 80
 
@@ -1694,8 +1695,10 @@ platform_init:
 	move.w	#0x1FE,pal_intreq_block_game
 	move.w	#0x1FE,pal_wait			| else intreq never happens
 0:
-    move.w #0x6600,bplcon0(a5)		| dual playfield!
-
+    *move.w #0x6600,bplcon0(a5)		| dual playfield ECS
+    move.w #0x0610+BORDERBLANK,bplcon0(a5) | 8 bitplanes, dual playfield, borderblank
+    move.w #BASE_BPLCON2_VALUE,bplcon2(a5)
+    move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
  	*         VVHH
     move.w #0x2489,d0
     move.w #0x2479,d1
@@ -2711,6 +2714,7 @@ osd_cpu_logging_control:
 osd_log_cpu:
 	move.l	a6,-(a7)
 	move.w	(10,a7),last_known_z80_pc
+	move.w	(10,a7),0x100
 	tst.b	cpu_log_enable
 	jeq		445f
 	* check if cpu log is enabled
@@ -3108,20 +3112,20 @@ game_copperlist:
 	* enable sprite colors now
 
 bobs_bitplanes:
-	DECL_EVEN_BITPLANES	4,3
+	DECL_EVEN_BITPLANES	4,NB_PLAYFIELD_PLANES
 background_bitplanes:
-	DECL_EVEN_BITPLANES	0,3
+	DECL_EVEN_BITPLANES	0,NB_PLAYFIELD_PLANES
 
 	* priority: BOBs playfield on top
 	.word	bplcon2,BASE_BPLCON2_VALUE
 
 status_colors:
-	DECL_COLORS	0,8
+	DECL_COLORS	0,TOTAL_NB_COLORS
 main_colors:
-	DECL_COLORS	8,8
+	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
 	
-sprite_colors:
-	DECL_COLORS	16,16
+*sprite_colors:
+*	DECL_COLORS	16,16
 	.word	0x0801,0xFFFE
 game_sprites:
 	DECL_SPRITES
