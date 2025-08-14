@@ -1967,10 +1967,18 @@ update_main_tile:
 	add.l	d1,d0
 	add.l	d0,a1
 
-	* optim: 0x40 is blank
-	cmp.b	#0x40,d2
-	jeq		111f
+	move.b	d3,d1
+	and.w	#0x3F,d3
 
+	
+	cmp.b	#0x40,d2
+	jne		0f
+	cmp.b	#9,d3
+	jeq		111f   |  optim: 0x40 is blank (orange) with attr 9
+	cmp.b	#0xA,d3
+	jeq		111f   |  optim: 0x40 is blank (orange) with attr 9
+	* attr 0x26: black tile
+0:
 	lea		main_tile_table,a0
 
 	
@@ -1988,8 +1996,6 @@ update_main_tile:
 12:
 	.endif
 	move.l	d0,a2
-	move.b	d3,d1
-	and.w	#0x3F,d3
 	add.w	d3,d3
 	add.w	d3,d3
 	move.l	(a2,d3.w),d0			| pointer on tile bitplanes for that CLUT
