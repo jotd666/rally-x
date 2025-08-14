@@ -601,7 +601,7 @@ l_0323:
 	add.b	#0x9D,d0                         	| [$0330: add  a,$9D]
 l_0332:
 	add.w	#0x800,a1                           	| [$0332: set  3,d]
-	WRITE_DO_TO_SCREEN_A1                         	| [$0334: ld   (de),a]
+	WRITE_D0_TO_SCREEN_A1                         	| [$0334: ld   (de),a]
 l_0335:
 	move.b	d1,d0                           	| [$0335: ld   a,b]
 	addq.w	#1,a0                           	| [$0336: inc  hl]
@@ -632,7 +632,7 @@ l_0350:
 	add.b	#0x5F,d0                         	| [$0365: add  a,$5F]
 l_0367:
 	add.w	#0x800,a1                           	| [$0367: set  3,d]
-	WRITE_DO_TO_SCREEN_A1                      | [$0369: ld   (de),a]
+	WRITE_D0_TO_SCREEN_A1                      | [$0369: ld   (de),a]
 	jra	l_0335                             	| [$036a: jp   $0335]
 l_036d:
 	move.b	#0x05,d1                        	| [$036d: ld   b,$05]
@@ -1432,7 +1432,9 @@ l_08e0:
 	clr.b	d0                               	| [$08f2: xor  a]
 	jbsr	osd_set_scroll_y             	| [$08f3: ld   (scrolly_a140),a]
 	jbsr	osd_set_scroll_x             	| [$08f6: ld   (scrollx_a130),a]
-	jbsr	l_1131                            	| [$08f9: call $1131]
+	jbsr	write_maze_1131                            	| [$08f9: call $1131]
+	* here the maze is fully drawn at start
+	BREAKPOINT	"maze drawn"
 	lea	l_89F5(a5),a0                      	| [$08fc: ld   hl,$89F5]
 l_08ff:
 	btst.b	#0,(a0)                         	| [$08ff: bit  0,(hl)]
@@ -2698,8 +2700,8 @@ l_107c:
 l_109d:
 	jbsr	l_1127                            	| [$109d: call $1127]
 	LOAD_D5D6_FROM_A0
-	LOAD_POINTER	value16_8054(a5),a1             	| [$10a0: ld   de,($8054)]
-
+	LOAD_WORD	value16_8054(a5),d3             	| [$10a0: ld   de,($8054)]
+	LOAD_D3D4_FROM_D3_16
 	addq.b	#1,d3                           	| [$10a4: inc  d]
 	move.b	d3,d0                           	| [$10a5: ld   a,d]
 	cmp.b	#0x03,d0                         	| [$10a6: cp   $03]
@@ -2724,7 +2726,7 @@ l_10c1:
 	LOAD_D3D4_FROM_D3_16
 l_10c8:
 	jbsr	osd_enable_interrupts
-	jra	l_1162                             	| [$10c9: jp   $1162]
+	jra	write_maze_rows_1162                             	| [$10c9: jp   $1162]
 
 l_10cc:
 	jbsr	l_1127                            	| [$10cc: call $1127]
@@ -2770,7 +2772,7 @@ l_10fd:
 	LOAD_WORD	value16_8058(a5),d5             	| [$1101: ld   hl,($8058)]
 
 l_1104:
-	jbsr	l_131e                            	| [$1104: call $131E]
+	jbsr	write_maze_row_131e                            	| [$1104: call $131E]
 	addq.b	#1,d3                           	| [$1107: inc  d]
 	subq.b	#1,d1                           	| [$1108: dec  b]
 	bne.b	0f                               	| [...]
@@ -2805,13 +2807,13 @@ l_1127:
 	STORE_WORD	d5,value16_8058(a5)            	| [$112d: ld   ($8058),hl]
 	rts                                    	| [$1130: ret]
 
-l_1131:
+write_maze_1131:
 	jbsr	l_1127                            	| [$1131: call $1127]
 	LOAD_WORD	value16_8054(a5),d3             	| [$1134: ld   de,($8054)]
 	LOAD_D3D4_FROM_D3_16
 	move.b	#0x20,d1                        	| [$1138: ld   b,$20]
 l_113a:
-	jbsr	l_1162                            	| [$113a: call $1162]
+	jbsr	write_maze_rows_1162                            	| [$113a: call $1162]
 	            	| [$113d: ld   (watchdog_a080),a]
 	LOAD_WORD	pointer_8056(a5),d5             	| [$1140: ld   hl,($8056)]
 	move.b	d1,d0                           	| [$1143: ld   a,b]
@@ -2834,7 +2836,7 @@ l_113a:
 	clr.b	d3                               	| [$115e: ld   d,$00]
 	jra	l_113a                             	| [$1160: jr   $113A]
 
-l_1162:
+write_maze_rows_1162:
 	movem.w	d1/d2,-(sp)                    	| [$1162: push bc]
 	movem.w	d3/d4,-(sp)                    	| [$1163: push de]
 	move.l	a1,-(sp)                        	| [$1163: push de]
@@ -2842,7 +2844,7 @@ l_1162:
 	LOAD_WORD	value16_8058(a5),d5             	| [$1166: ld   hl,($8058)]
 
 l_1169:
-	jbsr	l_131e                            	| [$1169: call $131E]
+	jbsr	write_maze_row_131e                            	| [$1169: call $131E]
 	addq.b	#1,d4                           	| [$116c: inc  e]
 
 	move.w	d5,-(sp)                        	| [$116d: push hl]
@@ -3178,7 +3180,7 @@ l_1319:
 
 * < D5.W: 16 bit value
 * < D3/D4
-l_131e:
+write_maze_row_131e:
 	movem.w	d1-d5,-(sp)                    	| [$131e: push bc]
 	                   	| [$131f: push de]
 	movem.l	a0/a1,-(sp)                        	| [$131f: push de]
@@ -3190,9 +3192,9 @@ l_131e:
 	move.b	d6,d0                           	| [$1327: ld   a,l]
 	cmp.b	#0x20,d0                         	| [$1328: cp   $20]
 	jcc	l_13b5                             	| [$132a: jp   nc,$13B5]
-	add.b	d0,d0                            	| [$132d: add  a,a]
-	add.b	d0,d0                            	| [$132e: add  a,a]
-	add.b	d0,d0                            	| [$132f: add  a,a]
+	lsl.b	#3,d0                            	| [$132d: add  a,a]
+	                            	| [$132e: add  a,a]
+	                            	| [$132f: add  a,a]
 	lsr.b	#1,d5                            	| [$1330: srl  h]
 	roxr.b	#1,d0                           	| [$1332: rra]
 	lsr.b	#1,d5                            	| [$1333: srl  h]
@@ -3254,10 +3256,10 @@ l_136d:
 	exg	d2,d0
 	jbsr	osd_w_videoram                         	| [$137a: ld   (hl),c]
 	exg	d2,d0
-	add.w	#0x800,a0                           	| [$137b: set  3,h] screen?
+	add.w	#0x800,a0                           	| [$137b: set  3,h]
 	move.b	l_82B1(a5),d0                   	| [$137d: ld   a,($82B1)]
 	or.b	d1,d0                             	| [$1380: or   b]
-	jbsr	osd_w_videoram                         	| [$1381: ld   (hl),a] screen?
+	jbsr	osd_w_videoram                         	| [$1381: ld   (hl),a]
 	                        	| [$1382: pop  hl]
 	movem.l	(sp)+,a0/a1                        	| [$1383: pop  de]
 	movem.w	(sp)+,d1-d5                    	| [$1383: pop  de]
@@ -3273,9 +3275,9 @@ l_1386:
 	move.b	d2,d6                           	| [$1389: ld   l,c]
 	LOAD_D5_16_FROM_D5D6
 	LOAD_D1_16_FROM_D1D2
-	add.w	d5,d5                            	| [$138a: add  hl,hl]
-	add.w	d5,d5                            	| [$138b: add  hl,hl]
-	add.w	d5,d5                            	| [$138c: add  hl,hl]
+	lsl.w	#3,d5                            	| [$138a: add  hl,hl]
+												| [$138b: add  hl,hl]
+												| [$138c: add  hl,hl]
 	add.w	d1,d5                            	| [$138d: add  hl,bc]
 	moveq	#0,d1
 	move.b	d3,d1                           	| [$138e: ld   c,d]
@@ -3299,13 +3301,15 @@ l_1386:
 l_13a8:
 	and.b	#0x1F,d0                         	| [$13a8: and  $1F]
 	bset.b	#7,d0                           	| [$13aa: set  7,a]
-	WRITE_DO_TO_SCREEN_A1                       	| [$13ac: ld   (de),a]
+	move.b	d0,(a1)                       	| [$13ac: ld   (de),a]  tile
 l_13ad:
 	exg	a1,a0                              	| [$13ad: ex   de,hl]
 	LOAD_D5D6_FROM_A0
 	bset.b	#3,d5                           	| [$13ae: set  3,h]
-	LOAD_A0_FROM_D5D6
-	WRITE_DO_TO_SCREEN_A1                         	| [$13b0: ld   (hl),b]
+	LOAD_A0_FROM_D5D6_SCREEN
+	exg	d0,d1
+	jbsr	osd_w_videoram                    	| [$13b0: ld   (hl),b] attribute (and write to screen)
+	exg	d0,d1
 	movem.l	(sp)+,a0/a1                        	| [$13b1: pop  hl]
 											| [$13b2: pop  de]
 										| [$13b2: pop  de]
@@ -3320,7 +3324,7 @@ l_13b5:
 	add.b	d4,d0                            	| [$13bb: add  a,e]
 	LOAD_POINTER	pointer_8056(a5),a1             	| [$13bc: ld   de,($8056)]
 
-	WRITE_DO_TO_SCREEN_A1                    	| [$13c0: ld   (de),a]
+	WRITE_D0_TO_SCREEN_A1                    	| [$13c0: ld   (de),a]
 	move.b	#0x51,d1                        	| [$13c1: ld   b,$51]
 	move.b	l_82D6(a5),d0                   	| [$13c3: ld   a,($82D6)]
 l_13c6:

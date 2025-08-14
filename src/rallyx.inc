@@ -222,7 +222,7 @@ okay\@:
 	move.w	(a7)+,d0
 	.endm
 	
-	.macro	WRITE_DO_TO_SCREEN_A1
+	.macro	WRITE_D0_TO_SCREEN_A1
 	exg	a0,a1
 	jbsr	osd_w_videoram
 	exg	a0,a1
