@@ -1296,6 +1296,7 @@ l_0811:
 l_0813:
 	* uses D5.W
 	jbsr	l_12c5                            	| [$0813: call $12C5]
+	LOG_REGS	816
 	move.b	d0,(a1)+                         	| [$0816: ld   (de),a]
 											| [$0817: inc  de]
 	add.w	#0x100,d5                           	| [$0818: inc  h]
@@ -1494,7 +1495,7 @@ l_0969:
 	jne	l_0969                             	| [$096f: djnz $0969]
 	move.l	(sp)+,a1                        	| [$0971: pop  de]
 	lea	l_8344(a5),a2                      	| [$0972: ld   ix,$8344]
-	LOAD_POINTER	pointer_8988(a5),a0             	| [$0976: ld   hl,($8988)]
+	LOAD_POINTER	pointer_on_lives_address_8988(a5),a0             	| [$0976: ld   hl,($8988)]
 
 	move.b	(a0),d2                         	| [$0979: ld   c,(hl)]
 	addq.b	#1,d2                           	| [$097a: inc  c]
@@ -1510,7 +1511,7 @@ l_0988:
 	jbsr	copy_status_row_1c4e                            	| [$098b: call $1C4E]
 	subq.b	#1,d1                           	| [...]
 	jne	l_0988                             	| [$098e: djnz $0988]
-	LOAD_POINTER	pointer_8988(a5),a0             	| [$0990: ld   hl,($8988)]
+	LOAD_POINTER	pointer_on_lives_address_8988(a5),a0             	| [$0990: ld   hl,($8988)]
 
 	move.b	(a0),d2                         	| [$0993: ld   c,(hl)]
 l_0994:
@@ -1518,14 +1519,15 @@ l_0994:
 	bne.b	0f                               	| [...]
 	rts                                    	| [$0995: ret  z] [...]
 0:
+	* draw life (yellow car) on status screen
 	move.b	#0xB0,d0                        	| [$0996: ld   a,$B0]
-	move.b	d0,(0x00,a2)                    	| [$0998: ld   (ix+$00),a]
+	WRITE_D0_TO_SCREEN_A2	0                    	| [$0998: ld   (ix+$00),a]
 	addq.b	#1,d0                           	| [$099b: inc  a]
-	move.b	d0,(0x01,a2)                    	| [$099c: ld   (ix+$01),a]
+	WRITE_D0_TO_SCREEN_A2	1                    	| [$099c: ld   (ix+$01),a]
 	addq.b	#1,d0                           	| [$099f: inc  a]
-	move.b	d0,(0x20,a2)                    	| [$09a0: ld   (ix+$20),a]
+	WRITE_D0_TO_SCREEN_A2	0x20                    	| [$09a0: ld   (ix+$20),a]
 	addq.b	#1,d0                           	| [$09a3: inc  a]
-	move.b	d0,(0x21,a2)                    	| [$09a4: ld   (ix+$21),a]
+	WRITE_D0_TO_SCREEN_A2	0x21                    	| [$09a4: ld   (ix+$21),a]
 	jbsr	a2_to_ixl
 	move.b	ixl,d0                          	| [$09a7: ld   a,ixl]
 	addq.b	#2,d0                           	| [$09a9: inc  a] * 2
@@ -1993,10 +1995,10 @@ l_0caf:
 * < D5.W
 * > carry
 l_0cb1:
-	movem.w	d1/d2,-(sp)                    	| [$0cb1: push bc]
+	movem.w	d1/d2/d5/d6,-(sp)                    	| [$0cb1: push bc]
 	move.b	d0,d2                           	| [$0cb2: ld   c,a]
 
-	move.w	d5,-(sp)                        	| [$0cb3: push hl]
+	                        	| [$0cb3: push hl]
 	exg	d3,d5                              	| [$0cb4: ex   de,hl]
 	LOAD_D3D4_FROM_D3_16
 	move.b	(0x08,a2),d5                    	| [$0cb5: ld   h,(ix+$08)]
@@ -2092,6 +2094,7 @@ l_0d3c:
 	LOAD_D5_16_FROM_D5D6
 	exg	d3,d5                              	| [$0d3c: ex   de,hl]
 	LOAD_D3D4_FROM_D3_16
+	LOAD_D5D6_FROM_D5_16
 	jbsr	l_12f2                            	| [$0d3d: call $12F2]
 	scs		d7                              	| [$0d40: ex   af,af'] save carry
 	move.b	d3,d0                           	| [$0d41: ld   a,d]
@@ -2112,16 +2115,16 @@ l_0d3c:
 l_0d55:
 	* save carry flag. We'll retrieve it at F55
 	scs		d7                              	| [$0d55: ex   af,af']
-	move.w	(sp)+,d5                        	| [$0d56: pop  hl]
+	                        	| [$0d56: pop  hl]
 	move.b	d2,d0                           	| [$0d57: ld   a,c]
-	movem.w	(sp)+,d1/d2                    	| [$0d58: pop  bc]
+	movem.w	(sp)+,d1/d2/d5/d6                    	| [$0d58: pop  bc]
 	CLEAR_XC_FLAGS
 	rts                                    	| [$0d59: ret]
 
 l_0d5a:
-	move.w	(sp)+,d5                        	| [$0d5a: pop  hl]
+	                        	| [$0d5a: pop  hl]
 	move.b	d2,d0                           	| [$0d5b: ld   a,c]
-	movem.w	(sp)+,d1/d2                    	| [$0d5c: pop  bc]
+	movem.w	(sp)+,d1/d2/d5/d6                      	| [$0d5c: pop  bc]
 	SET_XC_FLAGS                           	| [$0d5d: scf]
 	rts                                    	| [$0d5e: ret]
 
@@ -2149,10 +2152,8 @@ increase_and_wrap_d5w_0d69:
 	rts                                    	| [$0d71: ret] [uncovered]
 
 l_0d72:
-
-	move.l	a0,-(sp)                        	| [$0d72: push hl]
-	movem.w	d3/d4,-(sp)                    	| [$0d73: push de]
-	move.l	a1,-(sp)                        	| [$0d73: push de]
+	                        	| [$0d72: push hl]
+	movem.w	d3/d5,-(sp)                    	| [$0d73: push de]
 	move.w	d0,-(sp)                        	| [$0d74: push af]
 	LOAD_WORD	timer_8000(a5),d5             	| [$0d75: ld   hl,($8000)]
 
@@ -2168,9 +2169,8 @@ l_0d7c:
 l_0d85:
 	STORE_WORD	d5,timer_8000(a5)            	| [$0d85: ld   ($8000),hl]
 	move.w	(sp)+,d0                        	| [$0d88: pop  af]
-	move.l	(sp)+,a1                        	| [$0d89: pop  de]
-	movem.w	(sp)+,d3/d4                    	| [$0d89: pop  de]
-	move.l	(sp)+,a0                        	| [$0d8a: pop  hl]
+	movem.w	(sp)+,d3/d5                    	| [$0d89: pop  de]
+	                        	| [$0d8a: pop  hl]
 	rts                                    	| [$0d8b: ret]
 
 l_0d8c:
@@ -2770,7 +2770,6 @@ l_10fd:
 	move.b	#0x20,d1                        	| [$10fe: ld   b,$20]
 	move.b	d1,d2                           	| [$1100: ld   c,b]
 	LOAD_WORD	value16_8058(a5),d5             	| [$1101: ld   hl,($8058)]
-
 l_1104:
 	jbsr	write_maze_row_131e                            	| [$1104: call $131E]
 	addq.b	#1,d3                           	| [$1107: inc  d]
@@ -2781,9 +2780,10 @@ l_1104:
 
 	                        	| [$110a: push hl]
 	LOAD_WORD	pointer_8056(a5),d5             	| [$110b: ld   hl,($8056)]
-	move.b	d1,d0                           	| [$110e: ld   a,b]
-	clr.b	d1                               	| [$110f: ld   b,$00]
-	add.w	#0x20,d5                            	| [$1111: add  hl,bc]
+	clr.w	d1                               	| [$110f: ld   b,$00]
+	move.b	d1,d0                           	| [$110e: ld   a,b] ?? what's the point?
+	move.b	d2,d1
+	add.w	d1,d5                            	| [$1111: add  hl,bc]
 	LOAD_D5D6_FROM_D5_16
 	move.b	d0,d1                           	| [$1112: ld   b,a]
 	move.b	d5,d0                           	| [$1113: ld   a,h]
@@ -2797,7 +2797,7 @@ l_1104:
 	cmp.b	#0x03,d0                         	| [$111e: cp   $03]
 	jne	l_1104                             	| [$1120: jr   nz,$1104]
 	clr.b	d3                               	| [$1122: ld   d,$00]
-	add.w	#0x100,a0                           	| [$1124: inc  h]
+	add.w	#0x100,d5                           	| [$1124: inc  h]
 	jra	l_1104                             	| [$1125: jr   $1104]
 
 l_1127:
@@ -2972,6 +2972,7 @@ l_11fc:
 	jbsr	l_125f                            	| [$1224: call $125F]
 	movem.w	(sp)+,d1/d2                    	| [$1227: pop  bc]
 	jcs	l_11e2                             	| [$1228: jr   c,$11E2]
+	LOAD_D5D6_FROM_A0
 	move.b	d5,(0x21,a2)                    	| [$122a: ld   (ix+$21),h]
 	move.b	d6,(0x20,a2)                    	| [$122d: ld   (ix+$20),l]
 	move.b	d6,d0                           	| [$1230: ld   a,l]
@@ -3092,12 +3093,12 @@ l_12c2:
 	rts                                    	| [$12c4: ret]
 
 * < D5.W
+* > D0.B
 l_12c5:
 
 	move.w	d5,-(sp)                        	| [$12c5: push hl]
 	movem.w	d3/d4,-(sp)                    	| [$12c6: push de]
 	movem.w	d1/d2,-(sp)                    	| [$12c7: push bc]
-	                         	| [$12c8: xor  a]
 	clr.b	d0                               	| [$12c8: xor  a]
 	exg	d5,d3                              	| [$12c9: ex   de,hl]
 	LOAD_D3D4_FROM_D3_16
@@ -3162,12 +3163,19 @@ l_12f2:
 	move.b	(a1),d0                         	| [$1311: ld   a,(de)]
 l_1312:
 	add.b	d0,d0                            	| [$1312: add  a,a]
+	scs		d7			| note down carry flag from this add operation
 	subq.b	#1,d1                           	| [...]
 	jne	l_1312                             	| [$1313: djnz $1312]
+	* here carry is 0 and remains 0
 	move.b	d2,d0                           	| [$1315: ld   a,c]
 	movem.w	(sp)+,d1/d2                    	| [$1316: pop  bc]
 	move.l	(sp)+,a1                        	| [$1317: pop  de]
 	movem.w	(sp)+,d3/d4                    	| [$1317: pop  de]
+	tst.b	d7
+	jeq		0f
+	* set carry again if adding d0 with itself overflowed
+	SET_XC_FLAGS
+0:
 	rts                                    	| [$1318: ret]
 
 l_1319:
@@ -3186,6 +3194,7 @@ write_maze_row_131e:
 	movem.l	a0/a1,-(sp)                        	| [$131f: push de]
 	                       	| [$1320: push hl]
 	LOAD_D5D6_FROM_D5_16
+	LOG_REGS	1321
 	move.b	d5,d0                           	| [$1321: ld   a,h]
 	cmp.b	#0x38,d0                         	| [$1322: cp   $38]
 	jcc	l_13b5                             	| [$1324: jp   nc,$13B5]
@@ -3253,9 +3262,7 @@ l_136d:
 	                           	| [$1375: ld   l,a]
 	move.b	(a0),d2                         	| [$1376: ld   c,(hl)]
 	LOAD_POINTER	pointer_8056(a5),a0             	| [$1377: ld   hl,($8056)]
-	exg	d2,d0
-	jbsr	osd_w_videoram                         	| [$137a: ld   (hl),c]
-	exg	d2,d0
+	move.b	d2,(a0)                         	| [$137a: ld   (hl),c]
 	add.w	#0x800,a0                           	| [$137b: set  3,h]
 	move.b	l_82B1(a5),d0                   	| [$137d: ld   a,($82B1)]
 	or.b	d1,d0                             	| [$1380: or   b]
@@ -3370,7 +3377,7 @@ l_13f2:
 l_13fd:
 	subq.b	#1,d3                           	| [$13fd: dec  d]
 	jeq	l_1403                             	| [$13fe: jr   z,$1403]
-	sub.b	d2,d0                            	| [$1400: sub  c]
+	sub.b	d1,d0                            	| [$1400: sub  c]
 	jra	l_13fd                             	| [$1401: jr   $13FD]
 
 l_1403:
@@ -3885,15 +3892,15 @@ l_16d3:
 	move.b	l_8021(a5),d0                   	| [$16e8: ld   a,($8021)]
 	                               	| [$16eb: and  a]
 	jeq	l_068e                             	| [$16ec: jp   z,$068E]
-	LOAD_POINTER	pointer_8988(a5),a0             	| [$16ef: ld   hl,($8988)]
+	LOAD_POINTER	pointer_on_lives_address_8988(a5),a0             	| [$16ef: ld   hl,($8988)]
 
 	subq.b	#1,(a0)                         	| [$16f2: dec  (hl)]
 	jeq	l_19b9                             	| [$16f3: jp   z,$19B9]
 l_16f6:
 	lea	l_81AA(a5),a0                      	| [$16f6: ld   hl,$81AA]
-	move.b	(a0),d0                         	| [$16f9: ld   a,(hl)]
+	move.b	(a0)+,d0                         	| [$16f9: ld   a,(hl)]
 	move.b	d0,d1                           	| [$16fa: ld   b,a]
-	addq.w	#1,a0                           	| [$16fb: inc  hl]
+	                           	| [$16fb: inc  hl]
 	and.b	(a0),d0                          	| [$16fc: and  (hl)]
 	jeq	l_172a                             	| [$16fd: jp   z,$172A]
 	move.b	d1,d0                           	| [$1700: ld   a,b] [uncovered]
@@ -3940,7 +3947,7 @@ l_1741:
 	subq.w	#1,a0                           	| [$1746: dec  hl]
 	move.b	d0,(a0)                         	| [$1747: ld   (hl),a]
 	lea	l_1F00(a6),a0                      	| [$1748: ld   hl,$1F00]
-	lea	pointer_8988(a5),a1                      	| [$174b: ld   de,$8988]
+	lea	pointer_on_lives_address_8988(a5),a1                      	| [$174b: ld   de,$8988]
 	move.w	#0x0018,d1                      	| [$174e: ld   bc,$0018]
 	jbsr	ldir_video                              	| [$1751: ldir]
 	rts                                    	| [$1753: ret]
@@ -3956,7 +3963,7 @@ l_1754:
 	clr.b	d0                               	| [$175a: xor  a]
 	move.b	d0,-(a0)                         	| [$175b: ld   (hl),a]
 	lea	l_1f18(a6),a0                      	| [$175c: ld   hl,$1F18]
-	lea	pointer_8988(a5),a1                      	| [$175f: ld   de,$8988]
+	lea	pointer_on_lives_address_8988(a5),a1                      	| [$175f: ld   de,$8988]
 	move.b	d1,d0                           	| [$1762: ld   a,b]
 	move.w	#0x0016,d1                      	| [$1763: ld   bc,$0016]
 	tst.b	d0                               	| [$1766: and  a]
@@ -4357,7 +4364,7 @@ l_1996:
 	move.b	l_8021(a5),d0                   	| [$19ab: ld   a,($8021)]
 	                               	| [$19ae: and  a]
 	jeq	l_068e                             	| [$19af: jp   z,$068E]
-	LOAD_POINTER	pointer_8988(a5),a0             	| [$19b2: ld   hl,($8988)] [uncovered]
+	LOAD_POINTER	pointer_on_lives_address_8988(a5),a0             	| [$19b2: ld   hl,($8988)] [uncovered]
 
 	subq.b	#1,(a0)                         	| [$19b5: dec  (hl)] [uncovered]
 	jne	l_16f6                             	| [$19b6: jp   nz,$16F6] [uncovered]
@@ -4368,7 +4375,7 @@ l_19be:
 	move.b	timer_824b(a5),d0                   	| [$19be: ld   a,($824B)] [uncovered]
 	                               	| [$19c1: and  a] [uncovered]
 	jne	l_19be                             	| [$19c2: jr   nz,$19BE] [uncovered]
-	CLEAR_XC_FLAGS                         	| [$19c4: xor  a] [uncovered]
+	                         	| [$19c4: xor  a] [uncovered]
 	clr.b	d0                               	| [$19c4: xor  a] [uncovered]
 	move.b	d0,l_89F4(a5)                   	| [$19c5: ld   ($89F4),a] [uncovered]
 	move.b	(0x0c,a2),d0                    	| [$19c8: ld   a,(ix+$0c)] [uncovered]
@@ -5004,7 +5011,7 @@ l_1dac:
 	move.b	l_81AA(a5),d0                   	| [$1db3: ld   a,($81AA)] [uncovered]
 	or.b	d2,d0                             	| [$1db6: or   c] [uncovered]
 	move.b	d0,l_81B2(a5)                   	| [$1db7: ld   ($81B2),a] [uncovered]
-	LOAD_POINTER	pointer_8988(a5),a0             	| [$1dba: ld   hl,($8988)] [uncovered]
+	LOAD_POINTER	pointer_on_lives_address_8988(a5),a0             	| [$1dba: ld   hl,($8988)] [uncovered]
 
 	addq.b	#1,(a0)                         	| [$1dbd: inc  (hl)] [uncovered]
 

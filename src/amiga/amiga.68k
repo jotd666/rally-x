@@ -698,6 +698,8 @@ demo_game:
 	*jbsr	cpu_init		| zero all registers
 
 	jbsr	osd_disable_interrupts
+	move.l	a6,a3
+	add.l	#0xFFFF,a3			| trash A3 to match MAME IY
 	jmp			rallyx_reset					| pass control to the mpatrol core
 		
 	
