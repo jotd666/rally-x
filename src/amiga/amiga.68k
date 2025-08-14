@@ -108,9 +108,12 @@ SPRITE_ATTRIBUTES = 1
 SPRITE_SIZEOF = 4
 
 
-BIT_START_1P = 0
-BIT_START_2P = 1
+BIT_COIN_1 = 7
+BIT_START_1P = 6
 
+
+
+BIT_START_2P = 1
 BIT_LEFT = 1
 BIT_RIGHT = 0
 BIT_UP = 2
@@ -2438,6 +2441,34 @@ osd_video_control:
 	
 osd_read_p1_inputs:
 	move.b	player_1_controls,d0
+	movem.l	a0/d1,-(a7)
+	lea		keyboard_table(pc),a0
+	tst.b	(1,a0)		| "1" key like in MAME
+	beq.b	0f
+	bclr	#BIT_START_1P,d0
+0:
+
+	lea		keyboard_table(pc),a0
+	tst.b	(5,a0)		| "5" key like in MAME
+	beq.b	0f
+	bclr	#BIT_COIN_1,d0
+0:
+
+
+*	jbsr		is_game_playing
+*	jeq	1f
+*	move.l	_joypad_state,d1
+*	* game not playing, we can start with joypad
+*	btst	#JPB_BTN_UP,d1		| "1" key like in MAME
+*	beq.b	0f
+*	bclr	#BIT_START_1P,d0
+*0:
+*	btst	#JPB_BTN_DOWN,d1		| "2" key like in MAME
+*	beq.b	0f
+*	bclr	#BIT_START_2P,d0
+*0:	
+*1:	
+	movem.l	(a7)+,a0/d1	
 	rts
 	
 osd_read_p2_inputs:
@@ -2523,36 +2554,6 @@ osd_read_dsw:
 	not.b	d0		| active low
 	move.b	#0xCB,d0	| temp default MAME
 	rts
-	
-osd_read_system:
-	move.b	#0x3F,d0
-	movem.l	a0/d1,-(a7)
-	lea		keyboard_table(pc),a0
-	tst.b	(1,a0)		| "1" key like in MAME
-	beq.b	0f
-	bclr	#BIT_START_1P,d0
-0:
-	tst.b	(2,a0)		| "2" key like in MAME
-	beq.b	0f
-	bclr	#BIT_START_2P,d0
-0:	
-
-	jbsr		is_game_playing
-	jeq	1f
-	move.l	_joypad_state,d1
-	* game not playing, we can start with joypad
-	btst	#JPB_BTN_UP,d1		| "1" key like in MAME
-	beq.b	0f
-	bclr	#BIT_START_1P,d0
-0:
-	btst	#JPB_BTN_DOWN,d1		| "2" key like in MAME
-	beq.b	0f
-	bclr	#BIT_START_2P,d0
-0:	
-1:	
-	movem.l	(a7)+,a0/d1
-	
-	rts
 
 	
 
@@ -2593,10 +2594,7 @@ handle_keyboard:
     bsr	toggle_pause
 0:
 
-	cmp.b	#5,d0
-	jne	0f
-	nop			| todo insert coin
-0:
+
 	* cheat keys are always active in dev mode
 	.ifdef	RELEASE
 	btst	#4,cheat_flags+3

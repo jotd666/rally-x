@@ -595,6 +595,16 @@ l_01ec:
 	jra	l_015a                             	| [$01ed: jp   $015A]
 
 rallyx_irq:
+	* at least on amiga, we need keyboard interrupt enabled.
+	* this is done by disabling vblank, but setting SR at 2000
+	* it allows to intercept the "push start" button when a coin is inserted
+	* else the code loops in the irq which is wrong...
+	jbsr	osd_disable_interrupts
+	move.w	#0x2000,sr		| allow keyboard interrupt
+	jbsr	l_01f0
+	jbsr	osd_enable_interrupts
+	rts
+	
 l_01f0:
 
 	                     	| [$01f0: push hl]
@@ -1935,7 +1945,7 @@ l_0717:
 	LOG_REGS	73c   | added by add_reg_log.py
 	lea	l_81AB(a5),a0                      	| [$073c: ld   hl,$81AB] [uncovered]
 	LOG_REGS	73f   | added by add_reg_log.py
-	move.b	#0x03,(a0)                      	| [$073f: ld   (hl),$03] [uncovered]
+	move.b	#0x03,(a0)                      	| [$073f: ld   (hl),$03] screen?
 	LOG_REGS	741   | added by add_reg_log.py
 	jra	l_074c                             	| [$0741: jr   $074C] [uncovered]
 
@@ -1947,7 +1957,7 @@ l_0743:
 	LOG_REGS	747   | added by add_reg_log.py
 	lea	l_81AB(a5),a0                      	| [$0747: ld   hl,$81AB]
 	LOG_REGS	74a   | added by add_reg_log.py
-	move.b	#0x01,(a0)                      	| [$074a: ld   (hl),$01]
+	move.b	#0x01,(a0)                      	| [$074a: ld   (hl),$01] screen?
 l_074c:
 	                         	| [$074c: xor  a]
 	LOG_REGS	74c   | added by add_reg_log.py
@@ -7785,7 +7795,7 @@ l_1b1d:
 	addq.w	#1,a0                           	| [$1b23: inc  hl]
 	LOAD_D1_16_FROM_D1D2
 	LOG_REGS	1b24   | added by add_reg_log.py
-	jbsr	ldir                              	| [$1b24: ldir]
+	jbsr	ldir_video                              	| [$1b24: ldir]
 	LOG_REGS	1b26   | added by add_reg_log.py
 	movem.w	(sp)+,d1/d2                    	| [$1b26: pop  bc]
 	LOG_REGS	1b27   | added by add_reg_log.py
@@ -10886,9 +10896,15 @@ a2_to_ixl:
 ixl_to_a2:
 	move.l	d0,-(a7)
 	move.l	a2,d0
-	sub.l	a6,d0
-	move.b	ixl,d0
-	move.l	d0,a2
+	sub.l	a6,d0		| z80 address
+	.ifndef		RELEASE
+	jcc		0f
+	jbsr	osd_get_last_known_pc
+	BREAKPOINT	"wrong a2 value < a6"
+0:
+	.endif
+	move.b	ixl,d0		| replace lsb part
+	lea	(a6,d0.l),a2	| rebuild address
 	move.l	(a7)+,d0
 	rts
 	
