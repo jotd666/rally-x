@@ -40,13 +40,29 @@
 	.endm
 
 	.macro	BREAK_IF_IN_SCREEN	reg
+	* check main screen range
 	cmp.w	#0x8400,\reg
 	jcs		skip\@
 	cmp.w	#0x8800,\reg
 	jcc		skip\@
 	jbsr	osd_get_last_known_pc
 	BREAKPOINT	"loading 8400-8800 in \reg"
+	jra		out\@
 skip\@:
+	cmp.w	#0x8040,\reg
+	jcs		out\@
+	cmp.w	#0x8400,\reg
+	jcc		out\@
+	* check if 8 first bytes of each row
+	move.w	d7,-(a7)
+	move.w	\reg,d7
+	and.w	#0x1F,d7
+	cmp.w	#8,d7
+	movem.w	(a7)+,d7
+	jcc		out\@
+	jbsr	osd_get_last_known_pc
+	BREAKPOINT	"loading 8x4[0-7] in \reg"
+out\@:
 	.endm
 	
 * those macros use rol/ror instead of lsl/lsr

@@ -236,12 +236,16 @@ hw_sprite_set_list = []
 ##    _,hw_sprite_set = load_tileset(tsd,i,16,"hw_sprites",dump_dir,dump=dump_it,name_dict=sprite_names,cluts=cluts)
 ##    hw_sprite_set_list.append(hw_sprite_set)
 
+# orange in first position
 orange = (222,151,71)
 main_tile_palette = sorted(main_tile_palette)
 main_tile_palette.remove(orange)
 main_tile_palette = [orange]+main_tile_palette
-
+# black in any position but first, which is ignored
+black = (0,0,0)
 status_tile_palette = sorted(status_tile_palette)
+status_tile_palette.insert(0,(0x1,0x1,0x1))  # dummy
+
 
 full_palette = sorted(sprite_palette)
 

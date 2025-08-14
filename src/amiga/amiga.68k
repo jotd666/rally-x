@@ -380,7 +380,7 @@ _user:
 	lea		main_colors,a1
 	bsr		load_palette
 	move.w	#TOTAL_NB_COLORS,d0
-	lea		main_palette,a0
+	lea		status_palette,a0
 	lea		status_colors,a1
 	bsr		load_palette
 	
@@ -1723,9 +1723,10 @@ platform_init:
     move.w #TILE_PLANE_X_SHIFT,bplcon1(a5)
 	
 	# 0 modulo (OCS)
-	moveq	#NB_BYTES_PER_MAIN_ROW-40,d0
-    move.w d0,bpl1mod(a5)
+	move.w	#NB_BYTES_PER_MAIN_ROW-40,d0
     move.w d0,bpl2mod(a5)
+	move.w	#NB_BYTES_PER_STATUS_ROW-40,d0
+    move.w d0,bpl1mod(a5)
 
 	
 	lea		_custom,a5
@@ -1828,8 +1829,15 @@ osd_w_videoram:
 0:
 	cmp.w	#0x400,d7
 	jcc		0f
-	* status panel tiles TODO
+	* status panel tiles
 	* only addresses 80x0->80x7 are displayed
+	move.w	d7,d1
+	and.w	#0x1F,d1
+	cmp.w	#8,d1
+	jcc		osd_w_videoram_out
+	move.b	(0x800,a0),d1		| tile attribute
+	sub.w	#0x400,d7		| 0->3FF
+	jbsr	update_status_tile
 	jra		osd_w_videoram_out
 0:
 	cmp.w	#0x800,d7
@@ -1845,6 +1853,15 @@ osd_w_videoram:
 	jcc		0f
 	* between 0x8800 and 0x8bff: status panel attributes
 	* only addresses 88x0->88x7 are displayed
+	move.w	d7,d1
+	and.w	#0x1F,d1
+	cmp.w	#8,d1
+	jcc		osd_w_videoram_out
+	move.b	d0,d1				| tile attribute
+	move.b	(-0x800,a0),d0		| tile code
+	sub.w	#0xC00,d7		| 0->3FF
+	jbsr	update_status_tile
+	
 	jra		osd_w_videoram_out
 0:
 	cmp.w	#0x1000,d7
@@ -1862,6 +1879,22 @@ osd_w_videoram_out:
 
 
 
+
+* < D7: 0-0x400
+* > D0: 
+compute_status_tile_xy:
+	moveq	#0,d0
+	moveq	#0,d1
+	move.b	d7,d0
+	
+	sub.b	#4,d0
+	and.b	#0x7,d0	| x
+	add.w	#0x16,d0	| more to the right
+	move.w	d7,d1
+	and.w	#0x3FF,d1
+	lsr.w	#5,d1		| Y
+	lsl.w	#3,d1		| times 8
+	rts
 
 * < D7: 0-0x400
 * > D0: 
@@ -2114,7 +2147,7 @@ update_status_tile:
 	move.b	d1,d3	| attribute
 	* flip X/Y = bits 6 and 7 (to clarify)
 
-	bsr		compute_tile_xy
+	bsr		compute_status_tile_xy
 	
 
 	
@@ -2189,7 +2222,7 @@ status_standard_tile:
 	.set	offset,offset+NB_BYTES_PER_STATUS_ROW
 	.endr
 41:
-	MAIN_TILE_NEXT_PLANE
+	STATUS_TILE_NEXT_PLANE
 	dbf		d4,4b
 0:
 	rts
