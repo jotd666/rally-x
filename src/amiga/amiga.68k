@@ -25,6 +25,7 @@ PREVIOUS_SPRITE_SIZE = 8
 CURRENT_SPRITE_SIZE = 4
 
 TILE_PLANE_X_SHIFT = 8
+STATUS_TEXT_X_SHIFT = 0x20-3
 
 NB_CLUTS_POW = 6
 NB_CLUTS = 1<<NB_CLUTS_POW
@@ -41,7 +42,7 @@ NTSC_Y_SHIFT = 12
 
 Y_MAX = 256
 
-BORDERBLANK = 0
+BORDERBLANK = 1
 BASE_BPLCON3_VALUE = (1<<12)+(BORDERBLANK<<5)  | dpf second playfield palette starts at color 16!
 BASE_BPLCON2_VALUE = 0x0064		| sprites above all playfields
 SPRITE_ADDRESS = 0x3C00
@@ -346,7 +347,16 @@ _user:
 	move.l	a0,playfield_displayed_screen_ptr
 
 	lea		bg_screen_buffer,a0
-	move.l	a0,background_screen_ptr
+	move.l	a0,status_screen_ptr
+	* fill right part with black color (color #1)
+	move.w	#NB_STATUS_LINES-1,d0
+0:
+	moveq	#7,d1
+1:
+	st.b	(STATUS_TEXT_X_SHIFT,a0,d1.w)
+	dbf		d1,1b
+	lea		(NB_BYTES_PER_STATUS_ROW,a0),a0
+	dbf		d0,0b
 	
 	st		music_track_start_number
 
@@ -822,11 +832,12 @@ log_used_tiles:
 	lea	(0x800,a5),a4
 	lea	status_tile_log_table,a0
 	moveq	#0,d7
-	move.w	#0x20-1,d6
+	move.w	#0x1F-1,d6
 
 0:
 	moveq	#0,d1
 	moveq	#0,d0
+
 	move.b	(a5,d7.w),d0	| tile code
 	move.b	(a4,d7.w),d1	| tile attribute
 	and.b	#NB_CLUTS-1,d1		| remove flip/mirror
@@ -835,7 +846,7 @@ log_used_tiles:
 	st.b	(a0,d0.w)
 	addq	#1,d7
 	and.w	#7,d7
-	jne		1f
+	jne		0b
 	* skip 1 line each 8 chars
 	add.w	#0x20,a4
 	add.w	#0x20,a5
@@ -1704,7 +1715,7 @@ platform_init:
     move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
  	*         VVHH
     move.w #0x2489,d0
-    move.w #0x2479,d1
+    move.w #0x24A9,d1
 	cmp.l	#NTSC_MONITOR_ID,monitor
 	jne		0f
 	sub.w	#NTSC_Y_SHIFT<<8,d0
@@ -1724,9 +1735,9 @@ platform_init:
 	
 	# 0 modulo (OCS)
 	move.w	#NB_BYTES_PER_MAIN_ROW-40,d0
-    move.w d0,bpl2mod(a5)
-	move.w	#NB_BYTES_PER_STATUS_ROW-40,d0
     move.w d0,bpl1mod(a5)
+	move.w	#NB_BYTES_PER_STATUS_ROW-40,d0
+    move.w d0,bpl2mod(a5)
 
 	
 	lea		_custom,a5
@@ -1836,7 +1847,6 @@ osd_w_videoram:
 	cmp.w	#8,d1
 	jcc		osd_w_videoram_out
 	move.b	(0x800,a0),d1		| tile attribute
-	sub.w	#0x400,d7		| 0->3FF
 	jbsr	update_status_tile
 	jra		osd_w_videoram_out
 0:
@@ -1859,7 +1869,7 @@ osd_w_videoram:
 	jcc		osd_w_videoram_out
 	move.b	d0,d1				| tile attribute
 	move.b	(-0x800,a0),d0		| tile code
-	sub.w	#0xC00,d7		| 0->3FF
+	sub.w	#0x800,d7		| 0->3FF
 	jbsr	update_status_tile
 	
 	jra		osd_w_videoram_out
@@ -1889,7 +1899,7 @@ compute_status_tile_xy:
 	
 	sub.b	#4,d0
 	and.b	#0x7,d0	| x
-	add.w	#0x16,d0	| more to the right
+	add.w	#STATUS_TEXT_X_SHIFT,d0	| more to the right
 	move.w	d7,d1
 	and.w	#0x3FF,d1
 	lsr.w	#5,d1		| Y
@@ -2031,6 +2041,14 @@ update_main_tile:
 	.endr	
 	.endm
 	
+	.macro	CLEAR_STATUS_TILE_FIRST_PLANE
+	.set	offset,0
+	.rept	8
+	st.b	(offset,a1)
+	.set	offset,offset+NB_BYTES_PER_STATUS_ROW
+	.endr	
+	.endm
+	
 	.macro	STATUS_TILE_NEXT_PLANE
 	add.w	d5,a1
 	.endm
@@ -2154,7 +2172,7 @@ update_status_tile:
 	* updating bitplanes
 	move.l	#STATUS_SCREEN_PLANE_SIZE,d5
 	move.w	#NB_PLAYFIELD_PLANES-1,d4
-	move.l	background_screen_ptr,a1
+	move.l	status_screen_ptr,a1
 
 	lea		mulNB_BYTES_PER_STATUS_ROW_table,A2
 	add.w	d1,d1
@@ -2174,7 +2192,7 @@ update_status_tile:
 	move.l	(a0,d2.w),d0		| tile pointer
 	.ifndef	RELEASE
 	jne		12f
-	add.w	#0x8400,d7
+	add.w	#0x8000,d7
 	lsr.w	#2,d2
 	*BREAKPOINT	"game_tile_not_registered_error"
 	move.w	#0x0F0,_custom+color
@@ -2302,9 +2320,13 @@ status_mirror_flipped_tile:
 
 11:
 111:
+	subq	#1,d4
+	CLEAR_STATUS_TILE_FIRST_PLANE
+	STATUS_TILE_NEXT_PLANE
+112:
 	CLEAR_STATUS_TILE_PLANE
 	STATUS_TILE_NEXT_PLANE
-	dbf		d4,111b
+	dbf		d4,112b
 2:
 	rts
 	
@@ -2383,7 +2405,7 @@ HW_SpriteYTable_\height:
 
 set_background_bitplanes:
 	movem.l	a0-a1/d0-d2,-(a7)
-	move.l	background_screen_ptr,d0
+	move.l	status_screen_ptr,d0
 	lea	background_bitplanes+2,a0
     moveq #NB_PLAYFIELD_PLANES-1,d1
  	move.l	#STATUS_SCREEN_PLANE_SIZE,d2
@@ -3206,7 +3228,7 @@ playfield_screen_data_2:
 	.endif
 	
 	
-background_screen_ptr:
+status_screen_ptr:
 	.long	0
 playfield_drawed_screen_ptr:
 	.long	0
@@ -3258,12 +3280,12 @@ log_ptr:
 	.section	.bss
 
 main_tile_log_table:
-	* 32 cluts, 256 tiles
+	* 64 cluts, 256 tiles
 	* a lot of combinations aren't used (fortunately!)
 	.skip	NB_CLUTS*NB_TILES
 
 status_tile_log_table:
-	* 32 cluts, 256 tiles
+	* 64 cluts, 256 tiles
 	* a lot of combinations aren't used (fortunately!)
 	.skip	NB_CLUTS*NB_TILES
 
@@ -3341,17 +3363,17 @@ game_copperlist:
 	* enable sprite colors now
 
 bobs_bitplanes:
-	DECL_EVEN_BITPLANES	4,NB_PLAYFIELD_PLANES
-background_bitplanes:
 	DECL_EVEN_BITPLANES	0,NB_PLAYFIELD_PLANES
+background_bitplanes:
+	DECL_EVEN_BITPLANES	4,NB_PLAYFIELD_PLANES
 
 	* priority: BOBs playfield on top
 	.word	bplcon2,BASE_BPLCON2_VALUE
 
 status_colors:
-	DECL_COLORS	0,TOTAL_NB_COLORS
-main_colors:
 	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
+main_colors:
+	DECL_COLORS	0,TOTAL_NB_COLORS
 	
 *sprite_colors:
 *	DECL_COLORS	16,16
