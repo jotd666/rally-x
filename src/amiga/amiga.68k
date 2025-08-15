@@ -385,8 +385,8 @@ _user:
 	bcs		1b
 2:
 
-	bsr		set_background_bitplanes
-	bsr		set_bobs_bitplanes
+	bsr		set_status_bitplanes
+	bsr		set_main_bitplanes
 
 	move.w	#TOTAL_NB_COLORS,d0
 	lea		main_palette,a0
@@ -646,8 +646,10 @@ seed:
 	dc.l	0x12345678
 
 osd_set_scroll_x:
+	move.b	d0,scroll_x
 	rts
 osd_set_scroll_y:
+	move.b	d0,scroll_y
 	rts
 	
 * 60Hz VBLANK interrupt (also keyboard)
@@ -788,6 +790,7 @@ _vblank:
 	
 	jbsr	rallyx_irq
 
+	
 	.ifndef	RELEASE
 	jbsr	log_used_tiles
 	.endif
@@ -802,6 +805,8 @@ _vblank:
 	
 	.ifne	OPT_ENABLE_DOUBLE_BUFFERING
 	jbsr		switch_screen_buffers
+	.else
+	jbsr		set_main_bitplanes
 	.endif
 	
 	
@@ -811,6 +816,8 @@ _vblank:
 3:
     movem.l (a7)+,d0-d7/a0-a6
     rte
+	
+
 
 log_used_tiles:
 	* scan the whole screen, see what was updated
@@ -1574,7 +1581,7 @@ switch_screen_buffers:
 	move.l	a3,bob_previous_displayed_sprites
 	move.l	a2,bob_previous_drawed_sprites
 
-	jbra		set_bobs_bitplanes
+	jbra		set_main_bitplanes
 	.endif
 	
 	
@@ -2345,13 +2352,13 @@ status_mirror_flipped_tile:
 main_mirror_jump_table:
 	.long	main_mirror_tile
 	.long	main_standard_tile
-	.long	main_flipped_tile
 	.long	main_mirror_flipped_tile
+	.long	main_flipped_tile
 status_mirror_jump_table:
 	.long	status_mirror_tile
 	.long	status_standard_tile
-	.long	status_flipped_tile
 	.long	status_mirror_flipped_tile
+	.long	status_flipped_tile
 	
 mirror_bits:
 	.include "mirror_bits.68k"
@@ -2414,20 +2421,39 @@ HW_SpriteYTable_\height:
 
 	DEF_HW_SPRITE_Y_TABLE	16
 
-set_background_bitplanes:
+set_status_bitplanes:
 	movem.l	a0-a1/d0-d2,-(a7)
 	move.l	status_screen_ptr,d0
-	lea	background_bitplanes+2,a0
+	lea	status_bitplanes+2,a0
     moveq #NB_PLAYFIELD_PLANES-1,d1
  	move.l	#STATUS_SCREEN_PLANE_SIZE,d2
  	jra		set_bitplanes
 
-set_bobs_bitplanes:
+set_main_bitplanes:
 	movem.l	a0-a1/d0-d2,-(a7)
- 	lea	bobs_bitplanes+2,a0
+	
+	* set bitplanes
+	moveq	#0,d0
+	moveq	#0,d2
+	move.b	scroll_y,d0
+	add.w	d0,d0
+	add.w	d0,d0
+	lea		mulNB_BYTES_PER_MAIN_ROW_table,a2
+	move.w	(a2,d0.w),d0		| compute Y offset
+	move.b	scroll_x,d2
+	*add.w	#TILE_PLANE_X_SHIFT,d2
+	add.w	d2,d2
+	add.w	d2,d2
+	lea		scroll_table,a2
+	move.w	(a2,d2.w),fine_x_scroll_value
+	add.w	(2,a2,d2.w),d0
+	
     moveq #NB_PLAYFIELD_PLANES-1,d1
  	move.l	#MAIN_SCREEN_PLANE_SIZE,d2
-    move.l	playfield_displayed_screen_ptr(pc),d0
+    move.l	playfield_displayed_screen_ptr(pc),a0
+	add.w	d0,a0		| X/Y scroll offset
+	move.l	a0,d0		| first bitplane screen pointer
+ 	lea	main_bitplanes+2,a0
 set_bitplanes:
 1:
     swap d0
@@ -2440,6 +2466,8 @@ set_bitplanes:
 	movem.l	(a7)+,a0-a1/d0-d2
     rts
 
+scroll_table:
+	.include	"scroll_table_16.68k"
 	
 osd_debug_hook:
 	rts
@@ -3244,7 +3272,12 @@ playfield_displayed_screen_ptr:
 
 
 	.include	"sound_entries.68k"
-
+	
+scroll_x:
+	.byte	0
+scroll_y:
+	.byte	0
+	
 _keyexit:
 	.byte	0x45	| ESC by default unless whdload overwrites it
 
@@ -3368,10 +3401,14 @@ game_copperlist:
 
 	* enable sprite colors now
 
-bobs_bitplanes:
+main_bitplanes:
 	DECL_EVEN_BITPLANES	0,NB_PLAYFIELD_PLANES
-background_bitplanes:
+status_bitplanes:
 	DECL_EVEN_BITPLANES	4,NB_PLAYFIELD_PLANES
+
+	.word	bplcon1
+fine_x_scroll_value:
+	.word	0
 
 	* priority: BOBs playfield on top
 	.word	bplcon2,BASE_BPLCON2_VALUE

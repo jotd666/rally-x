@@ -1435,7 +1435,7 @@ l_08e0:
 	jbsr	osd_set_scroll_x             	| [$08f6: ld   (scrollx_a130),a]
 	jbsr	write_maze_1131                            	| [$08f9: call $1131]
 	* here the maze is fully drawn at start
-	BREAKPOINT	"maze drawn"
+	.word	0x60FE
 	lea	l_89F5(a5),a0                      	| [$08fc: ld   hl,$89F5]
 l_08ff:
 	btst.b	#0,(a0)                         	| [$08ff: bit  0,(hl)]
