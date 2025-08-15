@@ -1,12 +1,13 @@
 implement scrolling: in progress, scroll table probably not adapted
 main playfield too wide (2 tiles on the right, hide with other playfield: write the other playfield 2 tiles before?)
-implement sprites!!!!
+implement sprites: X ok, clut OK, Y not working
+sprites & second (status) playfield palette: make it distinct
+
+
 only 1 flag displayed in the radar
 round number not displayed
 
 memory overlapping between status and main? (bottom of status memory seem the same as main, check on MAME)
 compare memory after maze drawn MAME/amiga
 
-ECS: try to reduce colors!
-BOB displayed using status bitplane
-sprites for enemy cars (8)
+ECS: try to reduce colors: would work. Create separate AGA & OCS versions

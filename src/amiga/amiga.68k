@@ -99,7 +99,7 @@ STATUS_SCREEN_PLANE_SIZE = NB_BYTES_PER_STATUS_ROW*NB_STATUS_LINES
 
 STATUS_SCREEN_SIZE = STATUS_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
 SCREEN_SIZE = MAIN_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
-NB_HOST_SPRITES = 8
+NB_HOST_SPRITES = 6
 
 NB_TARGET_SPRITES = 6
 
@@ -803,7 +803,7 @@ _vblank:
 	jeq		23f
 0:
 
-	*jbsr		really_update_sprites
+	jbsr		really_update_sprites
 	
 	.ifne	OPT_ENABLE_DOUBLE_BUFFERING
 	jbsr		switch_screen_buffers
@@ -1049,10 +1049,21 @@ blit_background:
 
 really_update_sprites:
 update_bobs_and_hw_sprites:
+	* clear host sprites
+	move.w	#NB_HOST_SPRITES-1,d0
+
+	lea		host_sprites(pc),a2
+0:
+	st.b	(SPRITE_ATTRIBUTES,a2) | invalid clut: sprite is free
+	addq.w	#SPRITE_SIZEOF,a2
+	dbf		d0,0b
 	
 	* make a copy of the sprite memory
 	GET_MEMORY_BLOCKS_IN_A5_A6	
 	lea		(0x14,A5),a0
+
+	*move.w	#0xD401,(0x800,a0)
+	*move.w	#0xFC0C,(a0)
 
 	*****************************
 	* allocate hardware sprites *
@@ -1068,6 +1079,8 @@ update_bobs_and_hw_sprites:
 * > D3: color
 * > D4: flip X/Y attributes
 
+	tst.w	(a0)
+	jeq		1f
 	jbsr	compute_sprite_xy_code_and_attributes
 
 * < D0: sprite X
@@ -1076,9 +1089,8 @@ update_bobs_and_hw_sprites:
 * < D3: sprite color (clut index)
 * < D4: flip X/Y attributes
 * > D6: allocated sprite index
-
 	jbsr	alloc_sprite
-	
+1:	
 	addq.w	#CURRENT_SPRITE_SIZE/2,a0		| sprites are split into 2 blocks
 	dbf		d7,0b
 
@@ -1088,7 +1100,7 @@ update_bobs_and_hw_sprites:
 	* position hardware sprites *
 	*****************************
 
-	jbsr	place_hardware_sprites
+	jbsr	position_hardware_sprites
 	
 
 
@@ -1107,7 +1119,7 @@ compute_sprite_xy_code_and_attributes:
 	moveq	#0,d3
 	moveq	#0,d1
 	move.b	(TARGET_SPRITE_Y,a0),d1
-	neg.w	d0
+	neg.w	d1
 	add.w	#241,d1
 	moveq	#0,d1
 	move.b	(TARGET_SPRITE_LX,a0),d0
@@ -1157,7 +1169,7 @@ compute_sprite_xy_code_and_attributes:
 *	}
 *}
 
-place_hardware_sprites:
+position_hardware_sprites:
 	lea	HW_SpriteYTable_16,a1		| always loaded
 	lea	game_sprites,a3
 
@@ -1182,9 +1194,7 @@ place_hardware_sprites:
 	move.b	(SPRITE_Y,a2),d1
 	moveq	#0,d2
 	move.b	(SPRITE_CODE,a2),d2
-	move.b	d2,d5		| for flip bit
-	bclr	#7,d2		| clear flip bit
-	
+	and.b	#0x3F,d2				| max 64 possible sprites
 	move.w	d2,d4
 	add.w	d4,d4
 	add.w	d4,d4
@@ -1197,34 +1207,31 @@ place_hardware_sprites:
 	jra		30f
 25:
 	.endif
-	
+	* we have the pointer on the secondary table which has a copy of 6 simultaneous sprites
 	move.l	d4,a5
 	move.w	d6,d4
 	add.w	d4,d4
 	add.w	d4,d4
 	move.l	(a5,d4.W),a5			| get buffer for this sprite index
 
-	tst.b	d5			| x flip bit
-	bpl.b	21f
-	addq.w	#4,a5
-21:
+	* todo: orientation
+
 	move.l	(a5),d4
 	.ifndef	RELEASE
 	bne.b	22f
-	blitz		| should not happen
+	BREAKPOINT	"null sprite pointer"
 	jra		30f
 22:
 	.endif
 	move.l	d4,a5	| sprite pointer
 
 	* add offsets to both X & Y
-	add.b	#9,d0
-	add.b	#15,d1
+	
 
 	bsr		store_sprite_pos
 	move.l	d0,(a5)
 	* set colors
-	lea		cluts+2,a6
+	lea		cluts+2,a6		| skip first color
 	moveq	#0,d3
 	move.b	(SPRITE_ATTRIBUTES,a2),d3
 	lsl.w	#3,d3		| times 8
@@ -1492,27 +1499,24 @@ alloc_sprite:
 	btst	#0,d6
 	beq.b	1f
 	* odd: check if previous entry is free
-	tst.b	(SPRITE_X-SPRITE_SIZEOF,a2)
-	beq.b	8f
-	tst.b	(SPRITE_Y-SPRITE_SIZEOF,a2)
-	bne.b	10f
-8:
+	tst.b	(SPRITE_ATTRIBUTES-SPRITE_SIZEOF,a2)
+	jpl	10f
+
 	* previous entry is free, same clut: we can use that
 	* entry, no color conflict
 	lea		(-SPRITE_SIZEOF,a2),a2
 9:
-	move.b	d0,(a2)+		| X
-	move.b	d1,(a2)+		| Y
-	move.b	d2,(a2)+		| code
-	move.b	d3,(a2)+		| clut
+	move.b	d0,(SPRITE_X,a2)		| X
+	move.b	d1,(SPRITE_Y,a2)		| Y
+	move.b	d2,(SPRITE_CODE,a2)		| code
+	move.b	d3,(SPRITE_ATTRIBUTES,a2)		| clut
+	lea		(SPRITE_SIZEOF,a2),a2
 	rts						| done
 1:
 	* even: check if next entry is free
-	tst.b	(SPRITE_X+SPRITE_SIZEOF,a2)
-	beq.b	2f
-	tst.b	(SPRITE_Y+SPRITE_SIZEOF,a2)
-	bne.b	10f
-2:
+	tst.b	(SPRITE_ATTRIBUTES+SPRITE_SIZEOF,a2)
+	jpl	10f
+
 	* next entry is free, same clut: we can use that
 	* entry, no color conflict
 	lea		(SPRITE_SIZEOF,a2),a2
@@ -1534,11 +1538,9 @@ alloc_sprite:
 	* we consider that a sprite is not allocated
 	* if one of the coordinates is zero (real game
 	* doesn't care and sets X to 255, and Y to 0 at times
-	tst.b	(SPRITE_Y,a2)
-	beq.b	12f
-	tst.b	(SPRITE_X,a2)
-	bne.b	20f
-12:
+	tst.b	(SPRITE_ATTRIBUTES,a2)
+	jpl	20f
+
 	* not allocated: test odd sprite
 	tst.b	(SPRITE_Y+SPRITE_SIZEOF,a2)
 	jeq	9b
