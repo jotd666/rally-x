@@ -1078,8 +1078,8 @@ l_0674:
 	move.b	d0,l_81B0(a5)                   	| [$067d: ld   ($81B0),a]
 	move.w	#0xE03F,d5                      	| [$0680: ld   hl,$E03F]
 	STORE_WORD	d5,l_82F2(a5)            	| [$0683: ld   ($82F2),hl]
-	lea	l_81AB(a5),a0                      	| [$0686: ld   hl,$81AB]
-	move.b	#0x03,(a0)                      	| [$0689: ld   (hl),$03]
+	lea	game_state_81ab(a5),a0                      	| [$0686: ld   hl,$81AB]
+	move.b	#STATE_2P_GAME,(a0)                      	| [$0689: ld   (hl),$03]
 	jra	l_074c                             	| [$068b: jp   $074C]
 
 l_068e:
@@ -1161,7 +1161,7 @@ l_06fe:
 	lea	l_8728(a5),a1                      	| [$070e: ld   de,$8728]
 	lea	l_1F6E(a6),a0                      	| [$0711: ld   hl,$1F6E]
 	jbsr	rle_unpack_to_screen_1b15                            	| [$0714: call $1B15]
-l_0717:
+start_game_test_loop_0717:
 	move.b	timer_824b(a5),d0                   	| [$0717: ld   a,($824B)]
 	and.b	#0x1F,d0                         	| [$071a: and  $1F]
 	bne.b	0f                               	| [...]
@@ -1173,23 +1173,25 @@ l_0717:
 0:
 	jbsr	osd_read_p1_inputs                  	| [$0724: ld   a,(p1_a000)]
 	and.b	#0x40,d0                         	| [$0727: and  $40]
-	jeq	l_0743                             	| [$0729: jr   z,$0743]
+	jeq	start_game_1_player_0743                             	| [$0729: jr   z,$0743]
 	jbsr	osd_read_p2_inputs            	| [$072b: ld   a,(watchdog_a080)]
 	and.b	#0x40,d0                         	| [$072e: and  $40]
-	jne	l_0717                             	| [$0730: jr   nz,$0717]
-	move.b	nb_credits_8024(a5),d0                   	| [$0732: ld   a,($8024)] [uncovered]
-	subq.b	#0x02,d0                        	| [$0735: sub  $02] [uncovered]
-	jcs	l_0717                             	| [$0737: jr   c,$0717] [uncovered]
-	move.b	d0,nb_credits_8024(a5)                   	| [$0739: ld   ($8024),a] [uncovered]
-	lea	l_81AB(a5),a0                      	| [$073c: ld   hl,$81AB] [uncovered]
-	move.b	#0x03,(a0)                      	| [$073f: ld   (hl),$03] screen?
-	jra	l_074c                             	| [$0741: jr   $074C] [uncovered]
+	jne	start_game_test_loop_0717                             	| [$0730: jr   nz,$0717]
+	* 2 player game
+	move.b	nb_credits_8024(a5),d0                   	| [$0732: ld   a,($8024)]
+	subq.b	#0x02,d0                        	| [$0735: sub  $02]
+	jcs	start_game_test_loop_0717                             	| [$0737: jr   c,$0717]
+	* enough credits to start a 2P game
+	move.b	d0,nb_credits_8024(a5)                   	| [$0739: ld   ($8024),a]
+	lea	game_state_81ab(a5),a0                      	| [$073c: ld   hl,$81AB]
+	move.b	#STATE_2P_GAME,(a0)                      	| [$073f: ld   (hl),$03]
+	jra	l_074c                             	| [$0741: jr   $074C]
 
-l_0743:
+start_game_1_player_0743:
 	lea	nb_credits_8024(a5),a0                      	| [$0743: ld   hl,$8024]
 	subq.b	#1,(a0)                         	| [$0746: dec  (hl)]
-	lea	l_81AB(a5),a0                      	| [$0747: ld   hl,$81AB]
-	move.b	#0x01,(a0)                      	| [$074a: ld   (hl),$01] screen?
+	lea	game_state_81ab(a5),a0                      	| [$0747: ld   hl,$81AB]
+	move.b	#STATE_1P_GAME,(a0)                      	| [$074a: ld   (hl),$01] screen?
 l_074c:
 	                         	| [$074c: xor  a]
 	clr.b	d0                               	| [$074c: xor  a]
@@ -1218,11 +1220,11 @@ l_074c:
 	lea	l_1F93(a6),a0                      	| [$077f: ld   hl,$1F93]
 	jbsr	l_0b08                            	| [$0782: call $0B08]
 	jbsr	copy_status_row_1c4e                            	| [$0785: call $1C4E]
-	move.b	l_81AB(a5),d0                   	| [$0788: ld   a,($81AB)]
+	move.b	game_state_81ab(a5),d0                   	| [$0788: ld   a,($81AB)]
 	move.b	d0,d1                           	| [$078b: ld   b,a]
 	move.b	#0x66,d2                        	| [$078c: ld   c,$66]
-	cmp.b	#0x01,d0                         	| [$078e: cp   $01]
 	lea	l_1FBB(a6),a0                      	| [$0790: ld   hl,$1FBB]
+	cmp.b	#STATE_1P_GAME,d0                         	| [$078e: cp   $01]
 	jeq	l_0798                             	| [$0793: jr   z,$0798]
 	lea	l_1FA3(a6),a0                      	| [$0795: ld   hl,$1FA3]
 l_0798:
@@ -1435,7 +1437,7 @@ l_08e0:
 	jbsr	osd_set_scroll_x             	| [$08f6: ld   (scrollx_a130),a]
 	jbsr	write_maze_1131                            	| [$08f9: call $1131]
 	* here the maze is fully drawn at start
-	.word	0x60FE
+	jbsr	osd_break
 	lea	l_89F5(a5),a0                      	| [$08fc: ld   hl,$89F5]
 l_08ff:
 	btst.b	#0,(a0)                         	| [$08ff: bit  0,(hl)]
@@ -3538,8 +3540,8 @@ l_14d7:
 	roxl.b	#1,d0                           	| [$14ea: rla]
 	move.b	(a0),d7                         	| [$14eb: rl   (hl)]
 	roxl.b	#1,d7
-	move.b	d7,(a0)+
-	move.b	(a0),d0                         	| [$14ed: ld   a,(hl)]
+	move.b	d7,(a0)
+	move.b	d7,d0                         	| [$14ed: ld   a,(hl)]
 	
 	and.b	#0x0F,d0                         	| [$14ee: and  $0F]
 	cmp.b	#0x0C,d0                         	| [$14f0: cp   $0C]

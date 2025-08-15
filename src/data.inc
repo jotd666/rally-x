@@ -1,3 +1,5 @@
+STATE_1P_GAME = 1
+STATE_2P_GAME = 3
 
 l_0114 = 0x0114
 
@@ -127,7 +129,7 @@ l_8188 = 0x0188
 l_81A8 = 0x01a8
 l_81A9 = 0x01a9
 l_81AA = 0x01aa
-l_81AB = 0x01ab
+game_state_81ab = 0x01ab
 l_81B0 = 0x01b0
 l_81B1 = 0x01b1
 l_81B2 = 0x01b2

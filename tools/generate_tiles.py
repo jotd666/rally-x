@@ -5,27 +5,15 @@ import glob,shutil,os,re,pathlib
 from PIL import Image
 from shared import *
 
+import gen_cluts
+
 tilegen = gfx_dir / "tilegen"
 
 pal4_file = tilegen / "pal_04.png"
-cluts_file = tilegen / "cluts.txt"
 
-cluts = []
-current = []
+cluts = gen_cluts.doit()
 
 source = Image.open(pal4_file)
-with open(cluts_file) as f:
-    for line in f:
-        if '#' in line:
-            continue
-        toks = line.split(",")
-        if len(toks)==4:
-            toks = tuple([int(x) for x in toks[0:3]])
-            current.append(toks)
-            if len(current)==4:
-                cluts.append(current)
-                current=[]
-
 # this reference clut has all 4 colors different. We can use that to generate
 # the other cluts (mame gfx save only saves up to 32 cluts, we need 64)
 ref_clut = cluts[4]

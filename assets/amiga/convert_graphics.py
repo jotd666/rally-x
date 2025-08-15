@@ -29,19 +29,11 @@ def add_tile(table,index,cluts=[0]):
     for idx in index:
         table[idx].extend(cluts)
 
-sprite_cluts = collections.defaultdict(list)
+hw_sprite_cluts = collections.defaultdict(list)
 main_tile_cluts = collections.defaultdict(list)
 status_tile_cluts = collections.defaultdict(list)
 
-try:
-    with open(used_graphics_dir / "used_sprites","rb") as f:
-        for index in range(NB_SPRITES):
-            d = f.read(16)
-            cluts = [i for i,c in enumerate(d) if c]
-            if cluts:
-                add_tile(sprite_cluts,index,cluts=cluts)
-except OSError:
-    print("Cannot find used_sprites")
+
 
 
 try:
@@ -66,9 +58,6 @@ except OSError:
 
 if dump_it:
 
-        with open(dump_dir / "used_sprites.json","w") as f:
-            sprite_cluts_dict = {hex(k):[hex(x) for x in v] for k,v in sprite_cluts.items() if v}
-            json.dump(sprite_cluts_dict,f,indent=2)
         with open(dump_dir / "used_main_tiles.json","w") as f:
             tile_cluts_dict = {hex(k):[hex(x) for x in v] for k,v in main_tile_cluts.items() if v}
             json.dump(tile_cluts_dict,f,indent=2)
@@ -79,7 +68,10 @@ if dump_it:
 
 # add all letters & digits for some known cluts
 for tile_index in range(ord('A'),ord('Z')+1):
-    add_tile(main_tile_cluts,tile_index,[9,0xA])
+    add_tile(main_tile_cluts,tile_index,[9,0xA,0x26])
+for tile_index in range(0,10):
+    add_tile(main_tile_cluts,tile_index,[9,0xA,0x26])
+    add_tile(status_tile_cluts,tile_index,[0x33,0x26])
     #status_tile_cluts[tile_index].extend([9,0xA])
 #add_tile(main_tile_cluts,0xA9,[4])   # force some tile
 
@@ -94,7 +86,7 @@ def ensure_empty(d):
     else:
         os.makedirs(d)
 
-def load_tileset(image_name,palette_index,side,tileset_name,dumpdir,dump=False,name_dict=None,cluts=None):
+def load_tileset(image_name,palette_index,side,tileset_name,dumpdir,dump=False,name_dict=None,cluts=None,start_palette_index=0):
 
     if not image_name:
         # some cluts are blank, but we need to count them
@@ -108,7 +100,7 @@ def load_tileset(image_name,palette_index,side,tileset_name,dumpdir,dump=False,n
 
     if dump:
         dump_subdir = os.path.join(dumpdir,tileset_name)
-        if palette_index == 0:
+        if palette_index == start_palette_index:
             ensure_empty(dump_subdir)
 
     tile_number = 0
@@ -175,16 +167,17 @@ def add_hw_sprite(index,name,cluts=[0]):
         index = [index]
     for idx in index:
         sprite_names[idx] = name
-        hw_sprite_cluts[idx] = cluts
+        hw_sprite_cluts[idx].extend(cluts)
 
 nb_planes = 4
 nb_colors = 1<<nb_planes
 
 sprite_names = {}
-sprite_cluts = [[] for _ in range(64)]
-hw_sprite_cluts = [[] for _ in range(64)]
 
-
+for i in range(60,64):
+    add_hw_sprite(i,"car",[0xB])
+add_hw_sprite(56,"game",[0xB])
+add_hw_sprite(57,"over",[0xB])
 
 sheets_path = this_dir / os.path.pardir / "sheets"
 
@@ -201,7 +194,7 @@ def imgopen(i):
     p = sheets_path / "tiles" / f"pal_{i:02x}.png"
     return Image.open(p) if p.exists() else None
 
-#sprite_sheet_dict = {i:Image.open(os.path.join(sprites_path,f"sprites_pal_{i:02x}.png")) for i in range(16)}
+sprite_sheet_dict = {i:Image.open(os.path.join(sheets_path / "sprites" / f"pal_{i:02x}.png")) for i in [0xB]}
 tile_sheet_dict = {i:imgopen(i) for i in range(NB_CLUTS)}
 
 
@@ -225,16 +218,9 @@ sprite_palette = set()
 sprite_set_list = []
 hw_sprite_set_list = []
 
-##for i,tsd in sprite_sheet_dict.items():
-##    # BOBs
-##    cluts = sprite_cluts
-##    sp,sprite_set = load_tileset(tsd,i,16,"sprites",dump_dir,dump=dump_it,name_dict=sprite_names,cluts=cluts)
-##    sprite_set_list.append(sprite_set)
-##    sprite_palette.update(sp)
-##    # Hardware sprites
-##    cluts = hw_sprite_cluts
-##    _,hw_sprite_set = load_tileset(tsd,i,16,"hw_sprites",dump_dir,dump=dump_it,name_dict=sprite_names,cluts=cluts)
-##    hw_sprite_set_list.append(hw_sprite_set)
+
+_,hw_sprite_set = load_tileset(sprite_sheet_dict[0xB],0xB,16,"hw_sprites",dump_dir,dump=dump_it,name_dict=sprite_names,cluts=hw_sprite_cluts,start_palette_index=0xB)
+
 
 # orange in first position
 orange = (222,151,71)
@@ -396,7 +382,7 @@ with open(os.path.join(src_dir,"palette.68k"),"w") as f:
 with open(os.path.join(src_dir,"graphics.68k"),"w") as f:
     f.write("\t.global\tmain_tile_table\n")
     f.write("\t.global\tstatus_tile_table\n")
-    f.write("\t.global\tbob_table\n")
+    f.write("\t.global\tsprite_table\n")
 
     write_tile_entries(f,"main",main_tile_table)
     write_tile_entries(f,"status",status_tile_table)
@@ -407,64 +393,64 @@ with open(os.path.join(src_dir,"graphics.68k"),"w") as f:
         f.write(f"tile_plane_{v:02d}:")
         dump_asm_bytes(k,f)
 
-    f.write("bob_table:\n")
-##    for i,tile_entry in enumerate(sprite_table):
-##        f.write("\t.long\t")
-##        if tile_entry:
-##            prefix = sprite_names.get(i,"bob")
-##            f.write(f"{prefix}_{i:02x}")
-##        else:
-##            f.write("0")
-##        f.write("\n")
-##
-##    for i,tile_entry in enumerate(sprite_table):
-##        if tile_entry:
-##            prefix = sprite_names.get(i,"bob")
-##            f.write(f"{prefix}_{i:02x}:\n")
-##            for j,t in enumerate(tile_entry):
-##                f.write("\t.long\t")
-##                if t:
-##                    f.write(f"{prefix}_{i:02x}_{j:02x}")
-##                else:
-##                    f.write("0")
-##                f.write("\n")
-##
-##
-##    for i,tile_entry in enumerate(sprite_table):
-##        if tile_entry:
-##            prefix = sprite_names.get(i,"bob")
-##            for j,t in enumerate(tile_entry):
-##                if t:
-##                    name = f"{prefix}_{i:02x}_{j:02x}"
-##
-##                    f.write(f"{name}:\n")
-##                    height = 0
-##                    width = 4
-##                    offset = 0
-##                    for orientation,_ in plane_orientations:
-##                        if orientation in t:
-##                            height = t[orientation]["height"]
-##                            offset = t[orientation]["y_start"]
-##                            break
-##                    else:
-##                        raise Exception(f"height not found for {name}!!")
-##                    for orientation,_ in plane_orientations:
-##                        f.write("* {}\n".format(orientation))
-##                        f.write(f"\t.word\t{height},{width},{offset}\n")
-##                        if orientation in t:
-##                            for bitplane_id in t[orientation]["bitplanes"]:
-##                                f.write("\t.long\t")
-##                                if bitplane_id:
-##                                    f.write(f"bob_plane_{bitplane_id:02d}")
-##                                else:
-##                                    f.write("0")
-##                                f.write("\n")
-##                            if len(t)==1:
-##                                # optim: only standard
-##                                break
-##                        else:
-##                            for _ in range(nb_planes+1):
-##                                f.write("\t.long\t0\n")
+    f.write("sprite_table:\n")
+    for i,tile_entry in enumerate(sprite_table):
+        f.write("\t.long\t")
+        if tile_entry:
+            prefix = sprite_names.get(i,"bob")
+            f.write(f"{prefix}_{i:02x}")
+        else:
+            f.write("0")
+        f.write("\n")
+
+    for i,tile_entry in enumerate(sprite_table):
+        if tile_entry:
+            prefix = sprite_names.get(i,"bob")
+            f.write(f"{prefix}_{i:02x}:\n")
+            for j,t in enumerate(tile_entry):
+                f.write("\t.long\t")
+                if t:
+                    f.write(f"{prefix}_{i:02x}_{j:02x}")
+                else:
+                    f.write("0")
+                f.write("\n")
+
+
+    for i,tile_entry in enumerate(sprite_table):
+        if tile_entry:
+            prefix = sprite_names.get(i,"bob")
+            for j,t in enumerate(tile_entry):
+                if t:
+                    name = f"{prefix}_{i:02x}_{j:02x}"
+
+                    f.write(f"{name}:\n")
+                    height = 0
+                    width = 4
+                    offset = 0
+                    for orientation,_ in plane_orientations:
+                        if orientation in t:
+                            height = t[orientation]["height"]
+                            offset = t[orientation]["y_start"]
+                            break
+                    else:
+                        raise Exception(f"height not found for {name}!!")
+                    for orientation,_ in plane_orientations:
+                        f.write("* {}\n".format(orientation))
+                        f.write(f"\t.word\t{height},{width},{offset}\n")
+                        if orientation in t:
+                            for bitplane_id in t[orientation]["bitplanes"]:
+                                f.write("\t.long\t")
+                                if bitplane_id:
+                                    f.write(f"bob_plane_{bitplane_id:02d}")
+                                else:
+                                    f.write("0")
+                                f.write("\n")
+                            if len(t)==1:
+                                # optim: only standard
+                                break
+                        else:
+                            for _ in range(nb_planes+1):
+                                f.write("\t.long\t0\n")
 
     f.write("\t.section\t.datachip\n")
 

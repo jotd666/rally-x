@@ -52,16 +52,18 @@ SCREEN_COLOR_ADDRESS = 0x7800
 
 
 
-* if the alloc_sprite & update_sprite routines
-* are reused, changing those offsets can make
+* changing those offsets can make
 * a quick reuse from game to game as most sprite
 * RAMs have 4 bytes per sprite, only the order
-* and some bits differ
+* and some bits differ. In that case the attributes are mixed
+* which is annoying. But we shall overcome.
 
-TARGET_SPRITE_Y = 3
-TARGET_SPRITE_X = 2
+TARGET_SPRITE_LX = 1
+TARGET_SPRITE_HX = 0x801
+TARGET_SPRITE_COLOR = TARGET_SPRITE_HX
+TARGET_SPRITE_Y = 0x800
 TARGET_SPRITE_ATTRIBUTES = 0
-TARGET_SPRITE_CODE = 1
+TARGET_SPRITE_CODE = TARGET_SPRITE_ATTRIBUTES
 
 
 	.ifdef	RELEASE
@@ -99,7 +101,7 @@ STATUS_SCREEN_SIZE = STATUS_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
 SCREEN_SIZE = MAIN_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
 NB_HOST_SPRITES = 8
 
-NB_TARGET_SPRITES = 8
+NB_TARGET_SPRITES = 6
 
 SPRITE_X = 2
 SPRITE_Y = 3
@@ -873,7 +875,24 @@ osd_blitz:
 osd_break:
 	* sends a WinUAE command to enter WinUAE debugger
 	.ifndef	RELEASE
+* wait for VBL, so when breakpoint is hit, the DMA has displayed the current picture
 	move.l	D0,-(a7)
+	move.l	a0,-(a7)
+	move.w	SR,-(a7)
+	* block interrupts during the vblank wait
+	* in dev mode, we use whdload in supervisor mode so SR can be written to
+	move.w	#0x2700,SR
+	lea	_custom,a0
+	.rept	2
+	move.w	#0x7FFF,intreq(a0)
+0:
+	move.w	intreqr(a0),d0
+	btst	#5,d0
+	beq.b	0b
+	.endr
+	move.w	(a7)+,sr
+	move.l	(a7)+,a0
+
 	pea     0.w
 	* Normally it would point to where the result of the command is written, but since the last parameter (first pushed)
 	* indicating the number of bytes to write is 0, nothing is written.
@@ -1032,106 +1051,71 @@ really_update_sprites:
 update_bobs_and_hw_sprites:
 	
 	* make a copy of the sprite memory
-	GET_MEMORY_BLOCKS_IN_A5_A6
+	GET_MEMORY_BLOCKS_IN_A5_A6	
+	lea		(0x14,A5),a0
 
-	lea	(MIRROR_ADDRESS,a6),a0
-	lea	sprite_memory,a1
-	* super-quick copy of 32 bytes of memory
-	movem.l	(a0),d0-d7
-	movem.l	d0-d7,(a1)
+	*****************************
+	* allocate hardware sprites *
+	*****************************
 
+	moveq	#NB_TARGET_SPRITES-1,d7
+	
+0:
+* < A0: memory
+* > D0: X
+* > D1: Y
+* > D2: code
+* > D3: color
+* > D4: flip X/Y attributes
+
+	jbsr	compute_sprite_xy_code_and_attributes
+
+* < D0: sprite X
+* < D1: sprite Y
+* < D2: sprite code & flags
+* < D3: sprite color (clut index)
+* < D4: flip X/Y attributes
+* > D6: allocated sprite index
+
+	jbsr	alloc_sprite
+	
+	addq.w	#CURRENT_SPRITE_SIZE/2,a0		| sprites are split into 2 blocks
+	dbf		d7,0b
+
+	* now the host_sprites array is populated
 
 	*****************************
 	* position hardware sprites *
 	*****************************
 
-	lea	sprite_memory,a0
-	lea	HW_SpriteYTable_16,a1
-	lea	game_sprites+2,a3
-	*lea	sprite_type_table,a2
-	*lea	sprite_table,a4
-	moveq	#0,d6
-	moveq	#NB_TARGET_SPRITES-1,d7
-1:
-	jbsr	update_one_sprite
-	cmp.b	#4,d6
-	jeq		2f		| used all the slots: exit!
-	addq.w	#CURRENT_SPRITE_SIZE,a0
-	dbf		d7,1b
-	* reached here means that not all sprites have been allocated:
-	* clear the rest of the sprites
-	move.l	#blank_sprite,d1
-	move.l	d1,d2
-	swap 	d2
-11:
-	move.w	d1,(4,a3)
-	move.w	d1,(4+8,a3)
-	move.w	d2,(a3)
-	move.w	d2,(8,a3)
-	add.w	#0x10,a3
-	addq	#1,d6
-	cmp.b	#4,d6
-	jne		11b
-2:
-	
-	***********************
-	* erase previous BOBs *
-	***********************
-	
-	move.l	bob_previous_drawed_sprites(pc),a4
-	lea		_custom,a5
+	jbsr	place_hardware_sprites
 	
 
-	* clear previous positions
-
-	move.w	#NB_TARGET_SPRITES-1,d7
-1:
-	move.w	(2,a4),d1
-	beq.b	11f		| y=0: inactive
-	move.w	(a4),d0
-	and.w	#0x1F0,d0		| align on 16 lower bound
-	* clear area where the sprite was
-	clr.l	(a4)+			| ack deletion
-	move.w	(a4),d4			| height
-	move.w	(2,a4),d2		| width
-	clr.l	(a4)+			| ack deletion
-	move.w	#NB_PLAYFIELD_PLANES,d3
-	move.l	playfield_drawed_screen_ptr(pc),a1
-	jbsr		clear_planes_any_blitter_internal
-	dbf		d7,1b	
-	bra.b	12f
-11:
-	addq	#PREVIOUS_SPRITE_SIZE,a4
-	dbf		d7,1b
-12:	
-
-
-	*********************
-	* draw current BOBs *
-	*********************
-
-	lea	sprite_memory,a0
-    lea _custom,A5
-	move.l	bob_previous_drawed_sprites(pc),a6
-	lea		bob_table,a4
-	*lea	sprite_type_table,a2
-	
-	moveq	#NB_TARGET_SPRITES-1,d7
-1:
-	jbsr	update_one_bob
-	addq.w	#CURRENT_SPRITE_SIZE,a0
-	dbf		d7,1b
 
 	rts
 
-compute_sprite_xy_code:
-	moveq	#0,d0
-	move.b	(TARGET_SPRITE_X,a0),d0
-	neg.w	d0
-	add.w	#240,d0
+
+
+* < A0: memory
+* > D0: X
+* > D1: Y
+* > D2: code
+* > D3: color
+* > D4: flip X/Y attributes
+
+compute_sprite_xy_code_and_attributes:
+	moveq	#0,d3
 	moveq	#0,d1
 	move.b	(TARGET_SPRITE_Y,a0),d1
-
+	neg.w	d0
+	add.w	#241,d1
+	moveq	#0,d1
+	move.b	(TARGET_SPRITE_LX,a0),d0
+	move.b	(TARGET_SPRITE_HX,a0),d3
+	bclr	#7,d3			| d4 is the color now
+	jeq		0f
+	bset	#8,d0			| add 0x100 to sprite code
+0:
 	.ifne	SPRITE_Y_CORRECTION
 	add.w	#SPRITE_Y_CORRECTION,d1
 	.endif
@@ -1140,12 +1124,22 @@ compute_sprite_xy_code:
 	.endif
 	
 	moveq	#0,d2
+	moveq	#0,d4
 	move.b	(TARGET_SPRITE_CODE,a0),d2
+	move.b	d2,d4
+	and.b	#3,d4		| flipX/Y attributes
+	lsr.b	#2,d2		| code
+	
 	rts
 	
+
+* drawgfx.h:
+*	void prio_transmask(bitmap_ind16 &dest, const rectangle &cliprect, u32 code, u32 color, int flipx, int flipy, s32 destx, s32 desty, bitmap_ind8 &priority, u32 pmask, u32 transmask);
+*	void prio_transmask(bitmap_rgb32 &dest, const rectangle &cliprect, u32 code, u32 color, int flipx, int flipy, s32 destx, s32 desty, bitmap_ind8 &priority, u32 pmask, u32 transmask);
+
 *void rallyx_state::rallyx_draw_sprites( screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect )
 *{
-*	for (int offs = 0x20 - 2; offs >= m_spriteram_base; offs -= 2)
+*	for (int offs = 0x20 - 2; offs >= m_spriteram_base; offs -= 2)   // m_spriteram_base = 0x14, 6 sprites
 *	{
 *		int sx = m_spriteram[offs + 1] + ((m_spriteram2[offs + 1] & 0x80) << 1);
 *		int sy = 241 - m_spriteram2[offs];
@@ -1163,22 +1157,127 @@ compute_sprite_xy_code:
 *	}
 *}
 
+place_hardware_sprites:
+	lea	HW_SpriteYTable_16,a1		| always loaded
+	lea	game_sprites,a3
 
-* < A0,A1
-* < A2: sprite type table
-* < A4
-* < A3: pointer on copperlist (updated if slot allocated)
-* < D6: updated if slot has been allocated
-* A3,A5,A6,D0-D5 may be used as scratch registers
+	* all sprites are allocated: now display them
+	lea		host_sprites,a2		| input structure
+	lea		sprite_table,a4
+	moveq	#0,d6
+10:
+	move.b	(SPRITE_X,a2),d0
+	bne.b	20f		
+	* slot free: replace sprite by blank
+	move.l	#blank_sprite,d4
+	move.w	d4,(6,a3)
+	swap	d4
+	move.w	d4,(2,a3)
+	jra		30f
+20:
+	* lookup sprite code
+	
+	and.w	#0xFF,d0
+	moveq	#0,d1
+	move.b	(SPRITE_Y,a2),d1
+	moveq	#0,d2
+	move.b	(SPRITE_CODE,a2),d2
+	move.b	d2,d5		| for flip bit
+	bclr	#7,d2		| clear flip bit
+	
+	move.w	d2,d4
+	add.w	d4,d4
+	add.w	d4,d4
+	move.l	(a4,d4.w),d4	| get pointer
+	.ifndef	RELEASE
+	bne.b	25f
+	* sprite doesn't exist: blitz and bail out
+	* sprite code in D2
+	move.w	#0xF00,_custom+color
+	jra		30f
+25:
+	.endif
+	
+	move.l	d4,a5
+	move.w	d6,d4
+	add.w	d4,d4
+	add.w	d4,d4
+	move.l	(a5,d4.W),a5			| get buffer for this sprite index
+
+	tst.b	d5			| x flip bit
+	bpl.b	21f
+	addq.w	#4,a5
+21:
+	move.l	(a5),d4
+	.ifndef	RELEASE
+	bne.b	22f
+	blitz		| should not happen
+	jra		30f
+22:
+	.endif
+	move.l	d4,a5	| sprite pointer
+
+	* add offsets to both X & Y
+	add.b	#9,d0
+	add.b	#15,d1
+
+	bsr		store_sprite_pos
+	move.l	d0,(a5)
+	* set colors
+	lea		cluts+2,a6
+	moveq	#0,d3
+	move.b	(SPRITE_ATTRIBUTES,a2),d3
+	lsl.w	#3,d3		| times 8
+
+	add.w	d3,a6
+	* check if CLUT doesn't contain only color zero
+	* (we may as well cache the values in spare registers)
+	move.l	(a6)+,d3
+	move.w	(a6)+,d7
+*	bne.b	24f
+*	tst.l	d3
+*	bne.b	24f
+*	* all black sprites would hide bagman sprites & tiles
+*	* we want to hide them instead (no need to change palette)
+*	* inherited from pengo, probably not required
+*	move.l	#blank_sprite,d4
+*	bra.b	25f
+*24:
+	* d6 is the sprite index: compute/set proper color
+	move.w	d6,d5
+	bclr	#0,d5
+	lsl.w	#2,d5	| times 4*2
+	move.w	d5,d2
+	add.w	d2,d2
+	lea		sprite_colors+6,a5	| sprite palette + 2 (first color skipped)
+	add.w	d2,a5
+	* copy 3 colors from cached registers into sprite color copperlist
+	move.w	d3,(4,a5)
+	swap	d3
+	move.w	d3,(a5)
+	move.w	d7,(8,a5)
+25:
+	* set sprite in copperlist
+	move.w	d4,(6,a3)
+	swap	d4
+	move.w	d4,(2,a3)	
+30:
+	* next sprite
+	addq.w	#8,a3		| advance in copperlist
+	lea		(SPRITE_SIZEOF,a2),a2
+	addq	#1,d6
+	cmp.w	#NB_HOST_SPRITES,d6
+	jne	10b	
+	rts
+
 
 update_one_sprite:
-	move.b	(TARGET_SPRITE_ATTRIBUTES,a0),d3
-	btst	#0,d3
-	jeq	2f			| bit not set: not shown
+*	move.b	(TARGET_SPRITE_ATTRIBUTES,a0),d3
+*	btst	#0,d3
+*	jeq	2f			| bit not set: not shown
 
-	jbsr	compute_sprite_xy_code
-	cmp.b	#2,(a2,d2.w)
-	jne		2f			| not a HW sprite: skip, bob display will collect
+
+
 	add.w	d2,d2
 	add.w	d2,d2
 	move.l	(a4,d2.w),a5		| get pointer from bob table
@@ -1229,6 +1328,7 @@ update_one_sprite:
 2:
 	rts
 	
+	.ifdef	USE_BOBS
 update_one_bob:
 	move.l	A0,-(a7)
 *		int const sx = m_spriteram[0][offs];
@@ -1245,7 +1345,7 @@ update_one_bob:
 	btst	#0,d3
 	jeq	2f			| bit not set: not shown
 
-	jbsr	compute_sprite_xy_code
+	jbsr	compute_sprite_xy_code_and_attributes
 	cmp.b	#2,(a2,d2.w)
 	jeq		2f					| already drawn as sprite
 	add.w	d2,d2
@@ -1302,7 +1402,6 @@ update_one_bob:
 2:
 	move.l	(a7)+,a0
 	rts
-
 
 * < D0,D1: x,y
 * < A1: foreground plane pointer (often first plane!)
@@ -1371,8 +1470,116 @@ clear_planes_any_blitter_internal:
 	dbf		d3,3b
 4:
 	rts
+	.endif
+
+
+* < D0: sprite X
+* < D1: sprite Y
+* < D2: sprite code
+* < D3: sprite color (clut index)
+* < D4: flipx/y (ignored ATM)
+* > D6: allocated sprite index
+alloc_sprite:
+	* first pass: find a free sprite next to a sprite with
+	* same clut
+	lea		host_sprites(pc),a2
+	moveq	#0,d6
+0:
+	cmp.b	(SPRITE_ATTRIBUTES,a2),d3
+	bne.b	10f
+	* allocated (else would be -1/invalid) + same clut
+	* check even/odd index
+	btst	#0,d6
+	beq.b	1f
+	* odd: check if previous entry is free
+	tst.b	(SPRITE_X-SPRITE_SIZEOF,a2)
+	beq.b	8f
+	tst.b	(SPRITE_Y-SPRITE_SIZEOF,a2)
+	bne.b	10f
+8:
+	* previous entry is free, same clut: we can use that
+	* entry, no color conflict
+	lea		(-SPRITE_SIZEOF,a2),a2
+9:
+	move.b	d0,(a2)+		| X
+	move.b	d1,(a2)+		| Y
+	move.b	d2,(a2)+		| code
+	move.b	d3,(a2)+		| clut
+	rts						| done
+1:
+	* even: check if next entry is free
+	tst.b	(SPRITE_X+SPRITE_SIZEOF,a2)
+	beq.b	2f
+	tst.b	(SPRITE_Y+SPRITE_SIZEOF,a2)
+	bne.b	10f
+2:
+	* next entry is free, same clut: we can use that
+	* entry, no color conflict
+	lea		(SPRITE_SIZEOF,a2),a2
+	bra.b	9b
+10:
+	* next entry
+	addq.w	#SPRITE_SIZEOF,a2
+	addq	#1,d6
+	cmp.w	#NB_HOST_SPRITES,d6
+	bne.b	0b
+	* second pass if first pass failed (could not match
+	* a pair with one occupied slot with compatible clut,
+	* which happens when there are very few sprites
+	* displayed): we have to find 2 consecutive free slots
+
+	lea		host_sprites(pc),a2
+	moveq	#0,d6
+11:
+	* we consider that a sprite is not allocated
+	* if one of the coordinates is zero (real game
+	* doesn't care and sets X to 255, and Y to 0 at times
+	tst.b	(SPRITE_Y,a2)
+	beq.b	12f
+	tst.b	(SPRITE_X,a2)
+	bne.b	20f
+12:
+	* not allocated: test odd sprite
+	tst.b	(SPRITE_Y+SPRITE_SIZEOF,a2)
+	jeq	9b
+	tst.b	(SPRITE_X+SPRITE_SIZEOF,a2)
+	jeq	9b		| ok, both slots are free, allocate the first one
+20:
+	* next sprite pair
+	lea		(2*SPRITE_SIZEOF,a2),a2
+	addq	#2,d6
+	cmp.w	#NB_HOST_SPRITES,d6
+	bne.b	11b
 	
+	* third pass: last chance/emergency: there ARE free slots
+	* (since only 6 sprites on the target) but maybe too many
+	* different cluts so we can't find a suitable slot. In that
+	* case, pick the first free slot, we'll handle the color changes
+	* with a dynamic copperlist, let's hope that it works out
+	* Not needed here, unlike in Pengo
+	*
+	* the strategy globally works because during game, all 4 enemies
+	* share the same palette. main car uses another one
+	*
+	lea		host_sprites(pc),a2
+	moveq	#0,d6
+21:
+	tst.b	(SPRITE_X,a2)
+	beq.b	9b		| ok, a slot is free, allocate it
+	tst.b	(SPRITE_Y,a2)
+	beq.b	9b		| ok, a slot is free, allocate it
+30:
+	* next sprite
+	lea		(SPRITE_SIZEOF,a2),a2
+	addq	#1,d6
+	cmp.w	#NB_HOST_SPRITES,d6
+	bne.b	21b
+	* just cannot happen
+	* if we reach that point there's a big problem
+	BREAKPOINT		"unable to alloc enough hardware sprites!"
+	rts
 	
+
 	
 * what: blits 16x? data on one plane, cookie cut
 * args:
@@ -2508,7 +2715,14 @@ osd_read_p1_inputs:
 	rts
 	
 osd_read_p2_inputs:
-	move.b	player_2_controls,d0
+	st.b	d0
+	movem.l	a0/d1,-(a7)
+	lea		keyboard_table(pc),a0
+	tst.b	(2,a0)		| "2" key like in MAME
+	beq.b	0f
+	bclr	#BIT_START_2P,d0
+0:
+	movem.l	(a7)+,a0/d1	
 	rts
 	
 
@@ -2577,6 +2791,8 @@ update_controls:
 	jne		0f
 	nop
 0:
+
+
 	rts
 	
 direction_table:
@@ -3270,7 +3486,6 @@ playfield_displayed_screen_ptr:
 	.long	0
 
 
-
 	.include	"sound_entries.68k"
 	
 scroll_x:
@@ -3305,6 +3520,7 @@ _end_of_ng_code:
 
 
 	.include "palette.68k"
+	.include "cluts.68k"
 
 	
 	* on amiga, this file is included in mpatrol.68k file
@@ -3418,8 +3634,8 @@ status_colors:
 main_colors:
 	DECL_COLORS	0,TOTAL_NB_COLORS
 	
-*sprite_colors:
-*	DECL_COLORS	16,16
+sprite_colors:
+	DECL_COLORS	16,16
 	.word	0x0801,0xFFFE
 game_sprites:
 	DECL_SPRITES
