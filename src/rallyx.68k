@@ -1443,7 +1443,7 @@ l_08e0:
 	jbsr	write_maze_1131                            	| [$08f9: call $1131]
 	* here the maze is fully drawn at start
 	* also flags are located on the side radar but not enemies
-	BREAKPOINT	"maze drawn"
+	*BREAKPOINT	"maze drawn"
 	lea	l_89F5(a5),a0                      	| [$08fc: ld   hl,$89F5]
 l_08ff:
 	btst.b	#0,(a0)                         	| [$08ff: bit  0,(hl)]
@@ -3079,7 +3079,7 @@ l_12ac:
 	rts                                    	| [$12ae: ret]
 
 write_flag_dots_12af:
-BREAKPOINT "wflag"
+	*BREAKPOINT "wflag"
 	LOAD_POINTER	pointer_8994(a5),a0             	| [$12af: ld   hl,($8994)]
 	move.b	#0xC6,d2                        	| [$12b2: ld   c,$C6] dot tile
 	move.b	#0x0A,d1                        	| [$12b4: ld   b,$0A] 10 flags

@@ -45,7 +45,10 @@ Y_MAX = 256
 
 BORDERBLANK = 1
 BASE_BPLCON3_VALUE = (1<<12)+(BORDERBLANK<<5)  | dpf second playfield palette starts at color 16!
-BASE_BPLCON2_VALUE = 0x0044		| sprites above main playfield but below status. Status above main
+* sprites above main playfield but below status.
+* except sprites 0-1 that are above all (for radar in AGA mode)
+* Status above main
+BASE_BPLCON2_VALUE = 0x004C
 SPRITE_ADDRESS = 0x3C00
 MIRROR_ADDRESS = 0x7C00
 SCREEN_TILE_ADDRESS = SPRITE_ADDRESS+0x21
@@ -646,6 +649,9 @@ osd_set_scroll_x:
 	rts
 osd_set_scroll_y:
 	move.b	d0,scroll_y
+	jeq	0f
+	BREAKPOINT	"SCROLLY"
+0:
 	rts
 	
 * 60Hz VBLANK interrupt (also keyboard)
@@ -2273,18 +2279,18 @@ update_main_tile:
 	* do it 4 times because of wrapping scrolling
 	.macro	COPY_MAIN_TILE_PLANE_ROW
 	move.b	d0,(offset,a1)  | buffer
-	*move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2,a1)  | buffer
-	*move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
-	*move.b	d0,(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
+	move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2,a1)  | buffer
+	move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
+	move.b	d0,(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
 	.endm
 	
 	.macro	CLEAR_MAIN_TILE_PLANE
 	.set	offset,0
 	.rept	8
 	clr.b	(offset,a1)
-	*clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2,a1)
-	*clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)
-	*clr.b	(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)
+	clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2,a1)
+	clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)
+	clr.b	(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)
 	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
 	.endr	
 	.endm
@@ -2682,7 +2688,6 @@ set_main_bitplanes:
 	moveq	#0,d0
 	moveq	#0,d2
 	move.b	scroll_y,d0
-	add.w	d0,d0
 	add.w	d0,d0
 	lea		mulNB_BYTES_PER_MAIN_ROW_table,a2
 	move.w	(a2,d0.w),d0		| compute Y offset
