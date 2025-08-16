@@ -99,7 +99,7 @@ STATUS_SCREEN_PLANE_SIZE = NB_BYTES_PER_STATUS_ROW*NB_STATUS_LINES
 
 STATUS_SCREEN_SIZE = STATUS_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
 SCREEN_SIZE = MAIN_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
-NB_HOST_SPRITES = 6
+NB_HOST_SPRITES = 8
 
 NB_TARGET_SPRITES = 6
 
@@ -1049,6 +1049,7 @@ blit_background:
 
 really_update_sprites:
 update_bobs_and_hw_sprites:
+	
 	* clear host sprites
 	move.w	#NB_HOST_SPRITES-1,d0
 
@@ -1061,11 +1062,15 @@ update_bobs_and_hw_sprites:
 	* make a copy of the sprite memory
 	GET_MEMORY_BLOCKS_IN_A5_A6	
 	lea		(0x14,A5),a0
-
+*	cmp.w	#0xECEC,(a0)
+*	jne		0f
+*	BREAKPOINT	"empty sprites"
+*0:
 	*****************************
 	* allocate hardware sprites *
 	*****************************
 
+	* there are 8 slots but we only scan 6 sprites
 	moveq	#NB_TARGET_SPRITES-1,d7
 	
 0:
@@ -1583,10 +1588,8 @@ alloc_sprite:
 	lea		host_sprites(pc),a2
 	moveq	#0,d6
 21:
-	tst.b	(SPRITE_X,a2)
-	beq.b	9b		| ok, a slot is free, allocate it
-	tst.b	(SPRITE_Y,a2)
-	beq.b	9b		| ok, a slot is free, allocate it
+	tst.b	(SPRITE_ATTRIBUTES,a2)
+	bmi	9b		| ok, a slot is free, allocate it
 30:
 	* next sprite
 	lea		(SPRITE_SIZEOF,a2),a2
@@ -3626,6 +3629,8 @@ debug_color:
 	dc.l	-2
 	
 
+sprite_colors:
+	DECL_COLORS	16,16
 
 	
 	* main copperlist
@@ -3653,8 +3658,8 @@ status_colors:
 main_colors:
 	DECL_COLORS	0,TOTAL_NB_COLORS
 	
-sprite_colors:
-	DECL_COLORS	16,16
+*sprite_colors:
+*	DECL_COLORS	16,16
 	.word	0x0801,0xFFFE
 game_sprites:
 	DECL_SPRITES

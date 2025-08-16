@@ -10,4 +10,8 @@ round number not displayed
 memory overlapping between status and main? (bottom of status memory seem the same as main, check on MAME)
 compare memory after maze drawn MAME/amiga
 
+8380: last line "ROUND xxx" , 83A0: not displayed. 26 rows max
+
+8180->8328 status radar
+
 ECS: try to reduce colors: would work. Create separate AGA & OCS versions
