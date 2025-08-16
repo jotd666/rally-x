@@ -45,7 +45,7 @@ Y_MAX = 256
 
 BORDERBLANK = 1
 BASE_BPLCON3_VALUE = (1<<12)+(BORDERBLANK<<5)  | dpf second playfield palette starts at color 16!
-BASE_BPLCON2_VALUE = 0x0004		| sprites above all playfields
+BASE_BPLCON2_VALUE = 0x0044		| sprites above main playfield but below status. Status above main
 SPRITE_ADDRESS = 0x3C00
 MIRROR_ADDRESS = 0x7C00
 SCREEN_TILE_ADDRESS = SPRITE_ADDRESS+0x21
@@ -99,8 +99,9 @@ MAIN_SCREEN_PLANE_SIZE = NB_BYTES_PER_MAIN_ROW*NB_PLAYFIELD_LINES
 STATUS_SCREEN_PLANE_SIZE = NB_BYTES_PER_STATUS_ROW*NB_STATUS_LINES
 
 STATUS_SCREEN_SIZE = STATUS_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
-SCREEN_SIZE = MAIN_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
-NB_HOST_SPRITES = 8
+MAIN_SCREEN_SIZE = MAIN_SCREEN_PLANE_SIZE*NB_PLAYFIELD_PLANES
+START_HOST_SPRITE = 2
+NB_HOST_SPRITES = 8-START_HOST_SPRITE
 
 NB_TARGET_SPRITES = 6
 
@@ -1055,10 +1056,7 @@ update_bobs_and_hw_sprites:
 	* make a copy of the sprite memory
 	GET_MEMORY_BLOCKS_IN_A5_A6	
 	lea		(0x14,A5),a0
-*	cmp.w	#0xECEC,(a0)
-*	jne		0f
-*	BREAKPOINT	"empty sprites"
-*0:
+
 	*****************************
 	* allocate hardware sprites *
 	*****************************
@@ -1163,10 +1161,35 @@ compute_sprite_xy_code_and_attributes:
 *				m_palette->transpen_mask(*m_gfxdecode->gfx(1), color, 0));
 *	}
 *}
+* 0x8034=>0x8040: dots on radar
+* m_radarattr = 0xA000->0xA00F
+*void rallyx_state::rallyx_draw_bullets( bitmap_ind16 &bitmap, const rectangle &cliprect, bool transpen )
+*{
+*	for (int offs = m_spriteram_base; offs < 0x20; offs++)
+*	{
+*		int x = m_radarx[offs] + ((~m_radarattr[offs & 0x0f] & 0x01) << 8);
+*		int y = 253 - m_radary[offs];
+*
+*		if (transpen)
+*			m_gfxdecode->gfx(2)->transpen(bitmap,cliprect,
+*					((m_radarattr[offs & 0x0f] & 0x0e) >> 1) ^ 0x07,
+*					0,
+*					0,0,
+*					x,y,
+*					3);
+*		else
+*			m_gfxdecode->gfx(2)->transtable(bitmap,cliprect,
+*					((m_radarattr[offs & 0x0f] & 0x0e) >> 1) ^ 0x07,
+*					0,
+*					0,0,
+*					x,y,
+*					m_drawmode_table);
+*	}
+*}
 
 position_hardware_sprites:
 	lea	HW_SpriteYTable_16,a1		| always loaded
-	lea	game_sprites,a3
+	lea	game_sprites+START_HOST_SPRITE*8,a3
 
 	* all sprites are allocated: now display them
 	lea		host_sprites,a2		| input structure
@@ -1189,14 +1212,14 @@ position_hardware_sprites:
 	move.b	(SPRITE_Y,a2),d1
 	
 	.ifne	HW_SPRITE_X_CORRECTION
-	add.b	#HW_SPRITE_X_CORRECTION,d0
+	add.w	#HW_SPRITE_X_CORRECTION,d0
 	.else
 	tst.w	d0
 	.endif
 	jmi		30f		| don't display if negative!
 
 	.ifne	HW_SPRITE_Y_CORRECTION
-	add.b	#HW_SPRITE_Y_CORRECTION,d1
+	add.w	#HW_SPRITE_Y_CORRECTION,d1
 	.else
 	tst.w	d1
 	.endif
@@ -1271,7 +1294,7 @@ position_hardware_sprites:
 	lsl.w	#2,d5	| times 4*2
 	move.w	d5,d2
 	add.w	d2,d2
-	lea		sprite_colors+6,a5	| sprite palette + 2 (first color skipped)
+	lea		sprite_colors+6+16*(START_HOST_SPRITE/2),a5	| sprite palette + 2 (first color skipped)
 	add.w	d2,a5
 	* copy 3 colors from cached registers into sprite color copperlist
 	move.w	d3,(4,a5)
@@ -2250,18 +2273,18 @@ update_main_tile:
 	* do it 4 times because of wrapping scrolling
 	.macro	COPY_MAIN_TILE_PLANE_ROW
 	move.b	d0,(offset,a1)  | buffer
-	move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2,a1)  | buffer
-	move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
-	move.b	d0,(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
+	*move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2,a1)  | buffer
+	*move.b	d0,(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
+	*move.b	d0,(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)  | buffer
 	.endm
 	
 	.macro	CLEAR_MAIN_TILE_PLANE
 	.set	offset,0
 	.rept	8
 	clr.b	(offset,a1)
-	clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2,a1)
-	clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)
-	clr.b	(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)
+	*clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2,a1)
+	*clr.b	(offset+NB_BYTES_PER_MAIN_ROW/2+MAIN_SCREEN_PLANE_SIZE/2,a1)
+	*clr.b	(offset+MAIN_SCREEN_PLANE_SIZE/2,a1)
 	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
 	.endr	
 	.endm
@@ -3695,11 +3718,11 @@ bg_screen_buffer:
 
 		
 bobs_screen_buffer_1:
-	.skip	SCREEN_SIZE
+	.skip	MAIN_SCREEN_SIZE
 	*.skip	NB_BYTES_PER_MAIN_ROW*12*3
 	.ifne	OPT_ENABLE_DOUBLE_BUFFERING
 bobs_screen_buffer_2:
-	.skip	SCREEN_SIZE
+	.skip	MAIN_SCREEN_SIZE
 	.skip	NB_BYTES_PER_MAIN_ROW*12*3
 	.endif
 
