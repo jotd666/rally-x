@@ -1124,7 +1124,7 @@ l_06ab:
 	jbsr	clear_screen_and_reset_scroll_1dcb                            	| [$06cb: call $1DCB]
 	lea	l_1F30(a6),a0                      	| [$06ce: ld   hl,$1F30]
 	lea	l_8566(a5),a1                      	| [$06d1: ld   de,$8566]
-	jbsr	rle_unpack_to_screen_1c29                            	| [$06d4: call $1C29]
+	jbsr	write_to_screen_1c29                            	| [$06d4: call $1C29]
 
 	move.l	a0,-(sp)                        	| [$06d7: push hl]
 	LOAD_POINTER	pointer_81b3(a5),a0             	| [$06d8: ld   hl,($81B3)]
@@ -1134,7 +1134,7 @@ l_06ab:
 	cmp.b	#0x49,d0                         	| [$06dd: cp   $49]
 	jeq	l_06fe                             	| [$06df: jr   z,$06FE]
 	lea	l_85E3(a5),a1                      	| [$06e1: ld   de,$85E3]
-	jbsr	rle_unpack_to_screen_1c29                            	| [$06e4: call $1C29]
+	jbsr	write_to_screen_1c29                            	| [$06e4: call $1C29]
 	LOAD_POINTER	pointer_81b3(a5),a0             	| [$06e7: ld   hl,($81B3)]
 
 	move.w	#0x0007,d1                      	| [$06ea: ld   bc,$0007]
@@ -1151,7 +1151,7 @@ l_06ab:
 l_06fe:
 	lea	freeplay_string_1f5a(a6),a0                      	| [$06fe: ld   hl,$1F5A]
 	lea	l_866A(a5),a1                      	| [$0701: ld   de,$866A]
-	jbsr	rle_unpack_to_screen_1c29                            	| [$0704: call $1C29]
+	jbsr	write_to_screen_1c29                            	| [$0704: call $1C29]
 	tst.b	needs_credits_to_play_82aa(a5)                   	| [$0707: ld   a,($82AA)]
 	                               	| [$070a: and  a]
 	beq.b	0f                               	| [...]
@@ -1159,8 +1159,12 @@ l_06fe:
 	jbsr	display_credits_1ed2                            	| [$070b: call nz,$1ED2]
 0:
 	lea	l_8728(a5),a1                      	| [$070e: ld   de,$8728]
-	lea	l_1F6E(a6),a0                      	| [$0711: ld   hl,$1F6E]
+	lea	namco_1980_text_1f6e(a6),a0                      	| [$0711: ld   hl,$1F6E]
 	jbsr	rle_unpack_to_screen_1b15                            	| [$0714: call $1B15]
+	* add JOTD message
+	lea	l_8728+0x3D(a5),a1                      	| [$070e: ld   de,$8728]
+	lea	jotd_text,a0
+	jbsr	rle_unpack_to_screen_1b15
 start_game_test_loop_0717:
 	move.b	timer_824b(a5),d0                   	| [$0717: ld   a,($824B)]
 	and.b	#0x1F,d0                         	| [$071a: and  $1F]
@@ -1246,7 +1250,7 @@ l_07a8:
 	move.b	#0x01,d0                        	| [$07b8: ld   a,$01]
 	move.b	d0,l_81B7(a5)                   	| [$07ba: ld   ($81B7),a]
 l_07bd:
-	LOAD_POINTER	pointer_898a(a5),a0             	| [$07bd: ld   hl,($898A)]
+	LOAD_POINTER	pointer_on_round_number_898a(a5),a0             	| [$07bd: ld   hl,($898A)]
 
 	addq.b	#1,(a0)                         	| [$07c0: inc  (hl)]
 	                         	| [$07c1: xor  a]
@@ -1374,7 +1378,8 @@ l_0861:
 	jeq	l_08a1                             	| [$0882: jr   z,$08A1]
 l_0884:
 	jbsr	copy_status_row_1c4e                            	| [$0884: call $1C4E]
-	LOAD_POINTER	pointer_898a(a5),a0             	| [$0887: ld   hl,($898A)]
+	* contains the round number
+	LOAD_POINTER	pointer_on_round_number_898a(a5),a0             	| [$0887: ld   hl,($898A)]
 
 	move.b	(a0),d0                         	| [$088a: ld   a,(hl)]
 	subq.b	#1,d0                           	| [$088b: dec  a]
@@ -1386,14 +1391,14 @@ l_0891:
 	addq.b	#1,d1                           	| [$0895: inc  b] [uncovered]
 	sub.b	#0x0A,d0                         	| [$0896: sub  $0A] [uncovered]
 	jra	l_0891                             	| [$0898: jr   $0891] [uncovered]
-
+	* write round number
 l_089a:
-	move.b	d0,(a0)                         	| [$089a: ld   (hl),a]
-	move.b	d1,d0                           	| [$089b: ld   a,b]
+	jbsr	osd_w_videoram                         	| [$089a: ld   (hl),a]
 	subq.w	#1,a0                           	| [$089c: dec  hl]
-	tst.b	d0                               	| [$089d: and  a]
+	move.b	d1,d0                           	| [$089b: ld   a,b]
+	                               	| [$089d: and  a]
 	jeq	l_08a1                             	| [$089e: jr   z,$08A1]
-	move.b	d0,(a0)                         	| [$08a0: ld   (hl),a] [uncovered]
+	jbsr	osd_w_videoram                         	| [$08a0: ld   (hl),a] [uncovered]
 l_08a1:
 	move.b	l_81A8(a5),d0                   	| [$08a1: ld   a,($81A8)]
 	move.b	d0,l_A183(a5)                   	| [$08a4: ld   ($A183),a]
@@ -1402,7 +1407,7 @@ l_08a1:
 	                         	| [$08ad: xor  a]
 	clr.b	d0                               	| [$08ad: xor  a]
 	move.b	d0,l_82D0(a5)                   	| [$08ae: ld   ($82D0),a]
-	LOAD_POINTER	pointer_898a(a5),a0             	| [$08b1: ld   hl,($898A)]
+	LOAD_POINTER	pointer_on_round_number_898a(a5),a0             	| [$08b1: ld   hl,($898A)]
 
 	move.b	(a0),d0                         	| [$08b4: ld   a,(hl)]
 	and.b	#0x03,d0                         	| [$08b5: and  $03]
@@ -1437,7 +1442,7 @@ l_08e0:
 	jbsr	osd_set_scroll_x             	| [$08f6: ld   (scrollx_a130),a]
 	jbsr	write_maze_1131                            	| [$08f9: call $1131]
 	* here the maze is fully drawn at start
-	jbsr	osd_break
+	BREAKPOINT	"maze drawn"
 	lea	l_89F5(a5),a0                      	| [$08fc: ld   hl,$89F5]
 l_08ff:
 	btst.b	#0,(a0)                         	| [$08ff: bit  0,(hl)]
@@ -2237,7 +2242,7 @@ l_0db2:
 	move.b	(a0),d0                         	| [$0dc8: ld   a,(hl)]
 	                               	| [$0dc9: and  a]
 	jne	l_0df4                             	| [$0dca: jr   nz,$0DF4]
-	LOAD_POINTER	pointer_898a(a5),a1             	| [$0dcc: ld   de,($898A)]
+	LOAD_POINTER	pointer_on_round_number_898a(a5),a1             	| [$0dcc: ld   de,($898A)]
 
 	move.b	(a1),d0                         	| [$0dd0: ld   a,(de)]
 	and.b	#0x03,d0                         	| [$0dd1: and  $03]
@@ -3925,7 +3930,7 @@ l_1710:
 	cmp.b	(a0),d0                          	| [$1726: cp   (hl)] [uncovered]
 	jeq	l_07bd                             	| [$1727: jp   z,$07BD] [uncovered]
 l_172a:
-	LOAD_POINTER	pointer_898a(a5),a0             	| [$172a: ld   hl,($898A)]
+	LOAD_POINTER	pointer_on_round_number_898a(a5),a0             	| [$172a: ld   hl,($898A)]
 
 	move.b	(a0),d0                         	| [$172d: ld   a,(hl)]
 	and.b	#0x03,d0                         	| [$172e: and  $03]
@@ -4253,7 +4258,7 @@ l_190b:
 	beq.b	0f                               	| [...]
 	rts                                    	| [$190f: ret  nz] [...]
 0:
-	LOAD_POINTER	pointer_898a(a5),a0             	| [$1910: ld   hl,($898A)]
+	LOAD_POINTER	pointer_on_round_number_898a(a5),a0             	| [$1910: ld   hl,($898A)]
 
 	move.b	(a0),d0                         	| [$1913: ld   a,(hl)]
 	subq.b	#1,d0                           	| [$1914: dec  a]
@@ -4557,16 +4562,17 @@ l_1b0f:
 	jne	l_1b0f                             	| [$1b12: djnz $1B0F]
 	rts                                    	| [$1b14: ret]
 	
+* < A0: attribute value, len, then text
 rle_unpack_to_screen_1b15:
 	move.w	d0,-(sp)                        	| [$1b15: push af]
 	movem.w	d1/d2,-(sp)                    	| [$1b16: push bc]
 	movem.w	d3/d4,-(sp)                    	| [$1b17: push de]
 	move.l	a1,-(sp)                        	| [$1b17: push de]
-	move.b	(a0),d0                         	| [$1b18: ld   a,(hl)]
+	move.b	(a0)+,d0                         	| [$1b18: ld   a,(hl)]
 	LOAD_D3D4_FROM_A1
 	bset.b	#3,d3                           	| [$1b19: set  3,d]
 	LOAD_A1_FROM_D3D4
-	addq.w	#1,a0                           	| [$1b1b: inc  hl]
+	                           	| [$1b1b: inc  hl]
 	move.b	(a0),d1                         	| [$1b1c: ld   b,(hl)]
 	exg		a0,a1
 l_1b1d:
@@ -4716,7 +4722,7 @@ l_1c1d:
 	move.b	d0,timer_824b(a5)                   	| [$1c25: ld   ($824B),a]
 	rts                                    	| [$1c28: ret]
 
-rle_unpack_to_screen_1c29:
+write_to_screen_1c29:
 	move.b	(a0)+,d2                         	| [$1c29: ld   c,(hl)]
 	                           	| [$1c2a: inc  hl]
 ldir_video_1c2b:
@@ -4851,9 +4857,10 @@ l_1cce:
 	cmp.b	#0xCF,d0                         	| [$1cdb: cp   $CF]
 	jcs	l_1ce1                             	| [$1cdd: jr   c,$1CE1]
 	move.b	#0xCF,d0                        	| [$1cdf: ld   a,$CF]
+	* write fuel level
 l_1ce1:
-	move.b	d0,(a0)+                         	| [$1ce1: ld   (hl),a]
-	                           	| [$1ce2: inc  l]
+	jbsr	osd_w_videoram                         	| [$1ce1: ld   (hl),a]
+	addq	#1,a0                           	| [$1ce2: inc  l]
 	move.b	#0x07,d1                        	| [$1ce3: ld   b,$07]
 l_1ce5:
 	move.b	d3,d0                           	| [$1ce5: ld   a,d]
@@ -5156,7 +5163,7 @@ l_1e7e:
 	jne	l_1eb3                             	| [$1e91: jr   nz,$1EB3]
 
 	move.l	a0,-(sp)                        	| [$1e93: push hl] [uncovered]
-	LOAD_POINTER	pointer_898a(a5),a0             	| [$1e94: ld   hl,($898A)] [uncovered]
+	LOAD_POINTER	pointer_on_round_number_898a(a5),a0             	| [$1e94: ld   hl,($898A)] [uncovered]
 
 	move.b	(a0),d0                         	| [$1e97: ld   a,(hl)] [uncovered]
 	move.l	(sp)+,a0                        	| [$1e98: pop  hl] [uncovered]
@@ -5216,7 +5223,7 @@ display_credits_1ed2:
 	move.l	a4,-(sp)                        	| [$1ed4: push bc]
 	lea	credit_string_1f64(a6),a0                      	| [$1ed5: ld   hl,$1F64]
 	lea	l_866A(a5),a1                      	| [$1ed8: ld   de,$866A]
-	jbsr	rle_unpack_to_screen_1c29                            	| [$1edb: call $1C29]
+	jbsr	write_to_screen_1c29                            	| [$1edb: call $1C29]
 	move.b	nb_credits_8024(a5),d0                   	| [$1ede: ld   a,($8024)]
 	lea	l_8672(a5),a0                      	| [$1ee1: ld   hl,$8672]
 	clr.b	d1                               	| [$1ee4: ld   b,$00]
@@ -6468,3 +6475,11 @@ exx:
     movem.l (a7)+,d1-d4/a0/a1/a4
 	move.l	(a7)+,a6
     rts
+
+jotd_text:
+	.byte	0x66
+	.byte	jotd_text_end-.-1
+	.ascii	"@REMADE@"
+	.ascii  "BY@JOTD@"
+	.byte	2,0,2,5
+jotd_text_end:

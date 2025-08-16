@@ -25,7 +25,8 @@ PREVIOUS_SPRITE_SIZE = 8
 CURRENT_SPRITE_SIZE = 4
 
 TILE_PLANE_X_SHIFT = 8
-STATUS_TEXT_X_SHIFT = 0x20-3
+STATUS_TEXT_X_SHIFT = 0x20-6
+
 
 NB_CLUTS_POW = 6
 NB_CLUTS = 1<<NB_CLUTS_POW
@@ -34,7 +35,7 @@ NB_TILES = 256
 SPRITE_X_CORRECTION = -1
 SPRITE_Y_CORRECTION = -8
 HW_SPRITE_X_CORRECTION = 0
-HW_SPRITE_Y_CORRECTION = 16
+HW_SPRITE_Y_CORRECTION = 32
 
 * start displaying earlier in ntsc mode, allowing
 * full display
@@ -44,12 +45,12 @@ Y_MAX = 256
 
 BORDERBLANK = 1
 BASE_BPLCON3_VALUE = (1<<12)+(BORDERBLANK<<5)  | dpf second playfield palette starts at color 16!
-BASE_BPLCON2_VALUE = 0x0064		| sprites above all playfields
+BASE_BPLCON2_VALUE = 0x0004		| sprites above all playfields
 SPRITE_ADDRESS = 0x3C00
 MIRROR_ADDRESS = 0x7C00
 SCREEN_TILE_ADDRESS = SPRITE_ADDRESS+0x21
 SCREEN_COLOR_ADDRESS = 0x7800
-
+BASE_BPLCON4_VALUE = 0x0022		| sprites take their palette on colors 32-48
 
 
 * changing those offsets can make
@@ -399,15 +400,7 @@ _user:
 	lea		status_colors,a1
 	bsr		load_palette
 	
-*	move.w	#TOTAL_NB_COLORS,d0
-*	lea		playfield_palette,a0
-*	lea		sprite_colors,a1
-*	bsr		load_palette
-*	* load same colors again to be safe
-*	move.w	#TOTAL_NB_COLORS,d0
-*	lea		playfield_palette,a0	| skip 8 copper writes
-*	lea		sprite_colors+32,a1
-*	bsr		load_palette
+
 	
 
 	move.l	cheat_flags,d0
@@ -1954,9 +1947,10 @@ platform_init:
     move.w #0x0610+BORDERBLANK,bplcon0(a5) | 8 bitplanes, dual playfield, borderblank
     move.w #BASE_BPLCON2_VALUE,bplcon2(a5)
     move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
+    move.w #BASE_BPLCON4_VALUE,bplcon4(a5)
  	*         VVHH
-    move.w #0x2489,d0
-    move.w #0x24A9,d1
+    move.w #0x3479,d0
+    move.w #0x24A0,d1
 	cmp.l	#NTSC_MONITOR_ID,monitor
 	jne		0f
 	sub.w	#NTSC_Y_SHIFT<<8,d0
@@ -2670,6 +2664,7 @@ set_main_bitplanes:
 	lea		mulNB_BYTES_PER_MAIN_ROW_table,a2
 	move.w	(a2,d0.w),d0		| compute Y offset
 	move.b	scroll_x,d2
+	*sub.b	#0x10,d2
 	*add.w	#TILE_PLANE_X_SHIFT,d2
 	add.w	d2,d2
 	add.w	d2,d2
@@ -3629,9 +3624,6 @@ debug_color:
 	dc.l	-2
 	
 
-sprite_colors:
-	DECL_COLORS	16,16
-
 	
 	* main copperlist
 game_copperlist:
@@ -3658,8 +3650,10 @@ status_colors:
 main_colors:
 	DECL_COLORS	0,TOTAL_NB_COLORS
 	
-*sprite_colors:
-*	DECL_COLORS	16,16
+	.word	bplcon3,BASE_BPLCON3_VALUE+(1<<13)
+sprite_colors:
+	DECL_COLORS	0,16
+	.word	bplcon3,BASE_BPLCON3_VALUE
 	.word	0x0801,0xFFFE
 game_sprites:
 	DECL_SPRITES
