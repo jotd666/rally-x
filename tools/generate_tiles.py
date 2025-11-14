@@ -9,14 +9,15 @@ import gen_cluts
 
 tilegen = gfx_dir / "tilegen"
 
-pal4_file = tilegen / "pal_04.png"
+ref_clut_index = 4
+pal4_file = tilegen / f"pal_{ref_clut_index:02x}.png"
 
 cluts = gen_cluts.doit()
 
 source = Image.open(pal4_file)
 # this reference clut has all 4 colors different. We can use that to generate
 # the other cluts (mame gfx save only saves up to 32 cluts, we need 64)
-ref_clut = cluts[4]
+ref_clut = cluts[ref_clut_index]
 for i in range(0,64):
     this_clut = cluts[i]
     if len(set(this_clut))>1:
@@ -24,7 +25,7 @@ for i in range(0,64):
         rep_dict = {k:v for k,v in zip(ref_clut,this_clut)}
 
         dest_file = gfx_dir / "tiles" / f"pal_{i:02x}.png"
-        if i==4:
+        if i==ref_clut_index:
             shutil.copy(pal4_file,dest_file)
         else:
             for x in range(source.size[0]):
