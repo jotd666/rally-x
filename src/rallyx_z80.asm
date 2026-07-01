@@ -4891,8 +4891,6 @@ boot_sequence_384C:
 	.word 	resume_boot_39b1
 	
 389E: 31 00 84    ld   sp,$8400
-389F: 00          nop    ; [uncovered] 
-38A0: 84          add  a,h    ; [uncovered] 
 38A1: 21 00 80    ld   hl,$8000
 38A4: 11 01 80    ld   de,$8001
 38A7: 01 FF 03    ld   bc,$03FF
@@ -4949,11 +4947,11 @@ reset_3911:
 3914: 11 01 84    ld   de,$8401
 3917: 01 FF 03    ld   bc,$03FF
 391A: 36 40       ld   (hl),$40
-391C: ED B0       ldir			; fill video with $40
+391C: ED B0       ldir			; fill video with $40 [unchecked_address]
 391E: 21 00 8C    ld   hl,$8C00
 3921: 11 01 8C    ld   de,$8C01
 3924: 01 FF 03    ld   bc,$03FF
-3927: 36 66       ld   (hl),$66	; fill attibs
+3927: 36 66       ld   (hl),$66	; fill attribs  [video_address]
 3929: ED B0       ldir
 392B: 21 40 80    ld   hl,$8040
 392E: 01 08 1C    ld   bc,$1C08

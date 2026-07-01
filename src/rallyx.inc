@@ -1,254 +1,457 @@
-	.macro ERROR arg
-	.error	"\arg"
+* Converted with z80to68k v2.4 by JOTD
+*
+* make sure you call "cpu_init" first so all bits of data registers
+* are zeroed out so we can use add.l dy,ax with dy > 0x7FFF
+* without systematic masking
+*
+* WARNING: you also have to call "cpu_init"
+* at start of any interrupt you could hook
+*
+* the GET_ADDRESS macro can just call get_address or it can also use
+* conditional compilation to select the proper memory banks at compile time
+* (see my burger time 6502 conversion which does that in RELEASE mode)
+
+	.include	"options.inc"
+
+	.global	cpu_init
+
+
+	.macro	ERROR	arg
+	.error	"\arg"     | comment out or replace by ".warning" to disable errors
 	.endm
-	.macro CLEAR_XC_FLAGS
-	move.w	d7,-(a7)
+
+	.macro	VIDEO_BYTE_DIRTY
+	| called when a byte write was done in a0
+	.endm
+
+	.macro	VIDEO_WORD_DIRTY
+	| called when a word write was done in a0
+	.endm
+
+* the function that accesses all memory (except banks)
+* without any check
+	.macro	GET_UNCHECKED_ADDRESS_FUNC	dest
+	lea	(a6,\dest\().l),\dest
+	.endm
+
+	.macro	WRITE_ADDRESS	src,dest
+	move.l	\src,d7
+	sub.l	a6,d7
+	MOVE_W_FROM_REG	d7,\dest
+	.endm
+
+	.macro	READ_ADDRESS	src,dest
 	moveq	#0,d7
-	roxl.b	#1,d7
-	movem.w	(a7)+,d7
+	MOVE_W_TO_REG	a0,d7
+	GET_ADDRESS_FUNC	d7
+	move.l	d7,\dest
+	.endm
+
+* only in dev mode, else call GET_UNCHECKED_ADDRESS_FUNC
+	.macro	GET_ADDRESS_FUNC	dest
+	.if	\dest!=a0
+	exg	a0,\dest
+	.endif
+	jbsr	get_address
+	.if	\dest!=a0
+	exg	a0,\dest
+	.endif
+	.endm
+
+	.macro	CHECK_MAX	reg,arg
+	ERROR  "insert check max table function index here"
+	.endm
+
+	.macro	MAKE_AR_FROM_HL	dest
+	GET_REG_ADDRESS	0,d6,\dest
+	.endm
+	.macro	MAKE_AR_FROM_DE	dest
+	GET_REG_ADDRESS	0,d4,\dest
+	.endm
+	.macro	MAKE_AR_FROM_BC	dest
+	GET_REG_ADDRESS	0,d2,\dest
+	.endm
+
+	.macro	MAKE_HL_NO_AR
+* add d5 as MSB of d6 so d6.W = HL, load target reg
+	rol.w	#8,d6
+	move.b	d5,d6
+	rol.w	#8,d6
+	.endm
+
+	.macro	MAKE_HL	dest
+	MAKE_HL_NO_AR
+	MAKE_AR_FROM_HL	\dest
+	.endm
+
+	.macro	MAKE_H
+* update d5 from d6.W = HL
+	rol.w	#8,d6
+	move.b	d6,d5
+	rol.w	#8,d6
+	.endm
+
+	.macro	MAKE_BC_NO_AR
+* add d1 as MSB of d2 so d2.W = BC
+	rol.w	#8,d2
+	move.b	d1,d2
+	rol.w	#8,d2
+	.endm
+
+	.macro	MAKE_BC	dest
+	MAKE_BC_NO_AR
+	MAKE_AR_FROM_BC	\dest
+	.endm
+
+	.macro	MAKE_B
+* update d1 from d2.W = HL
+	rol.w	#8,d2
+	move.b	d2,d1
+	rol.w	#8,d2
+	.endm
+
+	.macro	MAKE_DE_NO_AR
+* add d3 as MSB of d4 so d4.W = DE
+	rol.w	#8,d4
+	move.b	d3,d4
+	rol.w	#8,d4
+	.endm
+
+	.macro	MAKE_DE	dest
+	MAKE_DE_NO_AR
+	MAKE_AR_FROM_DE	\dest
+	.endm
+
+	.macro	MAKE_D
+* update d3 from d4.W = HL
+	rol.w	#8,d4
+	move.b	d4,d3
+	rol.w	#8,d4
+	.endm
+
+	.macro	LOAD_HL	argument
+	move.w	\argument,d6
+	move.b	\argument>>8,d5
+	.endm
+
+	.macro	LOAD_BC	argument
+	move.w	\argument,d2
+	move.b	\argument>>8,d1
+	.endm
+
+	.macro	LOAD_DE	argument
+	move.w	\argument,d4
+	move.b	\argument>>8,d3
+	.endm
+
+	.macro CLR_XC_FLAGS
+	and.b	#0xEE,ccr	| bit 4 = X, bit 0 = C
 	.endm
 
 	.macro SET_XC_FLAGS
-	move.w	d7,-(a7)
-	st	d7
-	roxl.b	#1,d7
-	movem.w	(a7)+,d7
+	or.b	#0x11,ccr	| bit 4 = X, bit 0 = C
 	.endm
 
-	.macro	INVERT_XC_FLAGS
-	jcs	0f
-	SET_XC_FLAGS
-	bra.b	1f
-0:
-	CLEAR_XC_FLAGS
-1:
+
+	.macro INVERT_XC_FLAGS
+	eor.b	#0x11,ccr
 	.endm
 
-	.macro	SET_X_FROM_C
-	jcc	0f
-	SET_XC_FLAGS
-	bra.b	1f
-0:
-	CLEAR_XC_FLAGS
-1:
-	.endm
+* useful to recall C from X (add then move then bcx)
 	.macro	SET_C_FROM_X
-	move.w	d7,-(a7)
-	roxl.b	#1,d7
-	roxr.b	#1,d7
-	movem.w	(a7)+,d7
+	PUSH_SR
+	move.w	(sp),d7
+	bset	#0,d7   | set C
+	btst	#4,d7
+	jne	0f
+	bclr	#0,d7   | X is clear: clear C
+0:
+	move.w	d7,(sp)
+	POP_SR
 	.endm
 
-	.macro	BREAK_IF_IN_SCREEN	reg
-	* check main screen range (pretty complex as there are 2x2 zones to check)
-	cmp.w	#0x8400,\reg
-	jcs		skip\@
-	cmp.w	#0x8800,\reg
-	jcc		skip\@
-	jbsr	osd_get_last_known_pc
-	BREAKPOINT	"loading 8400-8800 in \reg"
-	jra		out\@
-skip\@:
-	cmp.w	#0x8040,\reg
-	jcs		out\@
-	cmp.w	#0x8400,\reg
-	jcc		out\@
-	* check if 8 first bytes of each row
-	move.w	d7,-(a7)
-	move.w	\reg,d7
-	and.w	#0x1F,d7
-	cmp.w	#8,d7
-	movem.w	(a7)+,d7
-	jcc		out\@
-	jbsr	osd_get_last_known_pc
-	BREAKPOINT	"loading 8x4[0-7] in \reg"
-out\@:
-	cmp.w	#0x8C00,\reg
-	jcs		skip2\@
-	cmp.w	#0x9000,\reg
-	jcc		skip2\@
-	jbsr	osd_get_last_known_pc
-	BREAKPOINT	"loading 8C00-9000 in \reg"
-	jra		out2\@
-skip2\@:
-	cmp.w	#0x8840,\reg
-	jcs		out2\@
-	cmp.w	#0x8C00,\reg
-	jcc		out2\@
-	* check if 8 first bytes of each row
-	move.w	d7,-(a7)
-	move.w	\reg,d7
-	and.w	#0x1F,d7
-	cmp.w	#8,d7
-	movem.w	(a7)+,d7
-	jcc		out2\@
-	jbsr	osd_get_last_known_pc
-	BREAKPOINT	"loading 8x4[0-7] in \reg"
-out2\@:
-	.endm
-	
-* those macros use rol/ror instead of lsl/lsr
-* which doesn't clear MSB/LSB but matters much less than
-* leaving X untouched for next operations
-
-	.macro	LOAD_D1_16_FROM_D1D2
-	and.l	#0xFFFF,d1
-	rol.w	#8,d1
-	move.b	d2,d1
-	.endm
-	
-	.macro	LOAD_D3_16_FROM_D3D4
-	and.l	#0xFFFF,d3
-	rol.w	#8,d3
-	move.b	d4,d3
-	.endm
-	.macro	LOAD_D5_16_FROM_D5D6
-	and.l	#0xFFFF,d5
-	rol.w	#8,d5
-	move.b	d6,d5
-	.endm
-	.macro	LOAD_D1D2_FROM_D1_16
-	move.b	d1,d2
-	ror.w	#8,d1
-	.endm
-	.macro	LOAD_D5D6_FROM_D5_16
-	move.b	d5,d6
-	ror.w	#8,d5
-	.endm
-	.macro	LOAD_D3D4_FROM_D3_16
-	move.b	d3,d4
-	ror.w	#8,d3
+* useful to store X from C (store cmp result)
+	.macro	SET_X_FROM_C
+	PUSH_SR
+	move.w	(sp),d7
+	bset	#4,d7   | set X
+	btst	#0,d7
+	bne.b	0f
+	bclr	#4,d7   | C is clear: clear X
+0:
+	move.w	d7,(sp)
+	POP_SR
 	.endm
 
-	.macro	LOAD_A0_FROM_D5_16
-	BREAK_IF_IN_SCREEN	d5
-	lea	(a6,d5.l),a0
-	.endm
-
-	* no "not in screen" macro load check
-	.macro	LOAD_A0_FROM_D5_16_SCREEN
-	lea	(a6,d5.l),a0
-	.endm
-	
-	.macro	LOAD_A1_FROM_D3_16
-	BREAK_IF_IN_SCREEN	d3
-	lea	(a6,d3.l),a1
-	.endm
-	
-	.macro	LOAD_D5_16_FROM_A0
-	move.l	a0,d5
-	sub.l	a6,d5
-	.ifndef	RELEASE
-	jpl		okay\@
-	BREAKPOINT	"invalid a0 base"
-okay\@:
-	.endif
-	.endm
-	
-	.macro	LOAD_D3_16_FROM_A1
-	move.l	a1,d3
-	sub.l	a6,d3
-	.ifndef	RELEASE
-	jpl		okay\@
-	BREAKPOINT	"invalid a1 base"
-okay\@:
-	.endif
-	.endm
-	
-	.macro	LOAD_D5D6_FROM_A0
-	LOAD_D5_16_FROM_A0
-	LOAD_D5D6_FROM_D5_16
-	.endm
-
-	.macro	LOAD_D3D4_FROM_A1
-	LOAD_D3_16_FROM_A1
-	LOAD_D3D4_FROM_D3_16
-	.endm
-
-	.macro	LOAD_A0_FROM_D5D6
-	LOAD_D5_16_FROM_D5D6
-	LOAD_A0_FROM_D5_16
-	.endm
-
-	.macro	LOAD_A0_FROM_D5D6_SCREEN
-	LOAD_D5_16_FROM_D5D6
-	LOAD_A0_FROM_D5_16_SCREEN
+	.macro	SET_X_FROM_CLEARED_C
+	PUSH_SR
+	move.w	(sp),d7
+	bset	#4,d7   | set X
+	btst	#0,d7
+	jeq	0f
+	bclr	#4,d7   | C is set: clear X
+0:
+	move.w	d7,(sp)
+	POP_SR
 	.endm
 
 
-	.macro	LOAD_A1_FROM_D3D4
-	LOAD_D3_16_FROM_D3D4
-	lea	(a6,d3.l),a1
+	.macro SET_I_FLAG
+	jbsr	osd_disable_interrupts
+	.endm
+	.macro CLR_I_FLAG
+	jbsr	osd_enable_interrupts
 	.endm
 
-	.macro	STORE_POINTER  src,dest
-	move.l	d7,-(a7)
-	move.l	\src,d7
-	sub.l	a6,d7
-	move.b	d7,\dest
-	rol.w	#8,d7
-	move.b	d7,1+\dest
-	move.l	(a7)+,d7
+	.ifdef	MC68020
+
+
+* 68020 compliant & optimized
+
+    .macro    JXX_X_INDEXED    inst,reg,nb_cases,ab
+    moveq    #0,d7
+    move.b    \ab,d7  | mask 8 bits
+    CHECK_MAX    d7,\nb_cases
+    \inst    ([\reg,d7.W*2])
+    .endm
+
+
+	.macro DO_EXTB	reg
+	extb.l	\reg
 	.endm
 
-	.macro	LOAD_POINTER  src,dest
-	move.l	d7,-(a7)
-	moveq	#0,d7
-	move.b	1+\src,d7
-	rol.w	#8,d7
-	move.b	\src,d7
-	add.l	a6,d7
-	move.l	d7,\dest
-	move.l	(a7)+,d7
+	.macro PUSH_SR
+	move.w	ccr,-(sp)
 	.endm
 
-	.macro	STORE_WORD  src,dest
-	move.b	\src,\dest
-	rol.w	#8,\src
-	move.b	\src,1+\dest
-	rol.w	#8,\src
-	.endm
 
-	.macro	LOAD_WORD  src,dest
-	move.b	1+\src,\dest
-	rol.w	#8,\dest
-	move.b	\src,\dest
-	.endm
 
-	.macro	WRITE_IMM_TO_SCREEN_A2	value,offset
-	move.w	d0,-(a7)
-	move.b	#\value,d0
-	WRITE_D0_TO_SCREEN_A2	\offset
-	move.w	(a7)+,d0
-	.endm
-	
-	.macro	WRITE_D0_TO_SCREEN_A1
-	exg	a0,a1
-	jbsr	osd_w_videoram
-	exg	a0,a1
-	.endm
-	
-	* preserves a0
-	.macro	WRITE_D0_TO_SCREEN_A0	offset
-	lea	(\offset,a0),a0
-	jbsr	osd_w_videoram
-	lea	(-\offset,a0),a0
-	.endm
 
-	.macro	WRITE_IMM_TO_SCREEN_A0	value,offset
-	move.w	d0,-(a7)
-	move.b	#\value,d0
-	.ifeq	\offset
-	jbsr	osd_w_videoram
+
 	.else
-	WRITE_D0_TO_SCREEN_A0	\offset
-	.endif
-	move.w	(a7)+,d0
-	.endm
-	
-	* does NOT preserve a0 (a lot of calls are done in sequence)
-	.macro	WRITE_D0_TO_SCREEN_A2	offset
-	lea	(\offset,a2),a0
-	jbsr	osd_w_videoram
+
+* 68000 compliant
+
+	.macro    JXX_X_INDEXED    inst,reg,nb_cases,ab
+	moveq    #0,d7   | scratch register
+	move.b   \ab,d7  | mask 8 bits
+	CHECK_MAX    d7,\nb_cases
+	* original register is not changed (could cause issues)
+	add.w    d6,d6    | *2 (16 -> 32 bits)
+	move.l    (\reg,d7.w),\reg
+	\inst    (\reg)
 	.endm
 
+
+
+	.macro DO_EXTB	reg
+	ext	\reg
+	ext.l	\reg
+	.endm
+
+	.macro PUSH_SR
+	move.w	sr,-(sp)
+	.endm
+
+
+
+	.endif
+
+* same for 68000 and 68020+
+	.macro POP_SR
+	move.w	(sp)+,ccr
+	.endm
+
+* little endian
+	.macro    MOVE_W_TO_REG    src,dest
+	move.b	(1,\src),\dest
+	rol.w	#8,\dest
+	move.b	(\src),\dest
+	.endm
+
+	.macro	MOVE_W_FROM_REG    src,dest
+	move.b	\src,(\dest)
+	rol.w	#8,\src
+	move.b	\src,(1,\dest)
+	rol.w	#8,\src
+	.endm
+
+
+    .macro    JXX_A_INDEXED    inst,reg,nb_cases
+    JXX_X_INDEXED    \inst,\reg,\nb_cases,d0
+    .endm
+
+    .macro    JXX_B_INDEXED    inst,reg,nb_cases
+    JXX_X_INDEXED    \inst,\reg,\nb_cases,d1
+    .endm
+
+    .macro    JSR_A_INDEXED    reg,nb_cases
+    JXX_A_INDEXED	jsr,\reg,\nb_cases
+    .endm
+    .macro    JMP_A_INDEXED    reg,nb_cases
+    JXX_A_INDEXED	jmp,\reg,\nb_cases
+    .endm
+    .macro    JSR_B_INDEXED    reg,nb_cases
+    JXX_B_INDEXED	jsr,\reg,\nb_cases
+    .endm
+    .macro    JMP_B_INDEXED    reg,nb_cases
+    JXX_B_INDEXED	jmp,\reg,\nb_cases
+    .endm
+
+	.macro	EXG_A_A_PRIME
+	move.b	aprime,d7       | retrieve A'
+	move.b	d0,aprime            | save A
+	move.b	d7,d0           | A <= A'
+	.endm
+
+	.macro	EXG_AF_AF_PRIME
+	PUSH_SR                       | push ccr
+	EXG_A_A_PRIME
+	move.w	fprime,d7       | retrieve F'
+	move.w	(sp),fprime           | save F
+	move.w	d7,(sp)         | F' <= F
+	POP_SR                        | pop ccr
+	.endm
+	.macro GET_REG_ADDRESS	offset,reg,dest
+	.ifeq	\offset
+	move.l	\reg,\dest
+	.else
+	lea	\offset,\dest
+	lea	(\dest,\reg\().l),\dest
+	.endif
+	GET_ADDRESS_FUNC	\dest
+	.endm
+
+
+
+	.macro GET_ADDRESS	offset,dest
+	.if \offset==a2
+    move.l    \offset,\dest
+    .else
+    .if \offset==a3
+       move.l  \offset,\dest
+    .else
+    lea    \offset,\dest
+    .endif
+    .endif
+	GET_ADDRESS_FUNC	\dest
+	.endm
+
+	.macro GET_INDIRECT_ADDRESS	offset,dest
+	GET_ADDRESS	\offset,\dest
+	READ_BE_WORD	\dest
+	GET_ADDRESS_FUNC	\dest
+	.endm
+	.macro GET_REG_UNCHECKED_ADDRESS	offset,reg,dest
+	.ifeq	\offset
+	move.l	\reg,\dest
+	.else
+	lea	\offset,\dest
+	lea	(\dest,\reg\().l),\dest
+	.endif
+	GET_UNCHECKED_ADDRESS_FUNC	\dest
+	.endm
+
+
+
+	.macro GET_UNCHECKED_ADDRESS	offset,dest
+	.if \offset==a2
+    move.l    \offset,\dest
+    .else
+    .if \offset==a3
+       move.l  \offset,\dest
+    .else
+    lea    \offset,\dest
+    .endif
+    .endif
+	GET_UNCHECKED_ADDRESS_FUNC	\dest
+	.endm
+
+	.macro GET_INDIRECT_UNCHECKED_ADDRESS	offset,dest
+	GET_ADDRESS	\offset,\dest
+	READ_BE_WORD	\dest
+	GET_UNCHECKED_ADDRESS_FUNC	\dest
+	.endm
+* zero all registers
+cpu_init:
+	moveq	#0,d0
+	moveq	#0,d1
+	moveq	#0,d2
+	moveq	#0,d3
+	moveq	#0,d4
+	moveq	#0,d5
+	moveq	#0,d6
+	moveq	#0,d7
+	sub.l	a2,a2
+	sub.l	a3,a3
+	rts
+
+get_address:
+	cmp.w	#0x8400,a0
+	jcs		0f
+	cmp.w	#0x8800,a0
+	jcc		0f
+	jbsr	osd_get_last_known_pc
+	BREAKPOINT	"loading 8400-8800 in a0"
+	jra		1f
+0:
+	cmp.w	#0x8040,a0
+	jcs		1f
+	cmp.w	#0x8400,a0
+	jcc		1f
+	* check if 8 first bytes of each row
+	move.w	d7,-(a7)
+	move.w	a0,d7
+	and.w	#0x1F,d7
+	cmp.w	#8,d7
+	movem.w	(a7)+,d7
+	jcc		1f
+	jbsr	osd_get_last_known_pc
+	BREAKPOINT	"loading 8x4[0-7] in a0"
+1:
+	cmp.w	#0x8C00,a0
+	jcs		2f
+	cmp.w	#0x9000,a0
+	jcc		2f
+	jbsr	osd_get_last_known_pc
+	BREAKPOINT	"loading 8C00-9000 in a0"
+	jra		3f
+2:
+	cmp.w	#0x8840,a0
+	jcs		3f
+	cmp.w	#0x8C00,a0
+	jcc		3f
+	* check if 8 first bytes of each row
+	move.w	d7,-(a7)
+	move.w	a0,d7
+	and.w	#0x1F,d7
+	cmp.w	#8,d7
+	movem.w	(a7)+,d7
+	jcc		3f
+	jbsr	osd_get_last_known_pc
+	BREAKPOINT	"loading 8x4[0-7] in a0"
+3:
+	GET_UNCHECKED_ADDRESS_FUNC	a0
+	rts
+
+
+
+	.ifne	OPT_ENABLE_LOGGING
+	.macro	LOG_REGS	z80pc
+	PUSH_SR
+	move.w	#0x\z80pc,-(a7)
+	move.w	#0,-(a7)  | cpu 0
+	jbsr	osd_log_cpu
+	addq.w	#4,a7
+	POP_SR
+	.endm
+	.macro	ENABLE_LOG_REGS
+	moveq	#1,d7		| enable
+	jbsr	osd_cpu_logging_control	
+	.endm
+	.macro	DISABLE_LOG_REGS
+	moveq	#0,d7		| disable
+	jbsr	osd_cpu_logging_control	
+	.endm	
+
+	.endif
