@@ -1,3 +1,6 @@
+ld iyx... in converter: replace by error, implement here with memory registers,
+independent from ix & iy
+
 implement scrolling: done but not sure it works
 log scrolling in MAME and in amiga (demo) break if != 0
 

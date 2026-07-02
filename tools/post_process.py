@@ -10,7 +10,7 @@ input_dict = {
 
 single_line_to_cc_protect = set()
 remove_error_in_next_line = set()
-remove_error_in_prev_line = set()
+remove_error_in_prev_line = {0x3}
 line_to_push_cc_protect = set() | single_line_to_cc_protect
 line_to_pull_cc_protect = set() | single_line_to_cc_protect
 
@@ -230,6 +230,9 @@ with open(source_dir / "conv.s") as f:
             line = remove_error(line)
         if "unsupported instruction out" in line:
             line = remove_error(line)
+
+        if address == 0x0003:
+            line = remove_instruction(lines,i)
 
         # end game_specific
         ###############################################

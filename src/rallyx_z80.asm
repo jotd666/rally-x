@@ -99,6 +99,7 @@ car_speed_8027 = $8027
 
 0000: C3 00 38    jp   boot_3800
 
+start_0003:   ; [global]
 ; reaches here when all memory & screen tests are done
 0003: 31 00 84    ld   sp,$8400
 0006: 18 32       jr   $003A
@@ -4941,7 +4942,7 @@ boot_sequence_384C:
 
 ; after setting the stack to a value to hide entrypoint/boot sequence
 ; the game jumps here
-reset_3911:
+reset_3911:		; [global]
 ; various memory fills
 3911: 21 00 84    ld   hl,$8400
 3914: 11 01 84    ld   de,$8401
