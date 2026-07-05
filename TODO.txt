@@ -1,14 +1,11 @@
 - flags & scores not showing in intro
-- insert coin: message is 00000 11111 ... + nb credits: log those writes!
-  done in 06CE
 
 
 
-
+missing sprites?
 implement scrolling: done but not sure it works
 log scrolling in MAME and in amiga (demo) break if != 0
 
-only 9 flags displayed on the radar!
 display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0 ???
 bullet placement: first do with a mockup from MAME!
 
