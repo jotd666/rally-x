@@ -34,6 +34,6 @@ def merge(used_name,nb_items,nb_cluts):
         with open(merged_path_file / used_name,"wb") as f:
             f.write(contents)
 
-#merge("used_sprites",256)
+#merge("used_sprites",256,16)
 merge("used_main_tiles",256,64)
 merge("used_status_tiles",256,64)

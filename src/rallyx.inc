@@ -451,17 +451,17 @@ ldir_unchecked:
 
 get_address:
 	.ifndef	RELEASE
-	cmp.w	#0x8400,a0
+	cmp.l	#0x8400,a0
 	jcs		0f
-	cmp.w	#0x8800,a0
+	cmp.l	#0x8800,a0
 	jcc		0f
 	jbsr	osd_get_last_known_pc
 	BREAKPOINT	"loading 8400-8800 in a0"
 	jra		1f
 0:
-	cmp.w	#0x8040,a0
+	cmp.l	#0x8040,a0
 	jcs		1f
-	cmp.w	#0x8400,a0
+	cmp.l	#0x8400,a0
 	jcc		1f
 	* check if 8 first bytes of each row
 	move.w	d7,-(a7)
@@ -473,17 +473,17 @@ get_address:
 	jbsr	osd_get_last_known_pc
 	BREAKPOINT	"loading 8x4[0-7] in a0"
 1:
-	cmp.w	#0x8C00,a0
+	cmp.l	#0x8C00,a0
 	jcs		2f
-	cmp.w	#0x9000,a0
+	cmp.l	#0x9000,a0
 	jcc		2f
 	jbsr	osd_get_last_known_pc
 	BREAKPOINT	"loading 8C00-9000 in a0"
 	jra		3f
 2:
-	cmp.w	#0x8840,a0
+	cmp.l	#0x8840,a0
 	jcs		3f
-	cmp.w	#0x8C00,a0
+	cmp.l	#0x8C00,a0
 	jcc		3f
 	* check if 8 first bytes of each row
 	move.w	d7,-(a7)

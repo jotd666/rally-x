@@ -12,14 +12,13 @@
 	.global	ixl
 	.global highscore_needs_saving_flag
 	.global	regscopy
-	.global	mem_buffer
 	.global vbl_sync_counter
 	.global vbl_sync_flag
 	.global no_sync_flag
 	.ifndef	RELEASE
-	.global ram_start_8000
-	.global mem_start_0000
+	.global rom_start_0000
 	.endif
+	.global rom_buffer
 	
 	.ifdef   __amiga__
 	.ascii	"RAM_STRT"
@@ -34,12 +33,12 @@
 
 	
 
-mem_buffer:
+rom_buffer:
 	.ifdef	RELEASE
 	.skip	0x10000
 	.else
 	.skip	0x20000
-mem_start_0000:
+rom_start_0000:
 	.long	0
 ram_start_8000:
 	.long	0

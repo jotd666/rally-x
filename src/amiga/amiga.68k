@@ -116,14 +116,11 @@ BIT_UP = 2
 BIT_DOWN = 3
 BIT_FIRE = 4
 
-.macro	GET_MEMORY_BLOCKS_IN_A5_A6	
-	.ifdef	RELEASE
-	lea		mem_buffer,a6
-	lea		mem_buffer+0x8000,a5
-	.else
-	move.l		mem_start_0000,a6
-	move.l		ram_start_8000,a5
-	.endif
+	
+	.macro	GET_MEMORY_BLOCKS_IN_A5_A6
+	GET_MEMORY_START_IN_A6
+	move.l	a6,a5
+	add.l	#0x8000,a5
 	.endm
 	
 .macro	WAIT_BLIT
@@ -658,9 +655,7 @@ demo_game:
 		
 0:	
 	* compute ram start
-	lea		mem_buffer,a6
-	move.l	a6,a5
-	add.l	#0x8000,a5
+	lea		rom_buffer,a6
 	.ifndef	RELEASE
 	* align so real addresses are $xxxx0yyy
 	* and lower 16-bit match original RAM offsets
@@ -668,10 +663,8 @@ demo_game:
 	clr.w	d0
 	add.l	#0x10000,d0
 	move.l	d0,a6
-	move.l	a6,mem_start_0000
-	move.l	a6,a5
-	add.l	#0x8000,a5
-	move.l	a5,ram_start_8000
+	move.l	a6,rom_start_0000
+
 	.endif
 	
 	* copy ROM at the start. Memory is one big block now
@@ -685,9 +678,10 @@ demo_game:
 	
 	* enable interrupts. Game doesn't use them
 	* but relies on vbl sync flags
-	*jbsr	cpu_init		| zero all registers
+	jbsr	cpu_init		| zero all registers
 
 	jbsr	osd_disable_interrupts
+	GET_MEMORY_START_IN_A6
 	move.l	a6,a3
 	move.l	a6,a2
 	add.l	#0xFFFF,a3			| trash A3 to match MAME IY
@@ -695,6 +689,15 @@ demo_game:
 	jbsr	reset_3911
 	jra		start_0003					| pass control to the mpatrol core
 		
+cpu_init:
+	moveq	#0,d0
+	moveq	#0,d1
+	moveq	#0,d2
+	moveq	#0,d3
+	moveq	#0,d4
+	moveq	#0,d5
+	moveq	#0,d6
+	rts
 	
 * just in case some hardware calls nmi
 _nmi:
@@ -707,6 +710,8 @@ do_irq:
 	* this is done by disabling vblank, but setting SR at 2000
 	* it allows to intercept the "push start" button when a coin is inserted
 	* else the code loops in the irq which is wrong...
+	GET_MEMORY_START_IN_A6
+	jbsr	cpu_init
 	jbsr	osd_disable_interrupts
 	move.w	#0x2000,sr		| allow keyboard interrupt
 	jbsr	irq_01f0
@@ -766,7 +771,7 @@ _vblank:
 
 
 	* set bases. We need 2 registers
-	GET_MEMORY_BLOCKS_IN_A5_A6
+	
 	* declare that we're in interrupt mode so osd_disable_interrupts/osd_enable_interrupts
 	* is level 1 interrupt set? that would mean that mid-screen interrupt
 	* is the source of the interrupt
@@ -2088,9 +2093,7 @@ osd_video_byte_dirty:
 	movem.l	d0-d7/a0-a2,-(a7)
 	move.l	a0,d7		| save address
 	sub.l	a6,d7		| start of video RAM
-
-
-
+	bclr	#15,d7		| remove high bit
 
 	cmp.w	#0x40,d7
 	jcc		0f
@@ -3240,7 +3243,7 @@ osd_sound_start:
 	.ifndef	RELEASE
 
 osd_get_last_known_pc:
-	move.w	last_known_z80_pc,d6
+	move.w	last_known_z80_pc,d7
 	rts
 	
 	

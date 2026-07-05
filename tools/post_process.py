@@ -5,7 +5,11 @@ gamename = "rallyx"
 # game_specific: replace or remove I/O addresses
 # if not done it will write in ROM here!!
 input_dict = {
-"watchdog_a080":""
+"watchdog_a080":["","read_p2_inputs"],
+"scrollx_a130":"set_scroll_x",
+"scrollx_a140":"set_scroll_y",
+"dsw_a100":"read_dsw",
+"p1_a000":"read_p1_inputs",
 }
 
 single_line_to_cc_protect = {0X168d,0x15c4,0x0139,0x18c,0x031d,0x040a,0x0412,0x41a,0X0443,0x0477,0x04d5,0x0564,0X0b52,0x0b5e,0x0bbb,0x0bd3,0x1420,
@@ -212,9 +216,10 @@ with open(source_dir / "conv.s") as f:
             elif "MAKE" in lines[i-1] and "UNCHECKED" not in lines[i-1]:
                 lines[i-1] = re.sub(r"(MAKE_AR)",r"\1_UNCHECKED",lines[i-1])
                 lines[i-1] = re.sub(r"(MAKE_[HDB]\w)",r"\1_UNCHECKED",lines[i-1])
-            elif "ldir" in line:
+
+            if "ldir" in line:
                 line = line.replace("ldir","ldir_video" if "[video_address" in line else "ldir_unchecked")
-            if "[video_address" in line:
+            elif "[video_address" in line:
                 if ",(a0)" in line or ("(a0)" in line and "clr.b" in line):
                     line += "\tVIDEO_BYTE_DIRTY | [...]\n"
                 elif (",(a0)" in lines[i+1] or ("(a0)" in  lines[i+1]  and "clr.b" in lines[i+1] )):
@@ -269,6 +274,10 @@ with open(source_dir / "conv.s") as f:
             lines[i+3] = remove_error(lines[i+3])
         elif address == 0x17b6:
             line = swap_lines(lines,i,i-2)
+        elif address == 0x023A:
+            # push de+pop iy okay but then push de (and pop iy later)
+            # replace by push iy
+            line = change_instruction("move.l\ta3,-(a7)",lines,i)
         # end game_specific
         ###############################################
         if address in remove_error_in_prev_line:
@@ -298,7 +307,16 @@ with open(source_dir / "conv.s") as f:
             if osd_call is not None:
 
                 if osd_call:
-                    line = change_instruction(f"jbsr\tosd_{osd_call}",lines,i)
+                    if isinstance(osd_call,list):
+                        # choose depending on read/write
+                        if "a,(" in line:
+                            osd_call = osd_call[1]
+                        else:
+                            osd_call = osd_call[0]
+                    if osd_call:
+                        line = change_instruction(f"jbsr\tosd_{osd_call}",lines,i)
+                    else:
+                        line = remove_instruction(lines,i)
                 else:
                     line = remove_instruction(lines,i)
                 lines[i+1] = remove_instruction(lines,i+1)

@@ -816,14 +816,14 @@ irq_01f0:		; [global]
 059E: CD CB 1D    call clear_screen_and_reset_scroll_1dcb
 05A1: 21 40 8C    ld   hl,$8C40
 05A4: 06 90       ld   b,$90
-05A6: 36 4A       ld   (hl),$4A
+05A6: 36 4A       ld   (hl),$4A		; [video_address]
 05A8: 23          inc  hl
 05A9: 10 FB       djnz $05A6
 05AB: 21 00 8F    ld   hl,$8F00
 05AE: 11 01 8F    ld   de,$8F01
 05B1: 01 FF 00    ld   bc,$00FF
-05B4: 36 47       ld   (hl),$47
-05B6: ED B0       ldir
+05B4: 36 47       ld   (hl),$47		; [video_address]
+05B6: ED B0       ldir			; [video_address]
 05B8: 21 F3 1F    ld   hl,$1FF3
 05BB: FB          ei
 05BC: CD 1B 1E    call write_instructions_text_1e1b
@@ -845,13 +845,13 @@ irq_01f0:		; [global]
 05E5: 0C          inc  c
 05E6: 21 A8 8E    ld   hl,$8EA8
 05E9: 06 07       ld   b,$07
-05EB: 36 44       ld   (hl),$44
+05EB: 36 44       ld   (hl),$44		; [video_address]
 05ED: 23          inc  hl
 05EE: 10 FB       djnz $05EB
 05F0: 21 C8 8E    ld   hl,$8EC8
-05F3: 36 44       ld   (hl),$44
+05F3: 36 44       ld   (hl),$44	; [video_address]
 05F5: 23          inc  hl
-05F6: 36 44       ld   (hl),$44
+05F6: 36 44       ld   (hl),$44 	; [video_address]
 05F8: DD 21 A8 86 ld   ix,$86A8
 05FC: DD 36 01 87 ld   (ix+$01),$87
 0600: DD 36 20 88 ld   (ix+$20),$88
@@ -943,7 +943,7 @@ irq_01f0:		; [global]
 06C8: 77          ld   (hl),a
 06C9: 3E 66       ld   a,$66
 06CB: CD CB 1D    call clear_screen_and_reset_scroll_1dcb
-06CE: 21 30 1F    ld   hl,$1F30
+06CE: 21 30 1F    ld   hl,$1F30		; PUSH START BUTTON
 06D1: 11 66 85    ld   de,$8566
 06D4: CD 29 1C    call write_to_screen_1c29
 06D7: E5          push hl
@@ -1153,12 +1153,12 @@ clear_sprites_074c:
 0896: D6 0A       sub  $0A    ; [uncovered] 
 0898: 18 F7       jr   $0891    ; [uncovered] 
 
-089A: 77          ld   (hl),a
+089A: 77          ld   (hl),a		; [video_address]
 089B: 78          ld   a,b
 089C: 2B          dec  hl
 089D: A7          and  a
 089E: 28 01       jr   z,$08A1
-08A0: 77          ld   (hl),a    ; [uncovered] 
+08A0: 77          ld   (hl),a    ; [video_address]
 08A1: 3A A8 81    ld   a,($81A8)
 08A4: 32 83 A1    ld   ($A183),a
 08A7: CD AF 12    call write_flag_dots_12af
@@ -1422,7 +1422,7 @@ clear_sprites_074c:
 0B0C: C0          ret  nz
 0B0D: D5          push de
 0B0E: 13          inc  de
-0B0F: 1A          ld   a,(de)
+0B0F: 1A          ld   a,(de)	; [video_address]
 0B10: A7          and  a
 0B11: D1          pop  de
 0B12: C8          ret  z
@@ -2496,7 +2496,7 @@ write_flag_dot_127f:
 1296: 30 01       jr   nc,$1299
 1298: 24          inc  h
 1299: 6F          ld   l,a
-129A: 71          ld   (hl),c
+129A: 71          ld   (hl),c		; [video_address]
 129B: CB DC       set  3,h
 129D: 7E          ld   a,(hl)
 129E: E6 3F       and  $3F
@@ -2506,7 +2506,7 @@ write_flag_dot_127f:
 12A6: CB 4A       bit  1,d
 12A8: 28 02       jr   z,$12AC
 12AA: F6 80       or   $80
-12AC: 77          ld   (hl),a
+12AC: 77          ld   (hl),a		; [video_address]
 12AD: E1          pop  hl
 12AE: C9          ret
 
@@ -2662,7 +2662,7 @@ write_maze_row_131e:
 137B: CB DC       set  3,h
 137D: 3A B1 82    ld   a,($82B1)
 1380: B0          or   b
-1381: 77          ld   (hl),a
+1381: 77          ld   (hl),a	; [video_address]
 1382: E1          pop  hl
 1383: D1          pop  de
 1384: C1          pop  bc
@@ -2698,7 +2698,7 @@ write_maze_row_131e:
 13AC: 12          ld   (de),a
 13AD: EB          ex   de,hl
 13AE: CB DC       set  3,h
-13B0: 70          ld   (hl),b
+13B0: 70          ld   (hl),b	; [video_address]
 13B1: E1          pop  hl
 13B2: D1          pop  de
 13B3: C1          pop  bc
@@ -3713,13 +3713,13 @@ rle_unpack_to_screen_1b15:
 1B19: CB DA       set  3,d
 1B1B: 23          inc  hl
 1B1C: 46          ld   b,(hl)
-1B1D: 12          ld   (de),a
+1B1D: 12          ld   (de),a	; [video_address]
 1B1E: 13          inc  de
 1B1F: 10 FC       djnz $1B1D
-1B21: 4E          ld   c,(hl)
+1B21: 4E          ld   c,(hl)  
 1B22: D1          pop  de
 1B23: 23          inc  hl
-1B24: ED B0       ldir
+1B24: ED B0       ldir		; [video_address]
 1B26: C1          pop  bc
 1B27: F1          pop  af
 1B28: C9          ret
@@ -3729,7 +3729,7 @@ rle_unpack_to_screen_1b15:
 1B78: 21 34 88    ld   hl,$8834
 1B7B: 06 0C       ld   b,$0C
 1B7D: 0E 00       ld   c,$00
-1B7F: 71          ld   (hl),c
+1B7F: 71          ld   (hl),c	; [video_address]
 1B80: 23          inc  hl
 1B81: 10 FC       djnz $1B7F
 1B83: C1          pop  bc
@@ -3833,7 +3833,7 @@ write_to_screen_1c29:
 1C2A: 23          inc  hl
 ldir_video_1c2b:
 1C2B: 06 00       ld   b,$00
-1C2D: ED B0       ldir
+1C2D: ED B0       ldir		; [video_address]
 1C2F: C9          ret
 
 1C30: 3A 24 80    ld   a,($8024)
@@ -3858,7 +3858,7 @@ copy_status_row_1c4e:
 1C4E: D5          push de
 1C4F: C5          push bc
 1C50: 01 08 00    ld   bc,$0008
-1C53: ED B0       ldir
+1C53: ED B0       ldir			; [video_address]
 1C55: C1          pop  bc
 1C56: D1          pop  de
 1C57: E5          push hl
@@ -3866,7 +3866,7 @@ copy_status_row_1c4e:
 1C59: EB          ex   de,hl
 1C5A: CB DC       set  3,h
 1C5C: 16 08       ld   d,$08
-1C5E: 71          ld   (hl),c
+1C5E: 71          ld   (hl),c		; [video_address]
 1C5F: 23          inc  hl
 1C60: 15          dec  d
 1C61: 20 FB       jr   nz,$1C5E
@@ -3933,7 +3933,7 @@ copy_status_row_1c4e:
 1CDB: FE CF       cp   $CF
 1CDD: 38 02       jr   c,$1CE1
 1CDF: 3E CF       ld   a,$CF
-1CE1: 77          ld   (hl),a
+1CE1: 77          ld   (hl),a	; [video_address]
 1CE2: 2C          inc  l
 1CE3: 06 07       ld   b,$07
 1CE5: 7A          ld   a,d
@@ -3948,7 +3948,7 @@ copy_status_row_1c4e:
 1CF1: 28 01       jr   z,$1CF4
 1CF3: AF          xor  a
 1CF4: 81          add  a,c
-1CF5: 77          ld   (hl),a
+1CF5: 77          ld   (hl),a	; [video_address]
 1CF6: 7D          ld   a,l
 1CF7: 3C          inc  a
 1CF8: E6 F7       and  $F7
@@ -4063,13 +4063,13 @@ clear_screen_and_reset_scroll_1dcb:
 1DCB: 21 00 84    ld   hl,$8400
 1DCE: 11 01 84    ld   de,$8401
 1DD1: 01 FF 03    ld   bc,$03FF
-1DD4: 36 40       ld   (hl),$40
-1DD6: ED B0       ldir
+1DD4: 36 40       ld   (hl),$40	; [unchecked_address]
+1DD6: ED B0       ldir		; [unchecked_address]
 1DD8: 21 00 8C    ld   hl,$8C00
 1DDB: 11 01 8C    ld   de,$8C01
 1DDE: 01 FF 03    ld   bc,$03FF
-1DE1: 77          ld   (hl),a
-1DE2: ED B0       ldir
+1DE1: 77          ld   (hl),a	; [video_address]
+1DE2: ED B0       ldir		; [video_address]
 1DE4: AF          xor  a
 1DE5: 32 40 A1    ld   (scrolly_a140),a
 1DE8: 32 30 A1    ld   (scrollx_a130),a
@@ -4189,7 +4189,7 @@ write_instructions_text_1e1b:
 1EB1: 71          ld   (hl),c
 1EB2: C1          pop  bc    ; [uncovered] 
 1EB3: 2B          dec  hl
-1EB4: 77          ld   (hl),a
+1EB4: 77          ld   (hl),a	; [video_address]
 1EB5: 13          inc  de
 1EB6: 10 C6       djnz $1E7E
 1EB8: AF          xor  a
@@ -4225,12 +4225,12 @@ display_credits_1ed2:
 1EF1: D6 0A       sub  $0A    ; [uncovered] 
 1EF3: 18 F7       jr   $1EEC    ; [uncovered] 
 
-1EF5: 77          ld   (hl),a
+1EF5: 77          ld   (hl),a	; [video_address]
 1EF6: 78          ld   a,b
 1EF7: A7          and  a
 1EF8: 28 02       jr   z,$1EFC
 1EFA: 2B          dec  hl    ; [uncovered] 
-1EFB: 77          ld   (hl),a    ; [uncovered] 
+1EFB: 77          ld   (hl),a    ; [video_address]
 1EFC: C1          pop  bc
 1EFD: D1          pop  de
 1EFE: E1          pop  hl
@@ -4985,18 +4985,17 @@ boot_sequence_384C:
 ; the game jumps here
 reset_3911:		; [global]
 ; various memory fills
-reset_3911:
 3911: 21 00 84    ld   hl,$8400
 3914: 11 01 84    ld   de,$8401
 3917: 01 FF 03    ld   bc,$03FF
-391A: 36 40       ld   (hl),$40
+391A: 36 40       ld   (hl),$40 ; [unchecked_address]
 391C: ED B0       ldir			; fill video with $40 [unchecked_address]
 keep_clearing_screen_391e:
 391E: 21 00 8C    ld   hl,$8C00
 3921: 11 01 8C    ld   de,$8C01
 3924: 01 FF 03    ld   bc,$03FF
 3927: 36 66       ld   (hl),$66	; fill attribs  [video_address]
-3929: ED B0       ldir
+3929: ED B0       ldir			; [video_address]
 392B: 21 40 80    ld   hl,$8040
 392E: 01 08 1C    ld   bc,$1C08
 3931: 3E 40       ld   a,$40
@@ -5006,7 +5005,7 @@ keep_clearing_screen_391e:
 3937: 5F          ld   e,a
 3938: 7A          ld   a,d
 3939: 51          ld   d,c
-393A: 77          ld   (hl),a
+393A: 77          ld   (hl),a		; [video_address]
 393B: 23          inc  hl
 393C: 15          dec  d
 393D: 20 FB       jr   nz,$393A
@@ -5021,7 +5020,7 @@ keep_clearing_screen_391e:
 394E: 5F          ld   e,a
 394F: 7A          ld   a,d
 3950: 51          ld   d,c
-3951: 77          ld   (hl),a
+3951: 77          ld   (hl),a	; [video_address]
 3952: 23          inc  hl
 3953: 15          dec  d
 3954: 20 FB       jr   nz,$3951
