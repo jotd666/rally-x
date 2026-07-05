@@ -223,6 +223,8 @@ with open(source_dir / "conv.s") as f:
         if "[pop_stack]" in line:
             line = change_instruction("addq\t#4,sp",lines,i)
 
+        line = re.sub("#(i[xy][hl])",r"\1",line)
+
         ###############################################
         # game_specific
 

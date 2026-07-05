@@ -120,7 +120,8 @@ start_0003:   ; [global]
 0003: 31 00 84    ld   sp,$8400
 0006: 18 32       jr   $003A
 
-0030: C3 F0 01    jp   $01F0
+irq_0030:
+0030: C3 F0 01    jp   irq_01f0
 
 003A: ED 46       im   0
 003C: FB          ei
@@ -144,7 +145,7 @@ start_0003:   ; [global]
 0060: ED B0       ldir
 0062: C3 E7 04    jp   $04E7
 
-irq_0069:
+	
 0069: 32 80 A0    ld   (watchdog_a080),a
 006C: FD 26 01    ld   iyh,$01
 006F: 2A 69 80    ld   hl,($8069)
@@ -341,6 +342,7 @@ irq_0069:
 01EC: C1          pop  bc
 01ED: C3 5A 01    jp   $015A
 
+irq_01f0:		; [global]
 01F0: E5          push hl
 01F1: D5          push de
 01F2: C5          push bc

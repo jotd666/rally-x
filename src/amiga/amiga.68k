@@ -1,13 +1,12 @@
 *
 *	Amiga-specific portions of Rally'X
 *
-* (c) JOTD 2025
+* (c) JOTD 2025-2026
 *
 
 
 
-	.include "../src/breakpoint.inc"
-	
+	.include "../src/options.inc"
  
 	
 	.include "custom.i"
@@ -70,17 +69,7 @@ TARGET_SPRITE_ATTRIBUTES = 0
 TARGET_SPRITE_CODE = TARGET_SPRITE_ATTRIBUTES
 
 
-	.ifdef	RELEASE
-OPT_ENABLE_LOGGING = 0           | DO NOT CHANGE THIS
 
-	.else
-OPT_ENABLE_LOGGING = 0
-* set to higher values than 1 to speed game up
-
-
-
-	.endif
-	
 
 OPT_ENABLE_DOUBLE_BUFFERING = 0
 
@@ -206,7 +195,6 @@ w\@:
 	.global	osd_set_scroll_x
 	.global	osd_set_scroll_y
 	.global	osd_read_system
-	.global	osd_w_videoram
 	
 	.global	is_game_playing
 	.global osd_read_high_scores
@@ -222,6 +210,7 @@ w\@:
 	.global	osd_dump_logs
 	.global	osd_log_cpu
 	.global	osd_cpu_logging_control		
+	.global osd_video_byte_dirty
 	
 	.include	"ReadJoypad.i"
 	.include	"whdload_funcs.i"
@@ -713,6 +702,18 @@ _nmi:
 	move.w	#0x7FFF,_custom+intreq
 	rts
 	
+do_irq:
+	* at least on amiga, we need keyboard interrupt enabled.
+	* this is done by disabling vblank, but setting SR at 2000
+	* it allows to intercept the "push start" button when a coin is inserted
+	* else the code loops in the irq which is wrong...
+	jbsr	osd_disable_interrupts
+	move.w	#0x2000,sr		| allow keyboard interrupt
+	jbsr	irq_01f0
+	jbsr	osd_enable_interrupts
+	rts
+
+
 _vblank:
     movem.l d0-d7/a0-a6,-(a7)
 	lea		_custom,a5
@@ -780,7 +781,7 @@ _vblank:
 	cmp.b	#7,d0
 	bne.b	1f
 	* simulate an extra vblank
-	jbsr	rallyx_irq
+	jbsr	do_irq
 	clr.b	d0
 1:
 	move.b	d0,mid_screen_interrupt_count
@@ -790,7 +791,7 @@ _vblank:
 	subq.w	#1,delay_timer
 		
 	
-	jbsr	rallyx_irq
+	jbsr	do_irq
 
 	
 	.ifndef	RELEASE
@@ -2076,23 +2077,17 @@ load_palette:
 
 	
 * a0=screen tile/attr address (preserved)
-* a5=ram base
+* a6=ram base
 * d0=value
 * should preserve all registers
 * allows 8040-8FFF range
 
-osd_w_videoram:
-	cmp.b	(a0),d0
-	jne		0f
-	rts
-0:
-	* only update if needed
-	move.b	d0,(a0)
+osd_video_byte_dirty:
 
 	
 	movem.l	d0-d7/a0-a2,-(a7)
 	move.l	a0,d7		| save address
-	sub.l	a5,d7		| start of video RAM
+	sub.l	a6,d7		| start of video RAM
 
 
 
