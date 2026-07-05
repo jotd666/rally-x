@@ -9,7 +9,7 @@
 	.global	fprime
 	.global	iyl
 	.global	iyh
-	.global	ixl
+
 	.global highscore_needs_saving_flag
 	.global	regscopy
 	.global vbl_sync_counter
@@ -56,9 +56,10 @@ sprite_ram_9000:
 regscopy:
 	.skip	56
 
-aprime:
-	.byte	0
 fprime:
+	.word	0
+
+aprime:
 	.byte	0
 i:
 	.byte	0
@@ -93,8 +94,7 @@ iyh:
 	.byte	0
 iyl:
 	.byte	0
-ixl:
-	.byte	0
+
 no_sync_flag:
 	.byte 	0
 break_at_startup_flag:

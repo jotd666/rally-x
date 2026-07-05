@@ -837,7 +837,7 @@ irq_01f0:		; [global]
 05D3: 32 20 80    ld   ($8020),a
 05D6: 32 4B 82    ld   ($824B),a
 05D9: 32 81 A1    ld   ($A181),a
-05DC: ED 5F       ld   a,r
+05DC: ED 5F       ld   a,r			; random
 05DE: E6 1F       and  $1F
 05E0: 4F          ld   c,a
 05E1: D6 0A       sub  $0A
@@ -852,24 +852,24 @@ irq_01f0:		; [global]
 05F3: 36 44       ld   (hl),$44	; [video_address]
 05F5: 23          inc  hl
 05F6: 36 44       ld   (hl),$44 	; [video_address]
-05F8: DD 21 A8 86 ld   ix,$86A8
-05FC: DD 36 01 87 ld   (ix+$01),$87
-0600: DD 36 20 88 ld   (ix+$20),$88
-0604: DD 36 21 89 ld   (ix+$21),$89
+05F8: DD 21 A8 86 ld   ix,$86A8      ; [unchecked_address]
+05FC: DD 36 01 87 ld   (ix+$01),$87  ; [video_address]
+0600: DD 36 20 88 ld   (ix+$20),$88  ; [video_address]
+0604: DD 36 21 89 ld   (ix+$21),$89  ; [video_address]
 0608: 3E 81       ld   a,$81
-060A: DD 77 00    ld   (ix+$00),a
-060D: DD 77 02    ld   (ix+$02),a
-0610: DD 77 05    ld   (ix+$05),a
-0613: DD 77 06    ld   (ix+$06),a
-0616: DD 36 08 50 ld   (ix+$08),$50
-061A: DD 36 09 54 ld   (ix+$09),$54
-061E: DD 36 0A 53 ld   (ix+$0a),$53
+060A: DD 77 00    ld   (ix+$00),a     ; [video_address]
+060D: DD 77 02    ld   (ix+$02),a     ; [video_address]
+0610: DD 77 05    ld   (ix+$05),a     ; [video_address]
+0613: DD 77 06    ld   (ix+$06),a     ; [video_address]
+0616: DD 36 08 50 ld   (ix+$08),$50   ; [video_address]
+061A: DD 36 09 54 ld   (ix+$09),$54   ; [video_address]
+061E: DD 36 0A 53 ld   (ix+$0a),$53   ; [video_address]
 0622: 16 00       ld   d,$00
 0624: 1E A0       ld   e,$A0
 0626: 3E 81       ld   a,$81
-0628: DD 77 03    ld   (ix+$03),a
-062B: DD 77 04    ld   (ix+$04),a
-062E: DD 77 05    ld   (ix+$05),a
+0628: DD 77 03    ld   (ix+$03),a   ; [video_address]
+062B: DD 77 04    ld   (ix+$04),a   ; [video_address]
+062E: DD 77 05    ld   (ix+$05),a   ; [video_address]
 0631: 3A 4B 82    ld   a,($824B)
 0634: E6 3F       and  $3F
 0636: 28 EE       jr   z,$0626
@@ -883,19 +883,19 @@ irq_01f0:		; [global]
 0646: 20 03       jr   nz,$064B
 0648: 3E 8A       ld   a,$8A
 064A: 57          ld   d,a
-064B: DD 77 00    ld   (ix+$00),a
+064B: DD 77 00    ld   (ix+$00),a		; [video_address]
 064E: CB 4A       bit  1,d
 0650: 28 04       jr   z,$0656
-0652: DD 36 05 AC ld   (ix+$05),$AC
-0656: DD 36 04 AA ld   (ix+$04),$AA
-065A: DD 73 03    ld   (ix+$03),e
+0652: DD 36 05 AC ld   (ix+$05),$AC    ; [video_address]
+0656: DD 36 04 AA ld   (ix+$04),$AA    ; [video_address]
+065A: DD 73 03    ld   (ix+$03),e      ; [video_address]
 065D: 7B          ld   a,e
 065E: 1C          inc  e
 065F: FE A9       cp   $A9
 0661: 20 CE       jr   nz,$0631
-0663: DD 36 03 A0 ld   (ix+$03),$A0
-0667: DD 36 05 AB ld   (ix+$05),$AB
-066B: DD 36 06 AC ld   (ix+$06),$AC
+0663: DD 36 03 A0 ld   (ix+$03),$A0     ; [video_address]
+0667: DD 36 05 AB ld   (ix+$05),$AB     ; [video_address]
+066B: DD 36 06 AC ld   (ix+$06),$AC     ; [video_address]
 066F: 3E 01       ld   a,$01
 0671: 32 4B 82    ld   ($824B),a
 0674: 3A 4B 82    ld   a,($824B)
@@ -1088,7 +1088,7 @@ clear_sprites_074c:
 0817: 13          inc  de
 0818: 24          inc  h
 0819: 10 F8       djnz $0813
-081B: 32 80 A0    ld   (watchdog_a080),a
+081B: 32 80 A0    ld   (watchdog_a080),a	; [breakpoint]
 081E: 60          ld   h,b
 081F: 2C          inc  l
 0820: 0D          dec  c
@@ -1191,11 +1191,11 @@ clear_sprites_074c:
 08EB: 32 20 80    ld   ($8020),a
 08EE: 32 81 A1    ld   ($A181),a
 08F1: FB          ei
-08F2: AF          xor  a
+08F2: AF          xor  a		; zero scroll in X and Y
 08F3: 32 40 A1    ld   (scrolly_a140),a
 08F6: 32 30 A1    ld   (scrollx_a130),a
 08F9: CD 31 11    call write_maze_1131
-08FC: 21 F5 89    ld   hl,$89F5
+08FC: 21 F5 89    ld   hl,$89F5		; [breakpoint]
 08FF: CB 46       bit  0,(hl)
 0901: 28 FC       jr   z,$08FF
 0903: 06 05       ld   b,$05
@@ -1243,13 +1243,13 @@ clear_sprites_074c:
 096C: CD 4E 1C    call copy_status_row_1c4e
 096F: 10 F8       djnz $0969
 0971: D1          pop  de
-0972: DD 21 44 83 ld   ix,$8344
+0972: DD 21 44 83 ld   ix,$8344		; [video_address]
 0976: 2A 88 89    ld   hl,($8988)
 0979: 4E          ld   c,(hl)
 097A: 0C          inc  c
 097B: 18 17       jr   $0994
 
-097D: DD 21 44 83 ld   ix,$8344
+097D: DD 21 44 83 ld   ix,$8344	; [video_address]
 0981: 11 40 83    ld   de,$8340
 0984: 06 02       ld   b,$02
 0986: 0E 63       ld   c,$63
@@ -1261,13 +1261,13 @@ clear_sprites_074c:
 0994: 0D          dec  c
 0995: C8          ret  z
 0996: 3E B0       ld   a,$B0
-0998: DD 77 00    ld   (ix+$00),a
+0998: DD 77 00    ld   (ix+$00),a	; [video_address]
 099B: 3C          inc  a
-099C: DD 77 01    ld   (ix+$01),a
+099C: DD 77 01    ld   (ix+$01),a   ; [video_address]
 099F: 3C          inc  a
-09A0: DD 77 20    ld   (ix+$20),a
+09A0: DD 77 20    ld   (ix+$20),a   ; [video_address]
 09A3: 3C          inc  a
-09A4: DD 77 21    ld   (ix+$21),a
+09A4: DD 77 21    ld   (ix+$21),a   ; [video_address]
 09A7: DD 7D       ld   a,ixl
 09A9: 3C          inc  a
 09AA: 3C          inc  a
@@ -1885,12 +1885,12 @@ increase_and_wrap_d5w_0d69:
 0E28: 54          ld   d,h
 0E29: 5D          ld   e,l
 0E2A: CB DC       set  3,h
-0E2C: CB 7E       bit  7,(hl)
+0E2C: CB 7E       bit  7,(hl)		; [video_address]
 0E2E: 28 29       jr   z,$0E59
 0E30: 1A          ld   a,(de)
 0E31: FE 81       cp   $81
 0E33: 20 24       jr   nz,$0E59
-0E35: CB BE       res  7,(hl)
+0E35: CB BE       res  7,(hl)		; [video_address]
 0E37: 06 03       ld   b,$03
 0E39: 3E BD       ld   a,$BD
 0E3B: 0E 03       ld   c,$03
@@ -1898,7 +1898,7 @@ increase_and_wrap_d5w_0d69:
 0E3E: D5          push de
 0E3F: 12          ld   (de),a
 0E40: 3C          inc  a
-0E41: 36 45       ld   (hl),$45
+0E41: 36 45       ld   (hl),$45			; [video_address]
 0E43: CD 5D 0E    call advance_hl_and_de_0e5d
 0E46: 0D          dec  c
 0E47: 20 F6       jr   nz,$0E3F
@@ -1907,9 +1907,9 @@ increase_and_wrap_d5w_0d69:
 0E4B: CD 6C 0E    call advance_hl_and_de_0e6c
 0E4E: 10 EB       djnz $0E3B
 0E50: 21 91 82    ld   hl,$8291
-0E53: 35          dec  (hl)
+0E53: 35          dec  (hl)			; [video_address]
 0E54: 21 F4 89    ld   hl,$89F4
-0E57: CB E6       set  4,(hl)
+0E57: CB E6       set  4,(hl)		; [video_address]
 0E59: C1          pop  bc
 0E5A: D1          pop  de
 0E5B: E1          pop  hl

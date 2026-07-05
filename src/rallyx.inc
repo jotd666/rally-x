@@ -24,6 +24,11 @@
 	jbsr	osd_video_byte_dirty
 	.endm
 
+	.macro	VIDEO_BYTE_DIRTY_IX	offset
+	lea	(\offset,a2),a0
+	jbsr	osd_video_byte_dirty
+	.endm
+
 
 * the function that accesses all memory (except banks)
 * without any check
@@ -498,6 +503,7 @@ get_address:
 	.endif
 	GET_UNCHECKED_ADDRESS_FUNC	a0
 	rts
+
 
 
 

@@ -1,11 +1,11 @@
-; Pooyan OCS slave
+; Rally-X OCS slave
 	INCDIR	Include:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
 ;CHIP_ONLY
 
-EXPMEM = $80000
+EXPMEM = $800000
 CHIPSIZE = $80000
 
 _base	SLAVE_HEADER					; ws_security + ws_id
@@ -68,7 +68,7 @@ DECL_VERSION:MACRO
 	ENDM
 _data   dc.b    0
 _name	dc.b	"Rally'X",0
-_copy	dc.b	'2025 JOTD',0
+_copy	dc.b	'2026 JOTD',0
 _info
     dc.b    "Original by Namco 1980",0
 	dc.b	0

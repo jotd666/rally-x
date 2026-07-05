@@ -1,5 +1,6 @@
-- flags & scores not showing in intro
-
+- 9DAA <= 0 in 816 but <= 28 on amiga. trace cpu in 816
+- then maze cpu trace is different because of 9DAA value
+- fix random, see what happens
 
 
 missing sprites?

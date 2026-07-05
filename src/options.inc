@@ -17,13 +17,20 @@ ROM_START = 0x0000
 ROM_SIZE = RAM_START
 RAM_SIZE = 0x10000-RAM_START
 
+
+	.macro	COLOR0_FLASH	v
+	move.w	#(BORDERBLANK<<5),_custom+bplcon3
+	move.w	#\v,_custom+color	
+	.endm
+
+
 	.ifdef	RELEASE
 	.macro	BREAKPOINT comment
 	.endm
 
 	.else
 	
-LOG_BUFFER_SIZE = 0x80000
+LOG_BUFFER_SIZE = 0x400000
 	* amiga specific
 	.macro	BREAKPOINT comment
 	move.l	a0,-(a7)

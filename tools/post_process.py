@@ -20,7 +20,7 @@ remove_error_in_next_line = {0x2440,0x15c5,0x15c0,0x13C,0x018d,0X31F,0x03fd,0x04
 remove_error_in_prev_line = {0x3,0x0b1e,0x0b22,0x3800,0x389e,0x06ab,0x0a7a,0x39ce,0x39cf,0x39d0,0x39d1,0x39ef,0x39f0,0x39f1,0x39f2}
 line_to_push_cc_protect = {0x0eed,0x3a1e} | single_line_to_cc_protect
 line_to_pull_cc_protect = {0x0ef2,0x3a21} | single_line_to_cc_protect
-af_to_a = {0x0d40,0xD55}
+
 
 store_to_video = re.compile("GET_ADDRESS\s+(0x8\w\w\w|video_ram_d)",flags=re.I)   # game_specific
 
@@ -205,26 +205,35 @@ with open(source_dir / "conv.s") as f:
             okay = True
             if g.startswith("0x"):
                 target_address = int(g,16)  # not used
-                line = line.rstrip() + " [video_address]\n"
+                if "ix," not in line and "iy," not in line:
+                    line = line.rstrip() + " [video_address]\n"
 
         if "[video_address" in line or "[unchecked_address" in line:
-            # give me the original instruction
-            line = line.replace("_ADDRESS","_UNCHECKED_ADDRESS")
-            if "MAKE" in line:
-                line = re.sub(r"(MAKE_AR)",r"\1_UNCHECKED",line)
-                line = re.sub(r"(MAKE_[HDB]\w)",r"\1_UNCHECKED",line)
-            elif "MAKE" in lines[i-1] and "UNCHECKED" not in lines[i-1]:
-                lines[i-1] = re.sub(r"(MAKE_AR)",r"\1_UNCHECKED",lines[i-1])
-                lines[i-1] = re.sub(r"(MAKE_[HDB]\w)",r"\1_UNCHECKED",lines[i-1])
+            if (",a2" in line or ",a3" in line) and "GET_ADDRESS" not in line:
+                    # using indexed ix/iy: parse code to insert the proper dirty macro
+                    toks = line.split()
+                    toks = toks[1].split(",")
+                    destreg = toks[2].strip("()")
+                    destz = "IX" if destreg=="a2" else "IY"
+                    offset = toks[1].strip("()")
+                    line += f"\tVIDEO_BYTE_DIRTY_{destz}\t{offset}\n"
+            else:
+                # give me the original instruction
+                line = line.replace("_ADDRESS","_UNCHECKED_ADDRESS")
+                if "MAKE" in line:
+                    line = re.sub(r"(MAKE_AR)",r"\1_UNCHECKED",line)
+                    line = re.sub(r"(MAKE_[HDB]\w)",r"\1_UNCHECKED",line)
+                elif "MAKE" in lines[i-1] and "UNCHECKED" not in lines[i-1]:
+                    lines[i-1] = re.sub(r"(MAKE_AR)",r"\1_UNCHECKED",lines[i-1])
+                    lines[i-1] = re.sub(r"(MAKE_[HDB]\w)",r"\1_UNCHECKED",lines[i-1])
 
-            if "ldir" in line:
-                line = line.replace("ldir","ldir_video" if "[video_address" in line else "ldir_unchecked")
-            elif "[video_address" in line:
-                if ",(a0)" in line or ("(a0)" in line and "clr.b" in line):
-                    line += "\tVIDEO_BYTE_DIRTY | [...]\n"
-                elif (",(a0)" in lines[i+1] or ("(a0)" in  lines[i+1]  and "clr.b" in lines[i+1] )):
-                    lines[i+1]  += "\tVIDEO_BYTE_DIRTY | [...]\n"
-
+                if "ldir" in line:
+                    line = line.replace("ldir","ldir_video" if "[video_address" in line else "ldir_unchecked")
+                elif "[video_address" in line:
+                    if ",(a0)" in line or ("(a0)" in line and "clr.b" in line):
+                        line += "\tVIDEO_BYTE_DIRTY | [...]\n"
+                    elif (",(a0)" in lines[i+1] or ("(a0)" in  lines[i+1]  and "clr.b" in lines[i+1] )):
+                        lines[i+1]  += "\tVIDEO_BYTE_DIRTY | [...]\n"
         if "[pop_stack]" in line:
             line = change_instruction("addq\t#4,sp",lines,i)
 
@@ -278,6 +287,22 @@ with open(source_dir / "conv.s") as f:
             # push de+pop iy okay but then push de (and pop iy later)
             # replace by push iy
             line = change_instruction("move.l\ta3,-(a7)",lines,i)
+        elif address == 0x0d55:
+            line += "\tSET_X_FROM_C\n"  # make flag more persistent
+        elif address == 0x0d59:
+            line = "\tSET_C_FROM_X\n"+line  # retrieve X into C
+        elif address == 0x09A7:
+            # of course Namco coders can't help use ixl crap
+            line = """
+* replace ixh code shit altogether
+\tmove.l\ta2,d7
+\tsub.l\ta6,d7
+\tadd.b\t#2,d7
+\tand.b\t#0xF7,d7
+\tadd.l\ta6,d7
+\tmove.l\td7,a2
+"""
+            kill_code(lines,i+1,0x09ad)
         # end game_specific
         ###############################################
         if address in remove_error_in_prev_line:
@@ -298,9 +323,6 @@ with open(source_dir / "conv.s") as f:
             # protect the sub instructions
             line = "\tPUSH_SR\n"+line
 
-        if address in af_to_a:
-            line = line.replace("EXG_AF_AF_PRIME","EXG_A_A_PRIME").rstrip()+" [no need for CC swap]\n"
-            lines[i+1] = remove_error(lines[i+1])
         if "GET_ADDRESS" in line:
             val = line.split()[1].split(",")[0]
             osd_call = input_dict.get(val)

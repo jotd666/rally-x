@@ -58,7 +58,7 @@ print("Block size = ",hex(len_block))
 
 sorted_cmp = False
 avoid_regs = []
-regslist = list("abcdehl")+["ix","iy","hl","de"]
+regslist = list("abcdehl")+["ix","hl","de"]
 
 
 
