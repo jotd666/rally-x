@@ -8,11 +8,15 @@ input_dict = {
 "watchdog_a080":""
 }
 
-single_line_to_cc_protect = set()
-remove_error_in_next_line = set()
-remove_error_in_prev_line = {0x3}
-line_to_push_cc_protect = set() | single_line_to_cc_protect
-line_to_pull_cc_protect = set() | single_line_to_cc_protect
+single_line_to_cc_protect = {0X168d,0x15c4,0x0139,0x18c,0x031d,0x040a,0x0412,0x41a,0X0443,0x0477,0x04d5,0x0564,0X0b52,0x0b5e,0x0bbb,0x0bd3,0x1420,
+0x0c1d,0x0c9e,0x0caa,0x0d98,0x0dc5,0x3e12,0x3e1a,0x1521,0x198d,0xBFF,0x15bf,0x1c05,0x1c0f}
+remove_error_in_next_line = {0x2440,0x15c5,0x15c0,0x13C,0x018d,0X31F,0x03fd,0x040c,0x414,0x41C,0x0445,0x0478,0x04d7,0x0565,0x0b53,0x0b5f,0xB12,0x0c9f,0x0cab,0x0d99,
+0x0646,0x0793,0x0441,0x04d3,0x0dc6,0x0dc3,0x0ef3,0x1421,0x141e,0x3e14,0x3e1c,0x1690,0x183a,0x1aef,0x1c06,0x1c10,
+0x0c02,0x0bbc,0x0bd4,0x0c1e,0x1522,0x17b8,0x198e,0x3A23}
+remove_error_in_prev_line = {0x3,0x0b1e,0x0b22,0x3800,0x389e,0x06ab,0x0a7a,0x39ce,0x39cf,0x39d0,0x39d1,0x39ef,0x39f0,0x39f1,0x39f2}
+line_to_push_cc_protect = {0x0eed,0x3a1e} | single_line_to_cc_protect
+line_to_pull_cc_protect = {0x0ef2,0x3a21} | single_line_to_cc_protect
+af_to_a = {0x0d40,0xD55}
 
 store_to_video = re.compile("GET_ADDRESS\s+(0x8\w\w\w|video_ram_d)",flags=re.I)   # game_specific
 
@@ -196,7 +200,7 @@ with open(source_dir / "conv.s") as f:
             g = m.group(1)
             okay = True
             if g.startswith("0x"):
-                address = int(g,16)
+                target_address = int(g,16)  # not used
                 line = line.rstrip() + " [video_address]\n"
 
         if "[video_address" in line or "[unchecked_address" in line:
@@ -222,10 +226,13 @@ with open(source_dir / "conv.s") as f:
         ###############################################
         # game_specific
 
-##        if "replace by EXG_A_A_PRIME" in line:
-##            # no need to swap F with F', ever in this game
-##            lines[i-1] = "* just swap A/A'\n"+change_instruction("EXG_A_A_PRIME",lines,i-1)
-##            line = remove_error(line)
+        if "replace by EXG_A_A_PRIME" in line:
+            #lines[i-1] = "* just swap A/A'\n"+change_instruction("EXG_A_A_PRIME",lines,i-1)
+            line = remove_error(line)
+        if "review stray cmp before MAKE_HL_NO_AR" in line:
+            # remove the errors now that the result is CC protected
+            line = remove_error(line)
+
         if "unsupported instruction im" in line:
             line = remove_error(line)
         if "unsupported instruction out" in line:
@@ -233,18 +240,55 @@ with open(source_dir / "conv.s") as f:
 
         if address == 0x0003:
             line = remove_instruction(lines,i)
-
+        elif address in {0x3FD,0x0b12}:
+            line = "\ttst.b\td0\n"+line
+        elif address in {0x0644,0x1837}:
+            line = swap_lines(lines,i,i-1)
+        elif address == 0x078E:
+            lines[i+1] = remove_error(lines[i+1])
+        elif address == 0x05dc:
+            line = change_instruction("jbsr\tosd_get_random",lines,i)
+        elif address == 0x790:
+            line = swap_lines(lines,i,i-2)
+        elif address in {0x3800,0x06ab,0x0a7a,0x389e}:  # stack shit
+            line = remove_instruction(lines,i)
+        elif address in {0x39ce,0x39cf,0x39d0,0x39d1,0x39ef,0x39f0,0x39f1,0x39f2}:  # stack shit
+            line = change_instruction("ILLEGAL",lines,i)
+        elif address in {0x0f61}:
+            # cmp+error+pop bc rewrite
+            lines[i+1] = remove_error(lines[i+1])
+            lines[i+2] = lines[i+2].replace("move.w","movem.w") + "\tPUSH_SR\n"
+            lines[i+3] += "\tPOP_SR\n"
+            lines[i+5] = remove_error(lines[i+5])
+        elif address in {0x1206,0x121b,0x1227}:
+            # jsr+pop bc rewrite
+            line = line.replace("move.w","movem.w") + "\tPUSH_SR\n"
+            lines[i+1] += "\tPOP_SR\n"
+            lines[i+3] = remove_error(lines[i+3])
+        elif address == 0x17b6:
+            line = swap_lines(lines,i,i-2)
         # end game_specific
         ###############################################
+        if address in remove_error_in_prev_line:
+            lines[i-1] = remove_error(lines[i-1].strip()+f" ({address:04x})")
+        if address in remove_error_in_next_line:
+            lines[i+1] = remove_error(lines[i+1].strip()+f" ({address:04x})")
         if address in line_to_pull_cc_protect:
-            # protect the sub instructions
-            line += "\tPOP_SR\n"
+            # protect the sub instructions if any
+            for j in range(i+1,len(lines)):
+                if not "[...]" in lines[j]:
+                    break
+
+            lines[j-1] += "\tPOP_SR\n"
+            if j-1==i:
+                line = lines[i]
+
         if address in line_to_push_cc_protect:
             # protect the sub instructions
             line = "\tPUSH_SR\n"+line
-        elif address in remove_error_in_prev_line:
-            lines[i-1] = remove_error(lines[i-1])
-        elif address in remove_error_in_next_line:
+
+        if address in af_to_a:
+            line = line.replace("EXG_AF_AF_PRIME","EXG_A_A_PRIME").rstrip()+" [no need for CC swap]\n"
             lines[i+1] = remove_error(lines[i+1])
         if "GET_ADDRESS" in line:
             val = line.split()[1].split(",")[0]

@@ -21,12 +21,9 @@
 	.endm
 
 	.macro	VIDEO_BYTE_DIRTY
-	| called when a byte write was done in a0
+	jbsr	osd_video_byte_dirty
 	.endm
 
-	.macro	VIDEO_WORD_DIRTY
-	| called when a word write was done in a0
-	.endm
 
 * the function that accesses all memory (except banks)
 * without any check
@@ -44,6 +41,16 @@
 	moveq	#0,d7
 	MOVE_W_TO_REG	a0,d7
 	GET_ADDRESS_FUNC	d7
+	move.l	d7,\dest
+	.endm
+	.macro	WRITE_UNCHECKED_ADDRESS	src,dest
+	move.l	\src,d7
+	sub.l	a6,d7
+	MOVE_W_FROM_REG	d7,\dest
+	.endm
+	.macro	READ_UNCHECKED_ADDRESS	src,dest
+	MOVE_W_TO_REG	a0,d7
+	GET_UNCHECKED_ADDRESS_FUNC	\dest
 	move.l	d7,\dest
 	.endm
 
@@ -71,6 +78,15 @@
 	.macro	MAKE_AR_FROM_BC	dest
 	GET_REG_ADDRESS	0,d2,\dest
 	.endm
+	.macro	MAKE_AR_UNCHECKED_FROM_HL	dest
+	GET_REG_UNCHECKED_ADDRESS	0,d6,\dest
+	.endm
+	.macro	MAKE_AR_UNCHECKED_FROM_DE	dest
+	GET_REG_UNCHECKED_ADDRESS	0,d4,\dest
+	.endm
+	.macro	MAKE_AR_UNCHECKED_FROM_BC	dest
+	GET_REG_UNCHECKED_ADDRESS	0,d2,\dest
+	.endm
 
 	.macro	MAKE_HL_NO_AR
 * add d5 as MSB of d6 so d6.W = HL, load target reg
@@ -82,6 +98,11 @@
 	.macro	MAKE_HL	dest
 	MAKE_HL_NO_AR
 	MAKE_AR_FROM_HL	\dest
+	.endm
+
+	.macro	MAKE_HL_UNCHECKED	dest
+	MAKE_HL_NO_AR
+	MAKE_AR_UNCHECKED_FROM_HL	\dest
 	.endm
 
 	.macro	MAKE_H
@@ -103,6 +124,12 @@
 	MAKE_AR_FROM_BC	\dest
 	.endm
 
+	.macro	MAKE_BC_UNCHECKED	dest
+	MAKE_BC_NO_AR
+	MAKE_AR_UNCHECKED_FROM_BC	\dest
+	.endm
+
+
 	.macro	MAKE_B
 * update d1 from d2.W = HL
 	rol.w	#8,d2
@@ -120,6 +147,11 @@
 	.macro	MAKE_DE	dest
 	MAKE_DE_NO_AR
 	MAKE_AR_FROM_DE	\dest
+	.endm
+
+	.macro	MAKE_DE_UNCHECKED	dest
+	MAKE_DE_NO_AR
+	MAKE_AR_UNCHECKED_FROM_DE	\dest
 	.endm
 
 	.macro	MAKE_D
@@ -372,21 +404,53 @@
 	READ_BE_WORD	\dest
 	GET_UNCHECKED_ADDRESS_FUNC	\dest
 	.endm
-* zero all registers
-cpu_init:
-	moveq	#0,d0
+
+* < A0: source (HL)
+* < A1: destination (DE)
+* < D1: length (16 bit)
+ldir_video:
+    MAKE_BC_NO_AR
+    MAKE_HL_NO_AR
+    MAKE_DE_NO_AR
+    MAKE_AR_UNCHECKED_FROM_HL	a1
+    MAKE_AR_UNCHECKED_FROM_DE	a0
+    add.w	d2,d6
+    add.w	d2,d4
+    MAKE_H
+    MAKE_D
+    subq.w    #1,d2
+0:
+    move.b    (a1)+,(a0)
+	VIDEO_BYTE_DIRTY
+	addq	#1,a0
+    dbf        d2,0b
+    moveq	#0,d2
 	moveq	#0,d1
+    rts
+* < A0: source (HL)
+* < A1: destination (DE)
+* < D1: length (16 bit)
+ldir_unchecked:
+    MAKE_BC_NO_AR
+    MAKE_HL_NO_AR
+    MAKE_DE_NO_AR
+    MAKE_AR_UNCHECKED_FROM_HL	a1
+    MAKE_AR_UNCHECKED_FROM_DE	a0
+    add.w	d2,d6
+    add.w	d2,d4
+    MAKE_H
+    MAKE_D
+    subq.w    #1,d2
+0:
+    move.b    (a1)+,(a0)
+	addq	#1,a0
+    dbf        d2,0b
 	moveq	#0,d2
-	moveq	#0,d3
-	moveq	#0,d4
-	moveq	#0,d5
-	moveq	#0,d6
-	moveq	#0,d7
-	sub.l	a2,a2
-	sub.l	a3,a3
+	moveq	#0,d1
 	rts
 
 get_address:
+	.ifndef	RELEASE
 	cmp.w	#0x8400,a0
 	jcs		0f
 	cmp.w	#0x8800,a0
@@ -431,6 +495,7 @@ get_address:
 	jbsr	osd_get_last_known_pc
 	BREAKPOINT	"loading 8x4[0-7] in a0"
 3:
+	.endif
 	GET_UNCHECKED_ADDRESS_FUNC	a0
 	rts
 

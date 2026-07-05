@@ -4,7 +4,9 @@
 	.global vb_ticks_count
 	.global break_at_startup_flag
 	.global log_ptr
-	.global	i_reg
+	.global	i
+	.global	aprime
+	.global	fprime
 	.global	iyl
 	.global	iyh
 	.global	ixl
@@ -55,7 +57,11 @@ sprite_ram_9000:
 regscopy:
 	.skip	56
 
-i_reg:
+aprime:
+	.byte	0
+fprime:
+	.byte	0
+i:
 	.byte	0
 skip_intro_flag:
 	.byte	0
