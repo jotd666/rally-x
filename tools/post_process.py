@@ -303,6 +303,16 @@ with open(source_dir / "conv.s") as f:
 \tmove.l\td7,a2
 """
             kill_code(lines,i+1,0x09ad)
+        elif address == 0x1311:
+            # try to preserve X flag
+            # first use dbf
+            line += "\tand.w\t#0xFF,d1\n\tsubq.w\t#1,d1\n"
+        elif address == 0x1312:
+            line += "\tSET_X_FROM_C\n"   # save C into X, will resist the end of routine
+        elif address == 0x1313:
+            line = change_instruction("dbf\td1,l_1312",lines,i)
+        elif address == 0x1318:
+            line = "\tSET_C_FROM_X\n"+line  # put X into C to respect function interface
         # end game_specific
         ###############################################
         if address in remove_error_in_prev_line:

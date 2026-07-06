@@ -3379,7 +3379,10 @@ save_cpu_log:
 	move.l	a5,(a0)+
 	addq	#8,d0
 	lea		cpu_log_name(pc),a0
+	move.w	sr,-(a7)
+	move.w	#0x2700,SR
 	jbsr	resload_SaveFile(a2)
+	move.w	(a7)+,sr
 0:	
 	rts
 

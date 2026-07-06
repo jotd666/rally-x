@@ -33,3 +33,5 @@ wpset 8300,8,W
 wpset 8320,8,W
 
 ECS: try to reduce colors: would work. Create separate AGA & OCS versions
+
+find carry returning routines call[^\n]+\n[^\n]+jr\s+n?c
