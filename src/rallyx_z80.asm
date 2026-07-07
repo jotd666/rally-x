@@ -110,6 +110,8 @@ sound_a100 = $a100
 unknown_8080 = $8080
 enemy_car_structs_8088 = $8088
 car_speed_8027 = $8027
+scrolly_shadow_804f = $804f
+scrollx_shadow_804d = $804d
 
 0000: C3 00 38    jp   boot_3800
 
@@ -359,9 +361,9 @@ irq_01f0:		; [global]
 0209: 28 05       jr   z,$0210
 020B: FE 02       cp   $02
 020D: C2 BD 03    jp   nz,$03BD
-0210: 3A 4D 80    ld   a,($804D)
+0210: 3A 4D 80    ld   a,(scrollx_shadow_804d)
 0213: 32 30 A1    ld   (scrollx_a130),a
-0216: 3A 4F 80    ld   a,($804F)
+0216: 3A 4F 80    ld   a,(scrolly_shadow_804f)
 0219: ED 44       neg
 021B: 32 40 A1    ld   (scrolly_a140),a
 021E: DD 21 14 88 ld   ix,$8814
@@ -1947,7 +1949,7 @@ advance_hl_and_de_0e6c:
 0E7E: C9          ret
 
 compute_hl_0e7f:
-0E7F: 3A 4D 80    ld   a,($804D)
+0E7F: 3A 4D 80    ld   a,(scrollx_shadow_804d)
 0E82: 80          add  a,b
 0E83: C6 03       add  a,$03
 0E85: 0F          rrca
@@ -1955,7 +1957,7 @@ compute_hl_0e7f:
 0E87: 0F          rrca
 0E88: E6 1F       and  $1F
 0E8A: 47          ld   b,a
-0E8B: 3A 4F 80    ld   a,($804F)
+0E8B: 3A 4F 80    ld   a,(scrolly_shadow_804f)
 0E8E: ED 44       neg
 0E90: 91          sub  c
 0E91: D6 08       sub  $08
@@ -2832,9 +2834,9 @@ write_maze_row_131e:
 
 1497: E5          push hl
 1498: F5          push af
-1499: 3A 4D 80    ld   a,($804D)
+1499: 3A 4D 80    ld   a,(scrollx_shadow_804d)
 149C: 6F          ld   l,a
-149D: 3A 4F 80    ld   a,($804F)
+149D: 3A 4F 80    ld   a,(scrolly_shadow_804f)
 14A0: ED 44       neg
 14A2: 67          ld   h,a
 14A3: 3A 50 80    ld   a,($8050)
@@ -3248,7 +3250,7 @@ write_maze_row_131e:
 178E: E5          push hl
 178F: D5          push de
 1790: 06 03       ld   b,$03
-1792: 12          ld   (de),a
+1792: 12          ld   (de),a	; [video_address]
 1793: 36 46       ld   (hl),$46
 1795: CD 5D 0E    call advance_hl_and_de_0e5d
 1798: 3C          inc  a

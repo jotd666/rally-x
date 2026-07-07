@@ -10,3 +10,5 @@ sound_a100 = 0xa100
 unknown_8080 = 0x8080
 enemy_car_structs_8088 = 0x8088
 car_speed_8027 = 0x8027
+scrolly_shadow_804f = 0x804f
+scrollx_shadow_804d = 0x804d

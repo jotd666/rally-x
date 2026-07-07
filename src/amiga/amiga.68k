@@ -635,9 +635,6 @@ osd_set_scroll_x:
 	rts
 osd_set_scroll_y:
 	move.b	d0,scroll_y
-	jeq	0f
-	BREAKPOINT	"SCROLLY"
-0:
 	rts
 	
 * 60Hz VBLANK interrupt (also keyboard)

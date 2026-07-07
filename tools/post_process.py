@@ -7,7 +7,7 @@ gamename = "rallyx"
 input_dict = {
 "watchdog_a080":["","read_p2_inputs"],
 "scrollx_a130":"set_scroll_x",
-"scrollx_a140":"set_scroll_y",
+"scrolly_a140":"set_scroll_y",
 "dsw_a100":"read_dsw",
 "p1_a000":"read_p1_inputs",
 }

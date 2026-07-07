@@ -1,10 +1,9 @@
-- 9DAA <= 0 in 816 but <= 28 on amiga. trace cpu in 816
-- then maze cpu trace is different because of 9DAA value
+- check maze
 - fix random, see what happens
 
 
 missing sprites?
-implement scrolling: done but not sure it works
+implement scrolling: done but not working properly: second playfield scrolled too
 log scrolling in MAME and in amiga (demo) break if != 0
 
 display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0 ???
