@@ -167,18 +167,18 @@
 	.endm
 
 	.macro	LOAD_HL	argument
-	move.w	\argument,d6
-	move.b	\argument>>8,d5
+	move.w	#\argument,d6
+	move.b	#(\argument)>>8,d5
 	.endm
 
 	.macro	LOAD_BC	argument
-	move.w	\argument,d2
-	move.b	\argument>>8,d1
+	move.w	#\argument,d2
+	move.b	#(\argument)>>8,d1
 	.endm
 
 	.macro	LOAD_DE	argument
-	move.w	\argument,d4
-	move.b	\argument>>8,d3
+	move.w	#\argument,d4
+	move.b	#(\argument)>>8,d3
 	.endm
 
 	.macro CLR_XC_FLAGS

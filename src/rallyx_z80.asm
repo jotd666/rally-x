@@ -1890,7 +1890,7 @@ increase_and_wrap_d5w_0d69:
 0E2A: CB DC       set  3,h
 0E2C: CB 7E       bit  7,(hl)		; [video_address]
 0E2E: 28 29       jr   z,$0E59
-0E30: 1A          ld   a,(de)
+0E30: 1A          ld   a,(de)		; [video_address]
 0E31: FE 81       cp   $81
 0E33: 20 24       jr   nz,$0E59
 0E35: CB BE       res  7,(hl)		; [video_address]

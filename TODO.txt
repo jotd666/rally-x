@@ -1,4 +1,7 @@
-- check maze
+- red / green flashes
+- demo: car is not oriented properly
+- demo: scrolling X wrong value
+- game: seems that demo mode is still on
 - fix random, see what happens
 
 
