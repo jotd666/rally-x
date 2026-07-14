@@ -1,6 +1,6 @@
-- red / green flashes
+- add controls: shuold be ok but not working: 14da plus X/C problems add/roxl conflict
+- demo: player car ends up fully black (ok in demo)
 - demo: car is not oriented properly
-- demo: scrolling X wrong value
 - game: seems that demo mode is still on
 - fix random, see what happens
 
@@ -37,3 +37,5 @@ wpset 8320,8,W
 ECS: try to reduce colors: would work. Create separate AGA & OCS versions
 
 find carry returning routines call[^\n]+\n[^\n]+jr\s+n?c
+
+after maze drawn: 08FC

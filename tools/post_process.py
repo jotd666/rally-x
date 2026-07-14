@@ -258,6 +258,10 @@ with open(source_dir / "conv.s") as f:
             line = remove_instruction(lines,i)
         elif address in {0x3FD,0x0b12}:
             line = "\ttst.b\td0\n"+line
+        elif address == 0x3FF:
+            line = "\ttst.w\td6\n\tjeq\t0f\n"+line
+        elif address == 0x400:
+            line = "0:\n"+line
         elif address in {0x0644,0x1837}:
             line = swap_lines(lines,i,i-1)
         elif address == 0x078E:

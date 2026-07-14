@@ -606,7 +606,7 @@ irq_01f0:		; [global]
 03F9: 3D          dec  a
 03FA: 32 8C 82    ld   ($828C),a
 03FD: 20 2F       jr   nz,$042E
-03FF: 34          inc  (hl)
+03FF: 34          inc  (hl)			; hl can be 0, incrementing in ROM
 0400: 7E          ld   a,(hl)
 0401: 21 8A 82    ld   hl,$828A
 0404: 36 04       ld   (hl),$04
@@ -1197,7 +1197,7 @@ clear_sprites_074c:
 08F3: 32 40 A1    ld   (scrolly_a140),a
 08F6: 32 30 A1    ld   (scrollx_a130),a
 08F9: CD 31 11    call write_maze_1131
-08FC: 21 F5 89    ld   hl,$89F5		; [breakpoint]
+08FC: 21 F5 89    ld   hl,$89F5
 08FF: CB 46       bit  0,(hl)
 0901: 28 FC       jr   z,$08FF
 0903: 06 05       ld   b,$05
@@ -3229,6 +3229,7 @@ write_maze_row_131e:
 176B: ED B0       ldir
 176D: C9          ret
 
+; called when car encounters enemies and explodes
 176E: 3E 20       ld   a,$20
 1770: 90          sub  b
 1771: 90          sub  b
@@ -3244,14 +3245,14 @@ write_maze_row_131e:
 1783: CD 7F 0E    call compute_hl_0e7f
 1786: 54          ld   d,h
 1787: 5D          ld   e,l
-1788: CB DC       set  3,h
+1788: CB DC       set  3,h			; color
 178A: 3E B4       ld   a,$B4
 178C: 0E 03       ld   c,$03
 178E: E5          push hl
 178F: D5          push de
 1790: 06 03       ld   b,$03
-1792: 12          ld   (de),a	; [video_address]
-1793: 36 46       ld   (hl),$46
+1792: 12          ld   (de),a	; [unchecked_address]
+1793: 36 46       ld   (hl),$46  ; [video_address]
 1795: CD 5D 0E    call advance_hl_and_de_0e5d
 1798: 3C          inc  a
 1799: 10 F7       djnz $1792
@@ -3263,7 +3264,7 @@ write_maze_row_131e:
 17A3: 2A 98 89    ld   hl,($8998)
 17A6: 06 04       ld   b,$04
 17A8: 3E 66       ld   a,$66
-17AA: 77          ld   (hl),a
+17AA: 77          ld   (hl),a		; [video_address]
 17AB: 23          inc  hl
 17AC: 10 FC       djnz $17AA
 17AE: C9          ret

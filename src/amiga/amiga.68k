@@ -109,12 +109,12 @@ BIT_START_1P = 6
 
 
 
-BIT_START_2P = 1
-BIT_LEFT = 1
-BIT_RIGHT = 0
-BIT_UP = 2
-BIT_DOWN = 3
-BIT_FIRE = 4
+BIT_START_2P = 1  | ???
+BIT_LEFT = 2
+BIT_RIGHT = 3
+BIT_UP = 5
+BIT_DOWN = 4
+BIT_FIRE = 1
 
 	
 	.macro	GET_MEMORY_BLOCKS_IN_A5_A6
@@ -676,12 +676,23 @@ demo_game:
 	dbf		d0,0b
 	
 	
-	* enable interrupts. Game doesn't use them
-	* but relies on vbl sync flags
-	jbsr	cpu_init		| zero all registers
 
 	jbsr	osd_disable_interrupts
 	GET_MEMORY_START_IN_A6
+
+	.ifndef 	RELEASE
+	pea		dump_and_quit
+	lea		2.W,a0
+	move.l	#0x4AFC4EF9,(a0)+
+	move.l	(a7)+,(a0)+
+	* protect ROM from writing if whdload on
+	move.l	#0x4000,d0
+	move.l	a6,a0
+	move.l  (_resload,pc),a2
+	jsr     (resload_ProtectWrite,a2)
+	.endif
+	
+	jbsr	cpu_init		| zero all registers
 	move.l	a6,a3
 	move.l	a6,a2
 	add.l	#0xFFFF,a3			| trash A3 to match MAME IY
@@ -1252,8 +1263,10 @@ position_hardware_sprites:
 	.ifndef	RELEASE
 	bne.b	25f
 	* sprite doesn't exist: blitz and bail out
-	* sprite code in D2
+	* sprite code in D2, attribute in d3
+	move.b	(SPRITE_ATTRIBUTES,a2),d3
 	move.w	#0xF00,_custom+color
+	BREAKPOINT	"unregistered sprite, code=d2, attr=d3"
 	jra		30f
 25:
 	.endif
@@ -1845,6 +1858,8 @@ switch_screen_buffers:
 store_system:
 	tst.l	_resload
 	beq.b	0f
+	
+
 	rts
 0:
 	* system copper
@@ -2741,7 +2756,6 @@ osd_read_p1_inputs:
 	bclr	#BIT_COIN_1,d0
 0:
 
-
 *	jbsr		is_game_playing
 *	jeq	1f
 *	move.l	_joypad_state,d1
@@ -3279,6 +3293,9 @@ osd_cpu_logging_control:
 	rts
 	
 
+dump_and_quit:	
+	jbsr	osd_dump_logs
+	illegal
 
 osd_log_cpu:
 	CHECK_ZERO_MSW	d0

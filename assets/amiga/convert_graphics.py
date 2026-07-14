@@ -178,10 +178,11 @@ nb_colors = 1<<nb_planes
 
 sprite_names = {}
 
-for i in range(60,64):
+for i in range(0x3C,0x40):
     add_hw_sprite(i,"car",[0xB])
-add_hw_sprite(56,"game",[0xB])
-add_hw_sprite(57,"over",[0xB])
+add_hw_sprite(0x38,"game",[0xB])
+add_hw_sprite(0x39,"over",[0xB])
+add_hw_sprite(0x3B,"blank",[1,0xB])
 
 sheets_path = this_dir / os.path.pardir / "sheets"
 
