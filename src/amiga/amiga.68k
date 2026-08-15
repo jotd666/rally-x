@@ -7,6 +7,7 @@
 
 
 	.include "../src/options.inc"
+	.include "../src/data.inc"
  
 	
 	.include "custom.i"
@@ -104,6 +105,7 @@ SPRITE_ATTRIBUTES = 1
 SPRITE_SIZEOF = 4
 
 
+* on $A000
 BIT_COIN_1 = 7
 BIT_START_1P = 6
 
@@ -184,8 +186,7 @@ w\@:
 	.global osd_blitz		| for debug
 	.global osd_read_dsw
 	.global	osd_sound_command
-	.global	osd_read_p1_inputs
-	.global	osd_read_p2_inputs
+
 	.global	osd_enable_interrupts
 	.global	osd_disable_interrupts
 	.global	osd_get_random
@@ -697,6 +698,10 @@ demo_game:
 	move.l	a6,a2
 	add.l	#0xFFFF,a3			| trash A3 to match MAME IY
 	add.l	#0xFFFF,a2			| trash A3 to match MAME IX
+	move.l	a6,a0
+	add.l	#p1_a000,a0
+	st.b	(p2_a080-p1_a000,a0)
+	st.b	(a0)
 	jbsr	reset_3911
 	jra		start_0003					| pass control to the mpatrol core
 		
@@ -2103,7 +2108,6 @@ load_palette:
 * allows 8040-8FFF range
 
 osd_video_byte_dirty:
-
 	
 	movem.l	d0-d7/a0-a2,-(a7)
 	move.b	(a0),d0		| read written value again
@@ -2221,6 +2225,8 @@ compute_tile_xy:
 * < D1: tile attribute
 
 update_main_tile:
+	move.b	#0,0x110
+
 	moveq	#0,d2
 	moveq	#0,d3
 	move.b	d0,d2	| code
@@ -2443,6 +2449,7 @@ main_mirror_flipped_tile:
 * < D1: tile attribute
 
 update_status_tile:
+	move.b	#1,0x110
 	moveq	#0,d2
 	moveq	#0,d3
 	move.b	d0,d2	| code
@@ -2741,53 +2748,14 @@ osd_debug_hook:
 osd_video_control:
 	rts
 	
-osd_read_p1_inputs:
-	move.b	player_1_controls,d0
-	movem.l	a0/d1,-(a7)
-	lea		keyboard_table(pc),a0
-	tst.b	(1,a0)		| "1" key like in MAME
-	beq.b	0f
-	bclr	#BIT_START_1P,d0
-0:
 
-	lea		keyboard_table(pc),a0
-	tst.b	(5,a0)		| "5" key like in MAME
-	beq.b	0f
-	bclr	#BIT_COIN_1,d0
-0:
-
-*	jbsr		is_game_playing
-*	jeq	1f
-*	move.l	_joypad_state,d1
-*	* game not playing, we can start with joypad
-*	btst	#JPB_BTN_UP,d1		| "1" key like in MAME
-*	beq.b	0f
-*	bclr	#BIT_START_1P,d0
-*0:
-*	btst	#JPB_BTN_DOWN,d1		| "2" key like in MAME
-*	beq.b	0f
-*	bclr	#BIT_START_2P,d0
-*0:	
-*1:	
-	movem.l	(a7)+,a0/d1	
-	rts
 	
-osd_read_p2_inputs:
-	st.b	d0
-	movem.l	a0/d1,-(a7)
-	lea		keyboard_table(pc),a0
-	tst.b	(2,a0)		| "2" key like in MAME
-	beq.b	0f
-	bclr	#BIT_START_2P,d0
-0:
-	movem.l	(a7)+,a0/d1	
-	rts
 	
 
 * < D1: previous state
 update_controls:
 	moveq	#-1,d0
-
+	GET_MEMORY_START_IN_A6
 
 	lea		keyboard_table(pc),a0
 
@@ -2838,7 +2806,34 @@ update_controls:
 	beq.b	0f
 	bclr	#BIT_FIRE,d0
 0:
-	move.b	d0,player_1_controls
+
+	lea		keyboard_table(pc),a0
+	tst.b	(1,a0)		| "1" key like in MAME
+	beq.b	0f
+	bclr	#BIT_START_1P,d0
+0:
+
+	tst.b	(5,a0)		| "5" key like in MAME
+	beq.b	0f
+	bclr	#BIT_COIN_1,d0
+0:
+
+*	jbsr		is_game_playing
+*	jeq	1f
+*	move.l	_joypad_state,d1
+*	* game not playing, we can start with joypad
+*	btst	#JPB_BTN_UP,d1		| "1" key like in MAME
+*	beq.b	0f
+*	bclr	#BIT_START_1P,d0
+*0:
+*	btst	#JPB_BTN_DOWN,d1		| "2" key like in MAME
+*	beq.b	0f
+*	bclr	#BIT_START_2P,d0
+*0:	
+*1:	
+	move.l	a6,a1
+	add.l	#p1_a000,a1
+	move.b	d0,(a1)
 
 	jbsr		is_game_playing
 	jeq	0f
@@ -2849,6 +2844,13 @@ update_controls:
 	jne		0f
 	nop
 0:
+
+	moveq	#-1,d0
+	tst.b	(2,a0)		| "2" key like in MAME
+	beq.b	0f
+	bclr	#BIT_START_2P,d0
+0:
+	move.b	d0,(p2_a080-p1_a000,a1)
 
 
 	rts
@@ -3449,10 +3451,7 @@ highscore_loaded:
 	.byte	0
 last_sound_played:
 	.byte	0
-player_1_controls:
-	.byte	0
-player_2_controls:
-	.byte	0
+
 normal_hiscorename:
 	.asciz	"rallyx.high"
 	.align	2

@@ -1,9 +1,8 @@
-- add controls: shuold be ok but not working: 14da plus X/C problems add/roxl conflict
-- demo: player car ends up fully black (ok in demo)
-- demo: car is not oriented properly
-- game: seems that demo mode is still on
+- demo/game: player car ends up fully black (ok in intro screen)
+  also wrongly oriented
 - fix random, see what happens
-
+- X scrolling width issue?
+- 082F: write to ROM after crash against enemies: present in MAME?
 
 missing sprites?
 implement scrolling: done but not working properly: second playfield scrolled too

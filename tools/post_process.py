@@ -4,12 +4,14 @@ gamename = "rallyx"
 
 # game_specific: replace or remove I/O addresses
 # if not done it will write in ROM here!!
+
+# TODO: check A080 watchdog write
+# TODO: write in A000, remove read inputs amiga68k
 input_dict = {
-"watchdog_a080":["","read_p2_inputs"],
+"watchdog_a080":"",
 "scrollx_a130":"set_scroll_x",
 "scrolly_a140":"set_scroll_y",
-"dsw_a100":"read_dsw",
-"p1_a000":"read_p1_inputs",
+"dsw_a100":"read_dsw"
 }
 
 single_line_to_cc_protect = {0X168d,0x15c4,0x0139,0x18c,0x031d,0x040a,0x0412,0x41a,0X0443,0x0477,0x04d5,0x0564,0X0b52,0x0b5e,0x0bbb,0x0bd3,0x1420,
@@ -165,13 +167,7 @@ with open(source_dir / "conv.s") as f:
 ##"""
         address = get_line_address(line)
 
-        if "[address_pop]" in line:
-            if "MAKE_" in line:
-                line = ""
-            else:
-                line = change_instruction("addq.w\t#4,sp",lines,i)
-
-        elif "[return]" in line:
+        if "[return]" in line:
             if "MAKE_" in line:
                 line = ""
             else:
@@ -199,14 +195,15 @@ with open(source_dir / "conv.s") as f:
             lines[i+1] = change_instruction(f"pea\t{pa}",lines,i+1)
 
         # pre-add video_address tag if we find a store instruction to an explicit 3000-3FFF address
-        m = store_to_video.search(line)
-        if m:
-            g = m.group(1)
-            okay = True
-            if g.startswith("0x"):
-                target_address = int(g,16)  # not used
-                if "ix," not in line and "iy," not in line:
-                    line = line.rstrip() + " [video_address]\n"
+        if "[unchecked_address" not in line:
+            m = store_to_video.search(line)
+            if m:
+                g = m.group(1)
+                okay = True
+                if g.startswith("0x"):
+                    target_address = int(g,16)  # not used
+                    if "ix," not in line and "iy," not in line:
+                        line = line.rstrip() + " [video_address]\n"
 
         if "[video_address" in line or "[unchecked_address" in line:
             if (",a2" in line or ",a3" in line) and "GET_ADDRESS" not in line:
@@ -291,6 +288,11 @@ with open(source_dir / "conv.s") as f:
             # push de+pop iy okay but then push de (and pop iy later)
             # replace by push iy
             line = change_instruction("move.l\ta3,-(a7)",lines,i)
+        elif address == 0x14e1:
+            lines[i-1] = ""
+        elif address == 0x14e2:
+            line = change_instruction("POP_SR",lines,i)
+            lines[i+1] = remove_error(lines[i+1])
         elif address == 0x0d55:
             line += "\tSET_X_FROM_C\n"  # make flag more persistent
         elif address == 0x0d59:

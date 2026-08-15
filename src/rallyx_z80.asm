@@ -112,6 +112,16 @@ enemy_car_structs_8088 = $8088
 car_speed_8027 = $8027
 scrolly_shadow_804f = $804f
 scrollx_shadow_804d = $804d
+sound_a11a = $a11a
+sound_a11b = $a11b
+sound_a11c = $a11c
+sound_a11d = $a11d
+sound_a11e = $a11e
+sound_a11f = $a11f
+sound_a115 = $a115
+sound_a110 = $a110
+sound_a116 = $a116
+pointer_on_port_a0x0_899e = $899e
 
 0000: C3 00 38    jp   boot_3800
 
@@ -599,12 +609,12 @@ irq_01f0:		; [global]
 03E9: 3C          inc  a
 03EA: 32 69 82    ld   ($8269),a
 03ED: 2A 9A 89    ld   hl,($899A)
-03F0: 3A 8C 82    ld   a,($828C)
+03F0: 3A 8C 82    ld   a,($828C)		; [unchecked_address]
 03F3: A7          and  a
 03F4: 20 03       jr   nz,$03F9
 03F6: 3A 88 82    ld   a,($8288)
 03F9: 3D          dec  a
-03FA: 32 8C 82    ld   ($828C),a
+03FA: 32 8C 82    ld   ($828C),a		; [unchecked_address]
 03FD: 20 2F       jr   nz,$042E
 03FF: 34          inc  (hl)			; hl can be 0, incrementing in ROM
 0400: 7E          ld   a,(hl)
@@ -796,7 +806,7 @@ irq_01f0:		; [global]
 0569: 23          inc  hl
 056A: 56          ld   d,(hl)
 056B: ED 53 B3 81 ld   ($81B3),de
-056F: 3A 80 A0    ld   a,(watchdog_a080)
+056F: 3A 80 A0    ld   a,(p2_a080)
 0572: F6 FE       or   $FE
 0574: 2F          cpl
 0575: 32 A9 81    ld   ($81A9),a
@@ -983,7 +993,7 @@ start_game_test_loop_0717:
 0724: 3A 00 A0    ld   a,(p1_a000)
 0727: E6 40       and  $40
 0729: 28 18       jr   z,start_game_1_player_0743
-072B: 3A 80 A0    ld   a,(watchdog_a080)
+072B: 3A 80 A0    ld   a,(p2_a080)
 072E: E6 40       and  $40
 0730: 20 E5       jr   nz,start_game_test_loop_0717
 0732: 3A 24 80    ld   a,($8024)    ; [uncovered] 
@@ -1024,6 +1034,7 @@ clear_sprites_074c:
 077D: 0E 72       ld   c,$72
 077F: 21 93 1F    ld   hl,$1F93
 0782: CD 08 0B    call $0B08
+; 1UP score
 0785: CD 4E 1C    call copy_status_row_1c4e
 0788: 3A AB 81    ld   a,($81AB)
 078B: 47          ld   b,a
@@ -1119,6 +1130,7 @@ clear_sprites_074c:
 0843: 21 AB 1F    ld   hl,$1FAB
 0846: 11 20 81    ld   de,$8120
 0849: 0E 6B       ld   c,$6B
+; copy "fuel" status
 084B: CD 4E 1C    call copy_status_row_1c4e
 084E: 11 40 81    ld   de,$8140
 0851: 0E 66       ld   c,$66
@@ -1128,6 +1140,7 @@ clear_sprites_074c:
 085B: 10 F8       djnz $0855
 085D: 06 0E       ld   b,$0E
 085F: 0E 63       ld   c,$63
+; copy radar blue background rows
 0861: 21 C3 1F    ld   hl,$1FC3
 0864: CD 4E 1C    call copy_status_row_1c4e
 0867: 10 F8       djnz $0861
@@ -1142,7 +1155,9 @@ clear_sprites_074c:
 087C: 28 06       jr   z,$0884
 087E: 3A 21 80    ld   a,($8021)
 0881: A7          and  a
+; skipped at game start
 0882: 28 1D       jr   z,$08A1
+; game start: display ROUND in status
 0884: CD 4E 1C    call copy_status_row_1c4e
 0887: 2A 8A 89    ld   hl,($898A)
 088A: 7E          ld   a,(hl)
@@ -1151,9 +1166,10 @@ clear_sprites_074c:
 088F: 06 00       ld   b,$00
 0891: FE 0A       cp   $0A
 0893: 38 05       jr   c,$089A
-0895: 04          inc  b    ; [uncovered] 
-0896: D6 0A       sub  $0A    ; [uncovered] 
-0898: 18 F7       jr   $0891    ; [uncovered] 
+; round >= 10
+0895: 04          inc  b
+0896: D6 0A       sub  $0A
+0898: 18 F7       jr   $0891
 
 089A: 77          ld   (hl),a		; [video_address]
 089B: 78          ld   a,b
@@ -1823,12 +1839,13 @@ increase_and_wrap_d5w_0d69:
 0DB2: E5          push hl
 0DB3: D5          push de
 0DB4: C5          push bc
-0DB5: 2A 9E 89    ld   hl,($899E)
+; read controls here during game (during demo it reads at 0!)
+0DB5: 2A 9E 89    ld   hl,(pointer_on_port_a0x0_899e)
 0DB8: 7E          ld   a,(hl)
 0DB9: 21 90 82    ld   hl,$8290
 0DBC: 0F          rrca
-0DBD: 0F          rrca
-0DBE: CB 16       rl   (hl)
+0DBD: 0F          rrca			; C is cleared if fire is pressed
+0DBE: CB 16       rl   (hl)		; when fire is pressed, this turns to $FE
 0DC0: 7E          ld   a,(hl)
 0DC1: E6 0F       and  $0F
 0DC3: FE 0C       cp   $0C
@@ -1981,7 +1998,8 @@ compute_hl_0e7f:
 0EB4: 21 F4 89    ld   hl,$89F4
 0EB7: CB F6       set  6,(hl)
 0EB9: 2A 27 80    ld   hl,(car_speed_8027)
-0EBC: ED 4B 9E 89 ld   bc,($899E)
+0EBC: ED 4B 9E 89 ld   bc,(pointer_on_port_a0x0_899e)
+; read controls here
 0EC0: 0A          ld   a,(bc)
 0EC1: 47          ld   b,a
 0EC2: F3          di
@@ -2874,18 +2892,19 @@ write_maze_row_131e:
 14D3: 36 FF       ld   (hl),$FF    ; [uncovered] 
 14D5: 18 3C       jr   $1513    ; [uncovered] 
 
-14D7: 21 AC 82    ld   hl,$82AC
+; read controls
+14D7: 21 AC 82    ld   hl,$82AC		; seems stuck at $FF
 14DA: 3A 00 A0    ld   a,(p1_a000)
 14DD: 47          ld   b,a
 14DE: 1F          rra
-14DF: CB 16       rl   (hl)
+14DF: CB 16       rl   (hl)		; rl $ff => $ff
 14E1: 23          inc  hl
 14E2: CB 10       rl   b
-14E4: CB 16       rl   (hl)
+14E4: CB 16       rl   (hl)		; changes when coin is inserted / game started
 14E6: 23          inc  hl
-14E7: 3A 80 A0    ld   a,(watchdog_a080)
+14E7: 3A 80 A0    ld   a,(p2_a080)
 14EA: 17          rla
-14EB: CB 16       rl   (hl)
+14EB: CB 16       rl   (hl)		; coin 2
 14ED: 7E          ld   a,(hl)
 14EE: E6 0F       and  $0F
 14F0: FE 0C       cp   $0C
@@ -4343,26 +4362,27 @@ display_credits_1ed2:
 24D2: B1          or   c
 24D3: FE 00       cp   $00
 24D5: 20 3C       jr   nz,$2513
-24D7: 32 15 A1    ld   ($A115),a
-24DA: 32 1A A1    ld   ($A11A),a
-24DD: 32 1F A1    ld   ($A11F),a
-24E0: 32 54 8A    ld   ($8A54),a
-24E3: 32 68 8A    ld   ($8A68),a
-24E6: 32 74 8A    ld   ($8A74),a
-24E9: 32 88 8A    ld   ($8A88),a
-24EC: 32 54 8B    ld   ($8B54),a
-24EF: 32 A8 8A    ld   ($8AA8),a
-24F2: 32 B4 8A    ld   ($8AB4),a
-24F5: 32 E8 8A    ld   ($8AE8),a
-24F8: 32 F4 8A    ld   ($8AF4),a
-24FB: 32 94 8A    ld   ($8A94),a
-24FE: 32 C8 8A    ld   ($8AC8),a
-2501: 32 D4 8A    ld   ($8AD4),a
-2504: 32 28 8A    ld   ($8A28),a
-2507: 32 34 8A    ld   ($8A34),a
-250A: 32 48 8A    ld   ($8A48),a
-250D: 32 C8 8A    ld   ($8AC8),a
-2510: 32 D4 8A    ld   ($8AD4),a
+; nullify all those addresses
+24D7: 32 15 A1    ld   (sound_a115),a
+24DA: 32 1A A1    ld   (sound_a11a),a
+24DD: 32 1F A1    ld   (sound_a11f),a
+24E0: 32 54 8A    ld   ($8A54),a     ; [unchecked_address]
+24E3: 32 68 8A    ld   ($8A68),a     ; [unchecked_address]
+24E6: 32 74 8A    ld   ($8A74),a     ; [unchecked_address]
+24E9: 32 88 8A    ld   ($8A88),a     ; [unchecked_address]
+24EC: 32 54 8B    ld   ($8B54),a     ; [unchecked_address]
+24EF: 32 A8 8A    ld   ($8AA8),a     ; [unchecked_address]
+24F2: 32 B4 8A    ld   ($8AB4),a     ; [unchecked_address]
+24F5: 32 E8 8A    ld   ($8AE8),a     ; [unchecked_address]
+24F8: 32 F4 8A    ld   ($8AF4),a     ; [unchecked_address]
+24FB: 32 94 8A    ld   ($8A94),a     ; [unchecked_address]
+24FE: 32 C8 8A    ld   ($8AC8),a     ; [unchecked_address]
+2501: 32 D4 8A    ld   ($8AD4),a     ; [unchecked_address]
+2504: 32 28 8A    ld   ($8A28),a     ; [unchecked_address]
+2507: 32 34 8A    ld   ($8A34),a     ; [unchecked_address]
+250A: 32 48 8A    ld   ($8A48),a     ; [unchecked_address]
+250D: 32 C8 8A    ld   ($8AC8),a     ; [unchecked_address]
+2510: 32 D4 8A    ld   ($8AD4),a     ; [unchecked_address]
 2513: F1          pop  af
 2514: C1          pop  bc
 2515: D1          pop  de
@@ -4378,8 +4398,8 @@ display_credits_1ed2:
 2523: CB 9E       res  3,(hl)
 2525: CB A6       res  4,(hl)
 2527: 3E 00       ld   a,$00
-2529: 32 15 A1    ld   ($A115),a
-252C: 32 1A A1    ld   ($A11A),a
+2529: 32 15 A1    ld   (sound_a115),a
+252C: 32 1A A1    ld   (sound_a11a),a
 252F: CB 66       bit  4,(hl)
 2531: 20 13       jr   nz,$2546
 2533: 21 C8 8A    ld   hl,$8AC8
@@ -4491,8 +4511,8 @@ display_credits_1ed2:
 263F: CD 93 28    call $2893
 2642: CD 45 28    call $2845
 2645: 3E 00       ld   a,$00
-2647: 32 15 A1    ld   ($A115),a
-264A: 32 1F A1    ld   ($A11F),a
+2647: 32 15 A1    ld   (sound_a115),a
+264A: 32 1F A1    ld   (sound_a11f),a
 264D: 21 54 8B    ld   hl,$8B54
 2650: CB 6E       bit  5,(hl)
 2652: CA 1C 24    jp   z,$241C
@@ -4540,15 +4560,15 @@ display_credits_1ed2:
 26BD: 21 54 8A    ld   hl,$8A54
 26C0: 11 C9 29    ld   de,$29C9
 26C3: 3E 00       ld   a,$00
-26C5: 32 1F A1    ld   ($A11F),a
-26C8: 32 15 A1    ld   ($A115),a
+26C5: 32 1F A1    ld   (sound_a11f),a
+26C8: 32 15 A1    ld   (sound_a115),a
 26CB: 18 2B       jr   $26F8
 26CD: 21 68 8A    ld   hl,$8A68
 26D0: 11 17 2A    ld   de,$2A17
 26D3: CD 93 28    call $2893
 26D6: CD 45 28    call $2845
 26D9: 3E 00       ld   a,$00
-26DB: 32 15 A1    ld   ($A115),a
+26DB: 32 15 A1    ld   (sound_a115),a
 26DE: CB 6E       bit  5,(hl)
 26E0: CA AF 24    jp   z,$24AF
 26E3: CB AE       res  5,(hl)
@@ -4618,9 +4638,9 @@ display_credits_1ed2:
 2772: 18 F1       jr   $2765
 
 2774: 3E 00       ld   a,$00
-2776: 32 15 A1    ld   ($A115),a
-2779: 32 1A A1    ld   ($A11A),a
-277C: 32 1F A1    ld   ($A11F),a
+2776: 32 15 A1    ld   (sound_a115),a
+2779: 32 1A A1    ld   (sound_a11a),a
+277C: 32 1F A1    ld   (sound_a11f),a
 277F: C9          ret
 
 2780: 21 F4 8A    ld   hl,$8AF4
@@ -4652,7 +4672,7 @@ display_credits_1ed2:
 27B6: CB 77       bit  6,a
 27B8: 20 06       jr   nz,$27C0
 27BA: 3E 00       ld   a,$00
-27BC: 32 1F A1    ld   ($A11F),a
+27BC: 32 1F A1    ld   (sound_a11f),a
 27BF: C9          ret
 
 27C0: 3A F4 89    ld   a,($89F4)
@@ -4679,7 +4699,7 @@ display_credits_1ed2:
 27E8: 3E 03       ld   a,$03
 27EA: 32 0F A1    ld   ($A10F),a
 27ED: 3E 04       ld   a,$04
-27EF: 32 1F A1    ld   ($A11F),a
+27EF: 32 1F A1    ld   (sound_a11f),a
 27F2: 11 50 00    ld   de,$0050
 27F5: 2A 69 80    ld   hl,($8069)
 27F8: CB 7C       bit  7,h
@@ -4697,27 +4717,27 @@ display_credits_1ed2:
 2807: CB 3F       srl  a
 2809: CB 3F       srl  a
 280B: CB 3F       srl  a
-280D: 32 1B A1    ld   ($A11B),a
+280D: 32 1B A1    ld   (sound_a11b),a
 2810: 7C          ld   a,h
 2811: E6 0F       and  $0F
-2813: 32 1C A1    ld   ($A11C),a
+2813: 32 1C A1    ld   (sound_a11C),a
 2816: 7C          ld   a,h
 2817: CB 3F       srl  a
 2819: CB 3F       srl  a
 281B: CB 3F       srl  a
 281D: CB 3F       srl  a
-281F: 32 1D A1    ld   ($A11D),a
+281F: 32 1D A1    ld   (sound_a11D),a
 2822: 3E 00       ld   a,$00
-2824: 32 1E A1    ld   ($A11E),a
+2824: 32 1E A1    ld   (sound_a11E),a
 2827: C9          ret
 
 2828: 3A 0E 8A    ld   a,($8A0E)
 282B: E5          push hl
 282C: 32 05 A1    ld   ($A105),a
 282F: 3A 11 8A    ld   a,($8A11)
-2832: 32 15 A1    ld   ($A115),a
+2832: 32 15 A1    ld   (sound_a115),a
 2835: 2A 0F 8A    ld   hl,($8A0F)
-2838: 11 10 A1    ld   de,$A110
+2838: 11 10 A1    ld   de,sound_a110
 283B: 7D          ld   a,l
 283C: E6 0F       and  $0F
 283E: 12          ld   (de),a
@@ -4730,9 +4750,9 @@ display_credits_1ed2:
 2848: E5          push hl
 2849: 32 0A A1    ld   ($A10A),a
 284C: 3A 11 8A    ld   a,($8A11)
-284F: 32 1A A1    ld   ($A11A),a
+284F: 32 1A A1    ld   (sound_a11a),a
 2852: 2A 0F 8A    ld   hl,($8A0F)
-2855: 11 16 A1    ld   de,$A116
+2855: 11 16 A1    ld   de,sound_a116
 2858: CD 75 28    call $2875
 285B: E1          pop  hl
 285C: C9          ret
@@ -4741,9 +4761,9 @@ display_credits_1ed2:
 2860: E5          push hl
 2861: 32 0F A1    ld   ($A10F),a
 2864: 3A 11 8A    ld   a,($8A11)
-2867: 32 1F A1    ld   ($A11F),a
+2867: 32 1F A1    ld   (sound_a11f),a
 286A: 2A 0F 8A    ld   hl,($8A0F)
-286D: 11 1B A1    ld   de,$A11B
+286D: 11 1B A1    ld   de,sound_a11b
 2870: CD 75 28    call $2875
 2873: E1          pop  hl
 2874: C9          ret
