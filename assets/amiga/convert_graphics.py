@@ -256,8 +256,8 @@ sprite_table = [None]*NB_SPRITES
 
 
 plane_orientations = [("standard",lambda x:x),
-("flip",ImageOps.flip),
 ("mirror",ImageOps.mirror),
+("flip",ImageOps.flip),
 ("flip_mirror",lambda x:ImageOps.flip(ImageOps.mirror(x)))]
 
 next_cache_id = 1

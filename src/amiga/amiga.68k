@@ -1064,8 +1064,6 @@ blit_background:
 	movem.l	(a7)+,d2-d6/a0-a5
 	rts
 
-mock:
-	.include "rallyx_ram_mame.68k"
 
 really_update_sprites:
 update_bobs_and_hw_sprites:
@@ -1083,7 +1081,6 @@ update_bobs_and_hw_sprites:
 	
 	* make a copy of the sprite memory
 	GET_MEMORY_BLOCKS_IN_A5_A6	
-	lea	mock,a5
 	lea		(0x14,A5),a0
 
 	*****************************
@@ -1263,7 +1260,7 @@ position_hardware_sprites:
 	moveq	#0,d2
 	move.b	(SPRITE_CODE,a2),d2
 	move.w	d2,d4
-	and.w	#0xFC,d4		| mask flip/mirror bits
+	and.w	#0xFC,d4		| mask flip/mirror bits: times 4
 	move.l	(a4,d4.w),d4	| get pointer
 	.ifndef	RELEASE
 	bne.b	25f
@@ -1281,11 +1278,17 @@ position_hardware_sprites:
 	move.w	d6,d4
 	add.w	d4,d4
 	add.w	d4,d4
+	move.w	d2,d3
 	move.l	(a5,d4.W),a5			| get buffer for this sprite index
 
-	* todo: orientation
-	btst	#0,d2
-	btst	#1,d2
+ 	* add orientation
+	and.w	#3,d2
+	jeq	0f
+	add.w	d2,d2
+	add.w	d2,d2
+	add.w	d2,a5
+0:
+
 	
 	move.l	(a5),d4
 	.ifndef	RELEASE
