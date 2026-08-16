@@ -1,10 +1,8 @@
 - 8380: last line "ROUND xxx" , 83A0: not displayed. 26 rows max
   plus tile corruption there and there
-- demo/game: player & enemy car cluts intermix: error in sprite allocation
-  also wrongly oriented (symmetry/flip not implemented probably!)
+- demo/game: wrongly oriented (symmetry/flip bits not properly set by transcode)
 - fix random, see what happens
 - X scrolling width issue?
-- 082F: write to ROM after crash against enemies: present in MAME?
 
 missing sprites?
 

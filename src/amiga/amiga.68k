@@ -1064,8 +1064,6 @@ blit_background:
 	movem.l	(a7)+,d2-d6/a0-a5
 	rts
 
-mock:
-	.include "rallyx_ram_mame.68k"
 
 really_update_sprites:
 update_bobs_and_hw_sprites:
@@ -1075,13 +1073,14 @@ update_bobs_and_hw_sprites:
 
 	lea		host_sprites(pc),a2
 0:
+
 	st.b	(SPRITE_ATTRIBUTES,a2) | invalid clut: sprite is free
 	addq.w	#SPRITE_SIZEOF,a2
 	dbf		d0,0b
 	
 	* make a copy of the sprite memory
 	GET_MEMORY_BLOCKS_IN_A5_A6	
-	lea	mock,a5
+
 	lea		(0x14,A5),a0
 
 	*****************************
@@ -1090,7 +1089,7 @@ update_bobs_and_hw_sprites:
 
 	* there are 8 slots but we only scan 6 sprites
 	moveq	#NB_TARGET_SPRITES-1,d7
-	
+
 0:
 * < A0: memory
 * > D0: X
@@ -1610,10 +1609,9 @@ alloc_sprite:
 	jpl	20f
 
 	* not allocated: test odd sprite
-	tst.b	(SPRITE_Y+SPRITE_SIZEOF,a2)
-	jeq	9b
-	tst.b	(SPRITE_X+SPRITE_SIZEOF,a2)
-	jeq	9b		| ok, both slots are free, allocate the first one
+	tst.b	(SPRITE_ATTRIBUTES+SPRITE_SIZEOF,a2)
+	jmi	9b
+
 20:
 	* next sprite pair
 	lea		(2*SPRITE_SIZEOF,a2),a2
