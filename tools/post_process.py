@@ -313,6 +313,16 @@ with open(source_dir / "conv.s") as f:
             # try to preserve X flag
             # first use dbf
             line += "\tand.w\t#0xFF,d1\n\tsubq.w\t#1,d1\n"
+        elif address == 0x082E:
+            # avoid write in 0 when restarting game
+            line = remove_instruction(lines,i)
+            line = """
+    MAKE_DE    a0                                 | [$082e: ld   (de),a]
+    tst.w\td4
+    jeq\t0f
+    move.b    d0,(a0)                             | [...]
+0:
+"""
         elif address == 0x1312:
             line += "\tSET_X_FROM_C\n"   # save C into X, will resist the end of routine
         elif address == 0x1313:

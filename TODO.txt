@@ -1,12 +1,12 @@
-- demo/game: player car ends up fully black (ok in intro screen)
-  also wrongly oriented
+- 8380: last line "ROUND xxx" , 83A0: not displayed. 26 rows max
+  plus tile corruption there and there
+- demo/game: player & enemy car cluts intermix: error in sprite allocation
+  also wrongly oriented (symmetry/flip not implemented probably!)
 - fix random, see what happens
 - X scrolling width issue?
 - 082F: write to ROM after crash against enemies: present in MAME?
 
 missing sprites?
-implement scrolling: done but not working properly: second playfield scrolled too
-log scrolling in MAME and in amiga (demo) break if != 0
 
 display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0 ???
 bullet placement: first do with a mockup from MAME!
@@ -15,7 +15,6 @@ bullet placement: first do with a mockup from MAME!
 memory overlapping between status and main? (bottom of status memory seem the same as main, check on MAME)
 compare memory after maze drawn MAME/amiga
 
-8380: last line "ROUND xxx" , 83A0: not displayed. 26 rows max
 
 8180->8328 status radar: watchpoints
 wpset 8180,8,W

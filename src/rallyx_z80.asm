@@ -3574,52 +3574,52 @@ move_wrap_pointer_1988:
 19AB: 3A 21 80    ld   a,($8021)
 19AE: A7          and  a
 19AF: CA 8E 06    jp   z,$068E
-19B2: 2A 88 89    ld   hl,($8988)    ; [uncovered] 
-19B5: 35          dec  (hl)    ; [uncovered] 
-19B6: C2 F6 16    jp   nz,$16F6    ; [uncovered] 
-19B9: 3E A0       ld   a,$A0    ; [uncovered] 
-19BB: 32 4B 82    ld   ($824B),a    ; [uncovered] 
-19BE: 3A 4B 82    ld   a,($824B)    ; [uncovered] 
-19C1: A7          and  a    ; [uncovered] 
-19C2: 20 FA       jr   nz,$19BE    ; [uncovered] 
-19C4: AF          xor  a    ; [uncovered] 
-19C5: 32 F4 89    ld   ($89F4),a    ; [uncovered] 
-19C8: DD 7E 0C    ld   a,(ix+$0c)    ; [uncovered] 
-19CB: D6 08       sub  $08    ; [uncovered] 
-19CD: 47          ld   b,a    ; [uncovered] 
-19CE: DD 7E 0E    ld   a,(ix+$0e)    ; [uncovered] 
-19D1: C6 08       add  a,$08    ; [uncovered] 
-19D3: 4F          ld   c,a    ; [uncovered] 
-19D4: CD 7F 0E    call compute_hl_0e7f    ; [uncovered] 
-19D7: 54          ld   d,h    ; [uncovered] 
-19D8: 5D          ld   e,l    ; [uncovered] 
-19D9: 06 03       ld   b,$03    ; [uncovered] 
-19DB: 3E 81       ld   a,$81    ; [uncovered] 
-19DD: E5          push hl    ; [uncovered] 
-19DE: D5          push de    ; [uncovered] 
-19DF: 0E 03       ld   c,$03    ; [uncovered] 
-19E1: 12          ld   (de),a    ; [uncovered] 
-19E2: CD 5D 0E    call advance_hl_and_de_0e5d    ; [uncovered] 
-19E5: 0D          dec  c    ; [uncovered] 
-19E6: 20 F9       jr   nz,$19E1    ; [uncovered] 
-19E8: D1          pop  de    ; [uncovered] 
-19E9: E1          pop  hl    ; [uncovered] 
-19EA: CD 6C 0E    call advance_hl_and_de_0e6c    ; [uncovered] 
-19ED: 10 EE       djnz $19DD    ; [uncovered] 
-19EF: DD 21 14 80 ld   ix,$8014    ; [uncovered] 
-19F3: FD 21 14 88 ld   iy,$8814    ; [uncovered] 
-19F7: 3A A8 81    ld   a,($81A8)    ; [uncovered] 
-19FA: A7          and  a    ; [uncovered] 
-19FB: 20 22       jr   nz,$1A1F    ; [uncovered] 
-19FD: DD 36 00 E0 ld   (ix+$00),$E0    ; [uncovered] 
-1A01: DD 36 01 68 ld   (ix+$01),$68    ; [uncovered] 
-1A05: FD 36 00 74 ld   (iy+$00),$74    ; [uncovered] 
-1A09: FD 36 01 66 ld   (iy+$01),$66    ; [uncovered] 
-1A0D: DD 36 02 E4 ld   (ix+$02),$E4    ; [uncovered] 
-1A11: DD 36 03 78 ld   (ix+$03),$78    ; [uncovered] 
-1A15: FD 36 02 74 ld   (iy+$02),$74    ; [uncovered] 
-1A19: FD 36 03 66 ld   (iy+$03),$66    ; [uncovered] 
-1A1D: 18 20       jr   $1A3F    ; [uncovered] 
+19B2: 2A 88 89    ld   hl,($8988)
+19B5: 35          dec  (hl)
+19B6: C2 F6 16    jp   nz,$16F6
+19B9: 3E A0       ld   a,$A0
+19BB: 32 4B 82    ld   ($824B),a
+19BE: 3A 4B 82    ld   a,($824B)
+19C1: A7          and  a
+19C2: 20 FA       jr   nz,$19BE
+19C4: AF          xor  a
+19C5: 32 F4 89    ld   ($89F4),a
+19C8: DD 7E 0C    ld   a,(ix+$0c)
+19CB: D6 08       sub  $08
+19CD: 47          ld   b,a
+19CE: DD 7E 0E    ld   a,(ix+$0e)
+19D1: C6 08       add  a,$08
+19D3: 4F          ld   c,a
+19D4: CD 7F 0E    call compute_hl_0e7f
+19D7: 54          ld   d,h
+19D8: 5D          ld   e,l
+19D9: 06 03       ld   b,$03
+19DB: 3E 81       ld   a,$81
+19DD: E5          push hl
+19DE: D5          push de
+19DF: 0E 03       ld   c,$03
+19E1: 12          ld   (de),a	; [video_address]
+19E2: CD 5D 0E    call advance_hl_and_de_0e5d
+19E5: 0D          dec  c 
+19E6: 20 F9       jr   nz,$19E1
+19E8: D1          pop  de
+19E9: E1          pop  hl
+19EA: CD 6C 0E    call advance_hl_and_de_0e6c
+19ED: 10 EE       djnz $19DD
+19EF: DD 21 14 80 ld   ix,$8014
+19F3: FD 21 14 88 ld   iy,$8814
+19F7: 3A A8 81    ld   a,($81A8)
+19FA: A7          and  a
+19FB: 20 22       jr   nz,$1A1F
+19FD: DD 36 00 E0 ld   (ix+$00),$E0
+1A01: DD 36 01 68 ld   (ix+$01),$68
+1A05: FD 36 00 74 ld   (iy+$00),$74
+1A09: FD 36 01 66 ld   (iy+$01),$66
+1A0D: DD 36 02 E4 ld   (ix+$02),$E4
+1A11: DD 36 03 78 ld   (ix+$03),$78
+1A15: FD 36 02 74 ld   (iy+$02),$74
+1A19: FD 36 03 66 ld   (iy+$03),$66
+1A1D: 18 20       jr   $1A3F
 1A1F: DD 36 00 E3 ld   (ix+$00),$E3
 1A23: DD 36 01 AC ld   (ix+$01),$AC
 1A27: DD 36 02 E7 ld   (ix+$02),$E7
@@ -3701,14 +3701,14 @@ move_wrap_pointer_1988:
 1ADB: CD 06 1B    call $1B06
 1ADE: 21 60 88    ld   hl,$8860
 1AE1: 06 08       ld   b,$08
-1AE3: 36 70       ld   (hl),$70
+1AE3: 36 70       ld   (hl),$70		; [video_address]
 1AE5: 23          inc  hl
 1AE6: 10 FB       djnz $1AE3
 1AE8: 21 AA 81    ld   hl,$81AA
-1AEB: 7E          ld   a,(hl)
+1AEB: 7E          ld   a,(hl)		; [unchecked_address]
 1AEC: 23          inc  hl
 1AED: A6          and  (hl)
-1AEE: 77          ld   (hl),a
+1AEE: 77          ld   (hl),a		; [video_address]
 1AEF: C2 F6 16    jp   nz,$16F6
 1AF2: C3 8E 06    jp   $068E
 1AF5: 2A 98 89    ld   hl,($8998)
@@ -3725,7 +3725,7 @@ move_wrap_pointer_1988:
 1B09: 01 1C 00    ld   bc,$001C
 1B0C: 09          add  hl,bc
 1B0D: 06 08       ld   b,$08
-1B0F: 36 72       ld   (hl),$72
+1B0F: 36 72       ld   (hl),$72		; [video_address]
 1B11: 23          inc  hl
 1B12: 10 FB       djnz $1B0F
 1B14: C9          ret
@@ -4044,8 +4044,8 @@ copy_status_row_1c4e:
 1D7D: 01 08 00    ld   bc,$0008
 1D80: FE 01       cp   $01
 1D82: 20 04       jr   nz,$1D88
-1D84: ED B0       ldir    ; [uncovered] 
-1D86: 18 12       jr   $1D9A    ; [uncovered] 
+1D84: ED B0       ldir
+1D86: 18 12       jr   $1D9A
 
 1D88: 1A          ld   a,(de)		; [video_address]
 1D89: FE 40       cp   $40

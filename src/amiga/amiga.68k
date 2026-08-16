@@ -34,7 +34,7 @@ NB_TILES = 256
 
 SPRITE_X_CORRECTION = -1
 SPRITE_Y_CORRECTION = -8
-HW_SPRITE_X_CORRECTION = 0
+HW_SPRITE_X_CORRECTION = 16
 HW_SPRITE_Y_CORRECTION = 32
 
 * start displaying earlier in ntsc mode, allowing
@@ -49,10 +49,7 @@ BASE_BPLCON3_VALUE = (1<<12)+(BORDERBLANK<<5)  | dpf second playfield palette st
 * except sprites 0-1 that are above all (for radar in AGA mode)
 * Status above main
 BASE_BPLCON2_VALUE = 0x004C
-SPRITE_ADDRESS = 0x3C00
-MIRROR_ADDRESS = 0x7C00
-SCREEN_TILE_ADDRESS = SPRITE_ADDRESS+0x21
-SCREEN_COLOR_ADDRESS = 0x7800
+
 BASE_BPLCON4_VALUE = 0x0022		| sprites take their palette on colors 32-48
 
 
@@ -1067,7 +1064,8 @@ blit_background:
 	movem.l	(a7)+,d2-d6/a0-a5
 	rts
 
-
+mock:
+	.include "rallyx_ram_mame.68k"
 
 really_update_sprites:
 update_bobs_and_hw_sprites:
@@ -1083,6 +1081,7 @@ update_bobs_and_hw_sprites:
 	
 	* make a copy of the sprite memory
 	GET_MEMORY_BLOCKS_IN_A5_A6	
+	lea	mock,a5
 	lea		(0x14,A5),a0
 
 	*****************************
@@ -1103,7 +1102,8 @@ update_bobs_and_hw_sprites:
 	tst.w	(a0)
 	jeq		1f
 	jbsr	compute_sprite_xy_code_and_attributes
-
+	cmp.b	#0x3B,d2		| blank sprite: avoid!
+	jeq		1f
 * < D0: sprite X
 * < D1: sprite Y
 * < D2: sprite code & flags
@@ -1146,9 +1146,9 @@ compute_sprite_xy_code_and_attributes:
 	move.b	(TARGET_SPRITE_LX,a0),d0
 	move.b	(TARGET_SPRITE_HX,a0),d3
 	bclr	#7,d3			| d4 is the color now
-*	jeq		0f
-*	bset	#8,d0			| add 0x100 to sprite code (cannot happen given that the sprite set has 64 sprites)
-*0:
+	jeq		0f
+	bset	#8,d0			| add 0x100 to sprite X
+0:
 	.ifne	SPRITE_Y_CORRECTION
 	add.w	#SPRITE_Y_CORRECTION,d1
 	.endif
@@ -2855,11 +2855,6 @@ update_controls:
 
 	rts
 	
-direction_table:
-	.byte	0x00,0x01,0x01,0x00,0x01,0xff,0xff,0x00	| 0x0000
-	.byte	0x01,0xff,0xff,0x00,0x00,0x00,0x00,0x00	| 0x0008	
-
-
 
 osd_read_dsw:
 	* actual dipswitches

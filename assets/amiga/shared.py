@@ -37,7 +37,12 @@ def ensure_exists(d):
 
 sr2 = lambda a,b : set(range(a,b,2))
 
-
+def get_sprite_names():
+    rval = {}
+    rval[0x38] = "game_over"
+    rval[0x39] = "game_over"
+    rval.update({i:"car" for i in range(0x3C,0x40)})
+    return rval
 
 alphanum_tile_codes = set(range(0,10)) | set(range(65-48,65+27-48))
 
