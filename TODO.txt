@@ -1,8 +1,7 @@
 - 8380: last line "ROUND xxx" , 83A0: not displayed. 26 rows max
   plus tile corruption there and there
-- demo/game: wrongly oriented (symmetry/flip bits not properly set by transcode)
-- fix random, see what happens
-- X scrolling width issue?
+- wrong color alloc: test free slot with zeroed X/Y again
+- X scrolling width issue! tiles displayed don't match / overlap at times
 
 missing sprites?
 

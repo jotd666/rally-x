@@ -329,6 +329,9 @@ with open(source_dir / "conv.s") as f:
             line = change_instruction("dbf\td1,l_1312",lines,i)
         elif address == 0x1318:
             line = "\tSET_C_FROM_X\n"+line  # put X into C to respect function interface
+        # fix the interleaved instructions mess that corrupt car position
+        elif address in {0x1BF7,0x1BFA}:
+            line = change_instruction("jra\tl_1bfd",lines,i)
         # end game_specific
         ###############################################
         if address in remove_error_in_prev_line:

@@ -1064,6 +1064,8 @@ blit_background:
 	movem.l	(a7)+,d2-d6/a0-a5
 	rts
 
+mock:
+	.include "rallyx_ram_mame.68k"
 
 really_update_sprites:
 update_bobs_and_hw_sprites:
@@ -1073,14 +1075,15 @@ update_bobs_and_hw_sprites:
 
 	lea		host_sprites(pc),a2
 0:
-
+	clr.w	(SPRITE_X,a2)  | clears X and Y
+	*clr.b	(SPRITE_Y,a2)
 	st.b	(SPRITE_ATTRIBUTES,a2) | invalid clut: sprite is free
 	addq.w	#SPRITE_SIZEOF,a2
 	dbf		d0,0b
 	
 	* make a copy of the sprite memory
 	GET_MEMORY_BLOCKS_IN_A5_A6	
-
+	lea	mock,a5
 	lea		(0x14,A5),a0
 
 	*****************************
@@ -1094,7 +1097,7 @@ update_bobs_and_hw_sprites:
 * < A0: memory
 * > D0: X
 * > D1: Y
-* > D2: code
+* > D2: code+flip X/Y attributes
 * > D3: color
 * > D4: flip X/Y attributes
 
@@ -1259,10 +1262,8 @@ position_hardware_sprites:
 	
 	moveq	#0,d2
 	move.b	(SPRITE_CODE,a2),d2
-	and.b	#0x3F,d2				| max 64 possible sprites
 	move.w	d2,d4
-	add.w	d4,d4
-	add.w	d4,d4
+	and.w	#0xFC,d4		| mask flip/mirror bits
 	move.l	(a4,d4.w),d4	| get pointer
 	.ifndef	RELEASE
 	bne.b	25f
@@ -1270,7 +1271,8 @@ position_hardware_sprites:
 	* sprite code in D2, attribute in d3
 	move.b	(SPRITE_ATTRIBUTES,a2),d3
 	move.w	#0xF00,_custom+color
-	BREAKPOINT	"unregistered sprite, code=d2, attr=d3"
+	lsr.w	#2,d4
+	BREAKPOINT	"unregistered sprite, code=d4, attr=d3"
 	jra		30f
 25:
 	.endif
@@ -1282,7 +1284,9 @@ position_hardware_sprites:
 	move.l	(a5,d4.W),a5			| get buffer for this sprite index
 
 	* todo: orientation
-
+	btst	#0,d2
+	btst	#1,d2
+	
 	move.l	(a5),d4
 	.ifndef	RELEASE
 	bne.b	22f
@@ -1551,7 +1555,7 @@ clear_planes_any_blitter_internal:
 * < D1: sprite Y
 * < D2: sprite code
 * < D3: sprite color (clut index)
-* < D4: flipx/y (ignored ATM)
+* < D4: flipx/y
 * > D6: allocated sprite index
 alloc_sprite:
 	* first pass: find a free sprite next to a sprite with
@@ -1575,6 +1579,9 @@ alloc_sprite:
 9:
 	move.b	d0,(SPRITE_X,a2)		| X
 	move.b	d1,(SPRITE_Y,a2)		| Y
+	add.b	d2,d2
+	add.b	d2,d2
+	or.b	d4,d2
 	move.b	d2,(SPRITE_CODE,a2)		| code
 	move.b	d3,(SPRITE_ATTRIBUTES,a2)		| clut
 	lea		(SPRITE_SIZEOF,a2),a2
@@ -1609,9 +1616,13 @@ alloc_sprite:
 	jpl	20f
 
 	* not allocated: test odd sprite
-	tst.b	(SPRITE_ATTRIBUTES+SPRITE_SIZEOF,a2)
-	jmi	9b
+*	tst.b	(SPRITE_ATTRIBUTES+SPRITE_SIZEOF,a2)
+*	jmi	9b
 
+	tst.b	(SPRITE_Y+SPRITE_SIZEOF,a2)
+	jeq	9b
+	tst.b	(SPRITE_X+SPRITE_SIZEOF,a2)
+	jeq	9b		| ok, both slots are free, allocate the first one
 20:
 	* next sprite pair
 	lea		(2*SPRITE_SIZEOF,a2),a2

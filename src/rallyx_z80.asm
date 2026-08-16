@@ -122,6 +122,7 @@ sound_a115 = $a115
 sound_a110 = $a110
 sound_a116 = $a116
 pointer_on_port_a0x0_899e = $899e
+player_car_structure_8068 = $8068
 
 0000: C3 00 38    jp   boot_3800
 
@@ -202,7 +203,7 @@ irq_0030:
 00C9: 2A 5A 80    ld   hl,($805A)
 00CC: 18 B6       jr   $0084
 
-00CE: DD 21 68 80 ld   ix,$8068
+00CE: DD 21 68 80 ld   ix,player_car_structure_8068
 00D2: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 00D5: 3C          inc  a
 00D6: 47          ld   b,a
@@ -386,24 +387,24 @@ irq_01f0:		; [global]
 0233: 7A          ld   a,d
 0234: B3          or   e
 0235: 28 6E       jr   z,$02A5
-0237: D5          push de
+0237: D5          push de		; DE contains pointer on object structs (8073)
 0238: FD E1       pop  iy
 023A: D5          push de
 023B: CD 90 04    call $0490
 023E: FD 7E 00    ld   a,(iy+$00)
 0241: 0F          rrca
 0242: 30 07       jr   nc,$024B
-0244: DD CB 01 FE set  7,(ix+$01)
-0248: C3 4F 02    jp   $024F
 
-024B: DD CB 01 BE res  7,(ix+$01)
-024F: FD 7E 01    ld   a,(iy+$01)
-0252: 77          ld   (hl),a
+0244: DD CB 01 FE set  7,(ix+$01)   ; sprite X += 256
+0248: C3 4F 02    jp   $024F
+024B: DD CB 01 BE res  7,(ix+$01)   ; sprite X < 256
+024F: FD 7E 01    ld   a,(iy+$01)	; sprite X
+0252: 77          ld   (hl),a		; store in HW register
 0253: FD 7E 03    ld   a,(iy+$03)
 0256: DD 77 00    ld   (ix+$00),a
-0259: FD 7E 04    ld   a,(iy+$04)
+0259: FD 7E 04    ld   a,(iy+$04)	; sprite code in struct
 025C: 2B          dec  hl
-025D: 77          ld   (hl),a
+025D: 77          ld   (hl),a   ; sprite code in sprite hw register
 025E: 23          inc  hl
 025F: FD 7E 05    ld   a,(iy+$05)
 0262: E6 7F       and  $7F
@@ -440,6 +441,7 @@ irq_01f0:		; [global]
 02A0: FE 0A       cp   $0A
 02A2: CC D8 02    call z,$02D8
 02A5: FD E1       pop  iy
+; next object
 02A7: FD 23       inc  iy
 02A9: FD 23       inc  iy
 02AB: DD 23       inc  ix
@@ -486,7 +488,7 @@ irq_01f0:		; [global]
 02EB: CD 69 00    call $0069
 02EE: CD B2 0D    call $0DB2
 02F1: CD 6B 1C    call $1C6B
-02F4: DD 21 68 80 ld   ix,$8068
+02F4: DD 21 68 80 ld   ix,player_car_structure_8068
 02F8: 06 09       ld   b,$09
 02FA: 21 94 82    ld   hl,$8294
 02FD: 11 34 80    ld   de,$8034
@@ -547,7 +549,7 @@ irq_01f0:		; [global]
 0369: 12          ld   (de),a
 036A: C3 35 03    jp   $0335
 036D: 06 05       ld   b,$05
-036F: DD 21 68 80 ld   ix,$8068
+036F: DD 21 68 80 ld   ix,player_car_structure_8068
 0373: FD 21 04 80 ld   iy,$8004
 0377: 21 4C 82    ld   hl,$824C
 037A: 7E          ld   a,(hl)
@@ -1202,7 +1204,7 @@ clear_sprites_074c:
 08D9: 21 F5 89    ld   hl,$89F5    ; [uncovered] 
 08DC: CB 46       bit  0,(hl)    ; [uncovered] 
 08DE: 28 FC       jr   z,$08DC    ; [uncovered] 
-08E0: CD BA 0A    call $0ABA
+08E0: CD BA 0A    call init_player_car_0aba
 08E3: 21 0A 2D    ld   hl,$2D0A
 08E6: 22 52 80    ld   ($8052),hl
 08E9: 3E 03       ld   a,$03
@@ -1407,7 +1409,8 @@ clear_sprites_074c:
 0AB4: 32 22 80    ld   ($8022),a
 0AB7: C3 7A 0A    jp   $0A7A
 
-0ABA: DD 21 68 80 ld   ix,$8068
+init_player_car_0aba:
+0ABA: DD 21 68 80 ld   ix,player_car_structure_8068
 0ABE: AF          xor  a
 0ABF: 32 23 80    ld   ($8023),a
 0AC2: 21 48 80    ld   hl,$8048
@@ -1430,7 +1433,7 @@ clear_sprites_074c:
 0AF1: DD 77 0B    ld   (ix+$0b),a
 0AF4: DD 36 0C 70 ld   (ix+$0c),$70
 0AF8: DD 36 0E 74 ld   (ix+$0e),$74
-0AFC: DD 36 0F F0 ld   (ix+$0f),$F0
+0AFC: DD 36 0F F0 ld   (ix+$0f),$F0		; set car sprite oriented up
 0B00: DD 36 10 01 ld   (ix+$10),$01
 0B04: DD 77 13    ld   (ix+$13),a
 0B07: C9          ret
@@ -1460,7 +1463,7 @@ clear_sprites_074c:
 0B23: C9          ret    ; [uncovered] 
 
 0B24: DD 21 88 80 ld   ix,enemy_car_structs_8088
-0B28: FD 21 68 80 ld   iy,$8068
+0B28: FD 21 68 80 ld   iy,player_car_structure_8068
 0B2C: 3A 4E 82    ld   a,(nb_enemy_cars_824e)
 0B2F: 47          ld   b,a
 0B30: A7          and  a
@@ -1879,7 +1882,7 @@ increase_and_wrap_d5w_0d69:
 0DF4: 7E          ld   a,(hl)
 0DF5: A7          and  a
 0DF6: 28 61       jr   z,$0E59
-0DF8: DD 21 68 80 ld   ix,$8068
+0DF8: DD 21 68 80 ld   ix,player_car_structure_8068
 0DFC: DD 7E 0F    ld   a,(ix+$0f)
 0DFF: 06 08       ld   b,$08
 0E01: 0E F0       ld   c,$F0
@@ -1989,7 +1992,7 @@ compute_hl_0e7f:
 0E9F: C9          ret
 
 0EA0: 11 00 00    ld   de,$0000
-0EA3: DD 21 68 80 ld   ix,$8068
+0EA3: DD 21 68 80 ld   ix,player_car_structure_8068
 0EA7: DD 7E 13    ld   a,(ix+$13)
 0EAA: DD 35 13    dec  (ix+$13)
 0EAD: A7          and  a
@@ -2005,7 +2008,7 @@ compute_hl_0e7f:
 0EC2: F3          di
 0EC3: 22 2D 80    ld   ($802D),hl
 0EC6: AF          xor  a
-0EC7: 32 68 80    ld   ($8068),a
+0EC7: 32 68 80    ld   (player_car_structure_8068),a
 0ECA: 32 48 80    ld   ($8048),a
 0ECD: 2A 69 80    ld   hl,($8069)
 0ED0: 3A 20 80    ld   a,($8020)
@@ -3005,7 +3008,7 @@ write_maze_row_131e:
 1583: 12          ld   (de),a
 1584: 18 E1       jr   $1567
 
-1586: DD 21 68 80 ld   ix,$8068
+1586: DD 21 68 80 ld   ix,player_car_structure_8068
 158A: DD 6E 11    ld   l,(ix+$11)
 158D: DD 66 12    ld   h,(ix+$12)
 1590: DD 7E 05    ld   a,(ix+$05)
@@ -3798,7 +3801,7 @@ rle_unpack_to_screen_1b15:
 1BC7: 32 8F 82    ld   ($828F),a
 1BCA: C9          ret
 
-1BCB: DD 21 68 80 ld   ix,$8068
+1BCB: DD 21 68 80 ld   ix,player_car_structure_8068
 1BCF: 06 09       ld   b,$09
 1BD1: 21 70 22    ld   hl,$2270
 1BD4: DD 7E 15    ld   a,(ix+$15)
@@ -3813,19 +3816,19 @@ rle_unpack_to_screen_1b15:
 1BE7: 28 08       jr   z,$1BF1
 1BE9: CB 79       bit  7,c
 1BEB: 28 0E       jr   z,$1BFB	; jumps in the middle of an instruction
-1BED: 0E FD       ld   c,$FD
+1BED: 0E FD       ld   c,$FD		; load car sprite oriented left ($3F)
 1BEF: 18 0C       jr   $1BFD
 
 1BF1: CB 79       bit  7,c
 1BF3: 28 03       jr   z,$1BF8	; jumps in the middle of an instruction
-1BF5: 0E F2       ld   c,$F2
-1BF7: 11 0E F0    ld   de,$F00E	; if executed, the next ld is skipped!
+1BF5: 0E F2       ld   c,$F2		; load car sprite oriented down ($3C) with flip
+1BF7: 11 0E F0    ld   de,$F00E	; if executed, the next ld is skipped! amounts to jp $1BFD
 ; crazy code interleave!
-1BF8: 0E F0       ld   c,$F0
-1BFA: 11 0E FC    ld   de,$FC0E	; if executed, the next ld is skipped!
+1BF8: 0E F0       ld   c,$F0		; load car sprite oriented up ($3C)
+1BFA: 11 0E FC    ld   de,$FC0E	; if executed, the next ld is skipped! amounts to jp $1BFD
 ; crazy code interleave!
 ; anyway, probably a mistake, as register de set value is not used
-1BFB: 0E FC       ld   c,$FC
+1BFB: 0E FC       ld   c,$FC		; load car sprite oriented right ($3F)
 1BFD: DD 7E 0F    ld   a,(ix+$0f)
 1C00: B9          cp   c
 1C01: 28 1A       jr   z,$1C1D
@@ -4151,7 +4154,7 @@ write_instructions_text_1e1b:
 1E36: 22 5A 80    ld   ($805A),hl
 1E39: 32 20 80    ld   ($8020),a
 1E3C: 32 4E 82    ld   (nb_enemy_cars_824e),a
-1E3F: DD 21 68 80 ld   ix,$8068
+1E3F: DD 21 68 80 ld   ix,player_car_structure_8068
 1E43: D5          push de
 1E44: 3E 64       ld   a,$64
 1E46: 11 20 00    ld   de,$0020
@@ -4160,7 +4163,7 @@ write_instructions_text_1e1b:
 1E4E: DD 19       add  ix,de
 1E50: 10 F9       djnz $1E4B
 1E52: D1          pop  de
-1E53: DD 21 68 80 ld   ix,$8068
+1E53: DD 21 68 80 ld   ix,player_car_structure_8068
 1E57: DD 36 0B 01 ld   (ix+$0b),$01
 1E5B: DD 36 0C F0 ld   (ix+$0c),$F0
 1E5F: 1A          ld   a,(de)
@@ -4168,7 +4171,7 @@ write_instructions_text_1e1b:
 1E61: 13          inc  de
 1E62: 1A          ld   a,(de)
 1E63: DD 77 0E    ld   (ix+$0e),a
-1E66: DD 36 0F FC ld   (ix+$0f),$FC
+1E66: DD 36 0F FC ld   (ix+$0f),$FC		; set car sprite turned right
 1E6A: DD 36 10 01 ld   (ix+$10),$01
 1E6E: 21 73 80    ld   hl,$8073
 1E71: 22 02 80    ld   ($8002),hl
