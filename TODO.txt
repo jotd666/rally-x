@@ -1,5 +1,6 @@
 - controls buggy at times: check carry/x flags when reading controls
   (demo is ok!!)
+- sometimes cars are all red: snap sprites at this moment for mockup
 - reduce display window
 - status: try to save memory by using narrow screen and negative modulus
 - invincibility/infinite fuel
@@ -8,14 +9,11 @@
 - game restarts automatically need to reset "1" ??? nope!!
 - engine sfx: make frequency vary
 
-missing sprites?
 
-display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0 ???
-bullet placement: first do with a mockup from MAME!
+display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0
+nope use bitmap & tile redraw
+bullet placement: first do with a mockup
 
-
-memory overlapping between status and main? (bottom of status memory seem the same as main, check on MAME)
-compare memory after maze drawn MAME/amiga
 
 
 8180->8328 status radar: watchpoints
@@ -36,6 +34,5 @@ wpset 8320,8,W
 
 ECS: try to reduce colors: would work. Create separate AGA & OCS versions
 
-find carry returning routines call[^\n]+\n[^\n]+jr\s+n?c
 
 after maze drawn: 08FC

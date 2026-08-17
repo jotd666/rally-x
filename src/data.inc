@@ -25,3 +25,5 @@ pointer_on_port_a0x0_899e = 0x899e
 player_car_structure_8068 = 0x8068
 p1_lives_800f = 0x800f
 kill_flag_824c = 0x824c
+car_orientation_806b = 0x806b
+control_flags_8020 = 0x8020

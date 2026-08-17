@@ -323,8 +323,6 @@ with open(source_dir / "conv.s") as f:
     move.b    d0,(a0)                             | [...]
 0:
 """
-        elif address == 0x1312:
-            line += "\tSET_X_FROM_C\n"   # save C into X, will resist the end of routine
         elif address == 0x1313:
             line = change_instruction("dbf\td1,l_1312",lines,i)
         elif address == 0x1318:

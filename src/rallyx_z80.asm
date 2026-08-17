@@ -125,6 +125,9 @@ pointer_on_port_a0x0_899e = $899e
 player_car_structure_8068 = $8068
 p1_lives_800f = $800f
 kill_flag_824c = $824c
+; during game: 0 vertical (up or down), $FF horizontal
+car_orientation_806b = $806b
+control_flags_8020 = $8020
 
 0000: C3 00 38    jp   boot_3800
 
@@ -165,7 +168,7 @@ irq_0030:
 006C: FD 26 01    ld   iyh,$01
 006F: 2A 69 80    ld   hl,($8069)
 0072: ED 4B 50 80 ld   bc,($8050)
-0076: 3A 6B 80    ld   a,($806B)
+0076: 3A 6B 80    ld   a,(car_orientation_806b)
 0079: A7          and  a
 007A: 28 27       jr   z,$00A3
 007C: 3A 48 80    ld   a,($8048)
@@ -369,7 +372,7 @@ irq_01f0:		; [global]
 01FC: 32 80 A0    ld   (watchdog_a080),a
 01FF: CD C5 14    call $14C5
 0202: CD 4D 15    call $154D
-0205: 3A 20 80    ld   a,($8020)
+0205: 3A 20 80    ld   a,(control_flags_8020)
 0208: A7          and  a
 0209: 28 05       jr   z,$0210
 020B: FE 02       cp   $02
@@ -724,7 +727,7 @@ irq_01f0:		; [global]
 04C5: E1          pop  hl    ; [uncovered] 
 04C6: C9          ret    ; [uncovered] 
 
-04C7: 3A 20 80    ld   a,($8020)
+04C7: 3A 20 80    ld   a,(control_flags_8020)
 04CA: 06 04       ld   b,$04
 04CC: 2A 98 89    ld   hl,($8998)
 04CF: FE 02       cp   $02
@@ -825,7 +828,7 @@ irq_01f0:		; [global]
 058E: 32 21 80    ld   ($8021),a
 0591: 3C          inc  a
 0592: 32 81 A1    ld   ($A181),a
-0595: 32 20 80    ld   ($8020),a
+0595: 32 20 80    ld   (control_flags_8020),a
 0598: 3E F7       ld   a,$F7
 059A: D3 00       out  ($00),a
 059C: 3E 49       ld   a,$49
@@ -850,7 +853,7 @@ irq_01f0:		; [global]
 05CB: CD 1B 1E    call write_instructions_text_1e1b
 05CE: 3E 01       ld   a,$01
 05D0: 32 0F 80    ld   (p1_lives_800f),a
-05D3: 32 20 80    ld   ($8020),a
+05D3: 32 20 80    ld   (control_flags_8020),a
 05D6: 32 4B 82    ld   ($824B),a
 05D9: 32 81 A1    ld   ($A181),a
 05DC: ED 5F       ld   a,r			; random
@@ -946,7 +949,7 @@ irq_01f0:		; [global]
 06AE: 3E 02       ld   a,$02
 06B0: 32 21 80    ld   ($8021),a
 06B3: 3D          dec  a
-06B4: 32 20 80    ld   ($8020),a
+06B4: 32 20 80    ld   (control_flags_8020),a
 06B7: 32 81 A1    ld   ($A181),a
 06BA: FB          ei
 06BB: 32 B0 81    ld   ($81B0),a
@@ -1073,7 +1076,7 @@ clear_sprites_074c:
 07D2: 3E 03       ld   a,$03
 07D4: 32 81 A1    ld   ($A181),a
 07D7: FB          ei
-07D8: 32 20 80    ld   ($8020),a
+07D8: 32 20 80    ld   (control_flags_8020),a
 07DB: 32 4B 82    ld   ($824B),a
 07DE: 3A 4B 82    ld   a,($824B)
 07E1: E6 3F       and  $3F
@@ -1200,7 +1203,7 @@ clear_sprites_074c:
 08CA: 21 DB 1F    ld   hl,$1FDB    ; [uncovered] 
 08CD: CD 1B 1E    call write_instructions_text_1e1b    ; [uncovered] 
 08D0: 3E 03       ld   a,$03    ; [uncovered] 
-08D2: 32 20 80    ld   ($8020),a    ; [uncovered] 
+08D2: 32 20 80    ld   (control_flags_8020),a    ; [uncovered] 
 08D5: 32 81 A1    ld   ($A181),a    ; [uncovered] 
 08D8: FB          ei    ; [uncovered] 
 08D9: 21 F5 89    ld   hl,$89F5    ; [uncovered] 
@@ -1210,7 +1213,7 @@ clear_sprites_074c:
 08E3: 21 0A 2D    ld   hl,$2D0A
 08E6: 22 52 80    ld   ($8052),hl
 08E9: 3E 03       ld   a,$03
-08EB: 32 20 80    ld   ($8020),a
+08EB: 32 20 80    ld   (control_flags_8020),a
 08EE: 32 81 A1    ld   ($A181),a
 08F1: FB          ei
 08F2: AF          xor  a		; zero scroll in X and Y
@@ -1301,7 +1304,7 @@ clear_sprites_074c:
 09B5: AF          xor  a
 09B6: 0E 0F       ld   c,$0F
 09B8: 06 03       ld   b,$03
-09BA: CD 11 1E    call $1E11
+09BA: CD 11 1E    call negate_hl_1e11
 09BD: DD 19       add  ix,de
 09BF: DD 36 00 B0 ld   (ix+$00),$B0
 09C3: DD 77 03    ld   (ix+$03),a
@@ -1342,7 +1345,7 @@ clear_sprites_074c:
 0A19: 21 73 80    ld   hl,$8073
 0A1C: 22 02 80    ld   ($8002),hl
 0A1F: 3E 03       ld   a,$03
-0A21: 32 20 80    ld   ($8020),a
+0A21: 32 20 80    ld   (control_flags_8020),a
 0A24: 32 81 A1    ld   ($A181),a
 0A27: 32 4B 82    ld   ($824B),a
 0A2A: 3A 4B 82    ld   a,($824B)
@@ -1367,7 +1370,7 @@ clear_sprites_074c:
 0A4E: 38 02       jr   c,$0A52
 0A50: 36 64       ld   (hl),$64    ; [uncovered] 
 0A52: 3A 21 80    ld   a,($8021)
-0A55: 32 20 80    ld   ($8020),a
+0A55: 32 20 80    ld   (control_flags_8020),a
 0A58: 3E 3C       ld   a,$3C
 0A5A: 32 4C 82    ld   (kill_flag_824c),a
 0A5D: 3E 01       ld   a,$01
@@ -1586,7 +1589,7 @@ init_player_car_0aba:
 0C04: 2A 29 80    ld   hl,($8029)
 0C07: F1          pop  af
 0C08: CB 7A       bit  7,d
-0C0A: C4 11 1E    call nz,$1E11
+0C0A: C4 11 1E    call nz,negate_hl_1e11
 0C0D: DD 36 14 02 ld   (ix+$14),$02
 0C11: 5F          ld   e,a
 0C12: DD BE 03    cp   (ix+$03)
@@ -1604,7 +1607,7 @@ init_player_car_0aba:
 0C2B: 79          ld   a,c
 0C2C: AC          xor  h
 0C2D: CB 7F       bit  7,a
-0C2F: C4 11 1E    call nz,$1E11
+0C2F: C4 11 1E    call nz,negate_hl_1e11
 0C32: F1          pop  af
 0C33: DD 36 14 02 ld   (ix+$14),$02
 0C37: DD BE 03    cp   (ix+$03)
@@ -1626,7 +1629,7 @@ init_player_car_0aba:
 0C5B: DD 7E 02    ld   a,(ix+$02)
 0C5E: AC          xor  h
 0C5F: CB 7F       bit  7,a
-0C61: C4 11 1E    call nz,$1E11
+0C61: C4 11 1E    call nz,negate_hl_1e11
 0C64: DD 7E 03    ld   a,(ix+$03)
 0C67: CD B1 0C    call carry_returning_0cb1
 0C6A: 30 13       jr   nc,$0C7F
@@ -1634,7 +1637,7 @@ init_player_car_0aba:
 0C70: 2F          cpl
 0C71: CD B1 0C    call carry_returning_0cb1
 0C74: 30 09       jr   nc,$0C7F
-0C76: CD 11 1E    call $1E11
+0C76: CD 11 1E    call negate_hl_1e11
 0C79: CD B1 0C    call carry_returning_0cb1
 0C7C: 30 01       jr   nc,$0C7F
 0C7E: 2F          cpl
@@ -1768,7 +1771,7 @@ carry_returning_0cb1:
 0D56: E1          pop  hl
 0D57: 79          ld   a,c
 0D58: C1          pop  bc
-0D59: C9          ret
+0D59: C9          ret		; return from carry_returning_0cb1
 
 0D5A: E1          pop  hl
 0D5B: 79          ld   a,c
@@ -1846,7 +1849,7 @@ increase_and_wrap_d5w_0d69:
 0DB4: C5          push bc
 ; read controls here during game (during demo it reads at 0!)
 0DB5: 2A 9E 89    ld   hl,(pointer_on_port_a0x0_899e)
-0DB8: 7E          ld   a,(hl)
+0DB8: 7E          ld   a,(hl)		; reads p1_a000
 0DB9: 21 90 82    ld   hl,$8290
 0DBC: 0F          rrca
 0DBD: 0F          rrca			; C is cleared if fire is pressed
@@ -2004,21 +2007,21 @@ compute_hl_0e7f:
 0EB7: CB F6       set  6,(hl)
 0EB9: 2A 27 80    ld   hl,(car_speed_8027)
 0EBC: ED 4B 9E 89 ld   bc,(pointer_on_port_a0x0_899e)
-; read controls here
-0EC0: 0A          ld   a,(bc)
-0EC1: 47          ld   b,a
-0EC2: F3          di
+; read controls here (car directions, fire) also during demo
+0EC0: 0A          ld   a,(bc)		              ; reads p1_a000
+0EC1: 47          ld   b,a			              ; save controls in register B
+0EC2: F3          di				              ; disable interrupts
 0EC3: 22 2D 80    ld   ($802D),hl
 0EC6: AF          xor  a
 0EC7: 32 68 80    ld   (player_car_structure_8068),a
 0ECA: 32 48 80    ld   ($8048),a
 0ECD: 2A 69 80    ld   hl,($8069)
-0ED0: 3A 20 80    ld   a,($8020)
+0ED0: 3A 20 80    ld   a,(control_flags_8020)
 0ED3: A7          and  a
-0ED4: CC 8E 1B    call z,$1B8E
+0ED4: CC 8E 1B    call z,read_demo_controls_1b8e	; 0 => call part only in demo mode (not in-game)
 0ED7: CD D8 0F    call carry_returning_0fd8
 0EDA: 30 79       jr   nc,$0F55
-0EDC: 3A 6B 80    ld   a,($806B)
+0EDC: 3A 6B 80    ld   a,(car_orientation_806b)
 0EDF: 2A 69 80    ld   hl,($8069)
 0EE2: CD B1 0C    call carry_returning_0cb1
 0EE5: 30 2F       jr   nc,$0F16
@@ -2033,18 +2036,20 @@ compute_hl_0e7f:
 0EF5: 2A 49 80    ld   hl,($8049)
 0EF8: CD B1 0C    call carry_returning_0cb1
 0EFB: 30 19       jr   nc,$0F16
-0EFD: 2A 69 80    ld   hl,($8069)    ; [uncovered] 
+
+0EFD: 2A 69 80    ld   hl,($8069)
 0F00: A7          and  a
-0F01: CC 11 1E    call z,$1E11
+0F01: CC 11 1E    call z,negate_hl_1e11
 0F04: CD B1 0C    call carry_returning_0cb1
 0F07: 30 0D       jr   nc,$0F16
-0F09: CD 11 1E    call $1E11
+0F09: CD 11 1E    call negate_hl_1e11
 0F0C: CD B1 0C    call carry_returning_0cb1
 0F0F: 30 05       jr   nc,$0F16
-0F11: A7          and  a    ; [uncovered] 
-0F12: CC 11 1E    call z,$1E11    ; [uncovered] 
-0F15: 2F          cpl    ; [uncovered] 
-0F16: 32 6B 80    ld   ($806B),a
+; reached when all ways are blocked: U-turn (rare parts of maze)
+0F11: A7          and  a
+0F12: CC 11 1E    call z,negate_hl_1e11
+0F15: 2F          cpl
+0F16: 32 6B 80    ld   (car_orientation_806b),a
 0F19: 22 69 80    ld   ($8069),hl
 0F1C: EB          ex   de,hl
 0F1D: 2A 2D 80    ld   hl,($802D)
@@ -2052,17 +2057,17 @@ compute_hl_0e7f:
 0F21: 7A          ld   a,d
 0F22: AC          xor  h
 0F23: CB 7F       bit  7,a
-0F25: C4 11 1E    call nz,$1E11
+0F25: C4 11 1E    call nz,negate_hl_1e11
 0F28: F1          pop  af
 0F29: 22 2D 80    ld   ($802D),hl
-0F2C: FB          ei
+0F2C: FB          ei			; enable interrupts again
 0F2D: 21 80 00    ld   hl,$0080
 0F30: A7          and  a
 0F31: CA 78 0F    jp   z,$0F78
-0F34: CB 68       bit  5,b
-0F36: CA B0 0F    jp   z,$0FB0
-0F39: CB 60       bit  4,b
-0F3B: CA BA 0F    jp   z,$0FBA
+0F34: CB 68       bit  5,b			; test up
+0F36: CA B0 0F    jp   z,up_command_0fb0
+0F39: CB 60       bit  4,b			; test down
+0F3B: CA BA 0F    jp   z,down_command_0fba
 0F3E: 3A 6F 80    ld   a,($806F)
 0F41: A7          and  a
 0F42: CA 99 0F    jp   z,$0F99
@@ -2111,7 +2116,7 @@ compute_hl_0e7f:
 
 0F99: 21 00 00    ld   hl,$0000
 0F9C: 22 5A 80    ld   ($805A),hl
-0F9F: 3A 20 80    ld   a,($8020)
+0F9F: 3A 20 80    ld   a,(control_flags_8020)
 0FA2: A7          and  a
 0FA3: CC C5 1B    call z,$1BC5
 0FA6: 3A 22 80    ld   a,($8022)
@@ -2119,11 +2124,13 @@ compute_hl_0e7f:
 0FAA: 32 22 80    ld   ($8022),a
 0FAD: C3 7A 0A    jp   $0A7A
 
+up_command_0fb0:
 0FB0: 3A 6F 80    ld   a,($806F)
 0FB3: FE 03       cp   $03
 0FB5: FA 9C 0F    jp   m,$0F9C
 0FB8: 18 DF       jr   $0F99
 
+down_command_0fba:
 0FBA: 3A 6F 80    ld   a,($806F)
 0FBD: FE FE       cp   $FE
 0FBF: F2 94 0F    jp   p,$0F94
@@ -2152,16 +2159,18 @@ carry_returning_0fd8:
 0FE9: 37          scf		; set carry
 0FEA: C9          ret
 
+* < H
 0FEB: 3E 00       ld   a,$00
 0FED: CB 7C       bit  7,h
 0FEF: CA B1 0C    jp   z,carry_returning_0cb1
-0FF2: CD 11 1E    call $1E11
+0FF2: CD 11 1E    call negate_hl_1e11
 0FF5: C3 B1 0C    jp   carry_returning_0cb1
 
+* < H
 0FF8: 3E 00       ld   a,$00
 0FFA: CB 7C       bit  7,h
 0FFC: C2 B1 0C    jp   nz,carry_returning_0cb1
-0FFF: CD 11 1E    call $1E11
+0FFF: CD 11 1E    call negate_hl_1e11
 1002: C3 B1 0C    jp   carry_returning_0cb1
 
 1005: 3E FF       ld   a,$FF
@@ -2408,7 +2417,7 @@ write_maze_rows_1162:
 11CF: 0E 01       ld   c,$01
 11D1: 06 0A       ld   b,$0A
 11D3: DD 2A 92 89 ld   ix,($8992)
-11D7: 3A 20 80    ld   a,($8020)
+11D7: 3A 20 80    ld   a,(control_flags_8020)
 11DA: A7          and  a
 11DB: 20 05       jr   nz,$11E2
 11DD: 3E 34       ld   a,$34    ; [uncovered] 
@@ -2473,7 +2482,7 @@ write_maze_rows_1162:
 124A: DD 23       inc  ix
 124C: DD 23       inc  ix
 124E: 10 92       djnz $11E2
-1250: 3A 20 80    ld   a,($8020)
+1250: 3A 20 80    ld   a,(control_flags_8020)
 1253: A7          and  a
 1254: C0          ret  nz
 1255: 3E 28       ld   a,$28    ; [uncovered] 
@@ -2602,7 +2611,7 @@ carry_returning_12f2:
 1304: 87          add  a,a
 1305: 87          add  a,a
 1306: 87          add  a,a
-1307: 87          add  a,a
+1307: 87          add  a,a		; times 16
 1308: CB 13       rl   e
 130A: 87          add  a,a
 130B: CB 13       rl   e
@@ -2959,7 +2968,7 @@ write_maze_row_131e:
 1535: 3A 21 80    ld   a,($8021)
 1538: A7          and  a
 1539: 28 09       jr   z,$1544
-153B: 3A 20 80    ld   a,($8020)
+153B: 3A 20 80    ld   a,(control_flags_8020)
 153E: FE 01       cp   $01
 1540: CC D2 1E    call z,display_credits_1ed2
 1543: C9          ret
@@ -3172,7 +3181,7 @@ write_maze_row_131e:
 16D2: C9          ret
 
 16D3: 3E 03       ld   a,$03
-16D5: 32 20 80    ld   ($8020),a
+16D5: 32 20 80    ld   (control_flags_8020),a
 16D8: 3E EC       ld   a,$EC
 16DA: 32 14 80    ld   ($8014),a
 16DD: 21 F4 89    ld   hl,$89F4
@@ -3430,7 +3439,7 @@ write_maze_row_131e:
 189B: FE 0A       cp   $0A
 189D: 20 05       jr   nz,$18A4
 189F: 3E 03       ld   a,$03
-18A1: 32 20 80    ld   ($8020),a
+18A1: 32 20 80    ld   (control_flags_8020),a
 18A4: 3A 50 82    ld   a,($8250)
 18A7: 47          ld   b,a
 18A8: 3A 23 80    ld   a,($8023)
@@ -3464,7 +3473,7 @@ write_maze_row_131e:
 18E2: 3E EC       ld   a,$EC
 18E4: 32 14 80    ld   ($8014),a
 18E7: 3E 03       ld   a,$03
-18E9: 32 20 80    ld   ($8020),a
+18E9: 32 20 80    ld   (control_flags_8020),a
 18EC: 32 4B 82    ld   ($824B),a
 18EF: 3A 4B 82    ld   a,($824B)
 18F2: E6 3F       and  $3F
@@ -3568,7 +3577,7 @@ move_wrap_pointer_1988:
 1995: C9          ret
 
 1996: 3E 03       ld   a,$03
-1998: 32 20 80    ld   ($8020),a
+1998: 32 20 80    ld   (control_flags_8020),a
 199B: 3E EC       ld   a,$EC
 199D: 32 14 80    ld   ($8014),a
 19A0: 21 F4 89    ld   hl,$89F4
@@ -3772,6 +3781,8 @@ rle_unpack_to_screen_1b15:
 1B8C: E1          pop  hl
 1B8D: C9          ret
 
+* < returns B (current demo controls)
+read_demo_controls_1b8e:
 1B8E: D9          exx
 1B8F: 06 FF       ld   b,$FF
 1B91: FD 21 88 80 ld   iy,enemy_car_structs_8088
@@ -4010,7 +4021,7 @@ copy_status_row_1c4e:
 1D2A: C3 CE 1C    jp   $1CCE
 
 1D2D: DD 2A 8E 89 ld   ix,($898E)
-1D31: 3A 20 80    ld   a,($8020)
+1D31: 3A 20 80    ld   a,(control_flags_8020)
 1D34: A7          and  a
 1D35: C8          ret  z
 1D36: 06 0A       ld   b,$0A
@@ -4040,7 +4051,7 @@ copy_status_row_1c4e:
 1D6A: 28 DD       jr   z,$1D49
 1D6C: C3 53 1D    jp   $1D53
 
-1D6F: 3A 20 80    ld   a,($8020)
+1D6F: 3A 20 80    ld   a,(control_flags_8020)
 1D72: A7          and  a
 1D73: C8          ret  z
 1D74: 3A D0 82    ld   a,($82D0)
@@ -4111,7 +4122,7 @@ clear_screen_and_reset_scroll_1dcb:
 1DF4: C9          ret
 
 1DF5: 2A 90 89    ld   hl,($8990)
-1DF8: 3A 20 80    ld   a,($8020)
+1DF8: 3A 20 80    ld   a,(control_flags_8020)
 1DFB: A7          and  a
 1DFC: C8          ret  z
 1DFD: 23          inc  hl
@@ -4129,6 +4140,9 @@ clear_screen_and_reset_scroll_1dcb:
 1E0D: CB 9D       res  3,l
 1E0F: 18 EE       jr   $1DFF
 
+* HL => -HL
+* < HL
+negate_hl_1e11:
 1E11: F5          push af
 1E12: 7C          ld   a,h
 1E13: 2F          cpl
@@ -4146,7 +4160,7 @@ write_instructions_text_1e1b:
 1E1F: 3E 03       ld   a,$03
 1E21: 32 48 80    ld   ($8048),a
 1E24: 32 81 A1    ld   ($A181),a
-1E27: 32 6B 80    ld   ($806B),a
+1E27: 32 6B 80    ld   (car_orientation_806b),a
 1E2A: EB          ex   de,hl
 1E2B: 21 00 04    ld   hl,$0400
 1E2E: 22 69 80    ld   ($8069),hl
@@ -4154,7 +4168,7 @@ write_instructions_text_1e1b:
 1E34: AF          xor  a
 1E35: 67          ld   h,a
 1E36: 22 5A 80    ld   ($805A),hl
-1E39: 32 20 80    ld   ($8020),a
+1E39: 32 20 80    ld   (control_flags_8020),a
 1E3C: 32 4E 82    ld   (nb_enemy_cars_824e),a
 1E3F: DD 21 68 80 ld   ix,player_car_structure_8068
 1E43: D5          push de
@@ -4686,7 +4700,7 @@ display_credits_1ed2:
 27C8: 3A 6A 80    ld   a,($806A)
 27CB: CB 7F       bit  7,a
 27CD: 28 0E       jr   z,$27DD
-27CF: 3A 6B 80    ld   a,($806B)
+27CF: 3A 6B 80    ld   a,(car_orientation_806b)
 27D2: FE 00       cp   $00
 27D4: 28 03       jr   z,$27D9
 27D6: AF          xor  a
@@ -4695,7 +4709,7 @@ display_credits_1ed2:
 27D9: 3E 01       ld   a,$01
 27DB: 18 0D       jr   $27EA
 
-27DD: 3A 6B 80    ld   a,($806B)
+27DD: 3A 6B 80    ld   a,(car_orientation_806b)
 27E0: FE 00       cp   $00
 27E2: 28 04       jr   z,$27E8
 27E4: 3E 02       ld   a,$02

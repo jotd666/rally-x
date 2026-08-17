@@ -349,6 +349,7 @@
 	move.w	d7,(sp)         | F' <= F
 	POP_SR                        | pop ccr
 	.endm
+	
 	.macro GET_REG_ADDRESS	offset,reg,dest
 	.ifeq	\offset
 	move.l	\reg,\dest
