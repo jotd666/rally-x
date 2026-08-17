@@ -339,7 +339,7 @@ _user:
 	move.l	a0,playfield_drawn_screen_ptr
 	move.l	a0,playfield_displayed_screen_ptr
 
-	lea		bg_screen_buffer,a0
+	lea		status_screen_buffer,a0
 	move.l	a0,status_screen_ptr
 	* fill right part with black color (color #1)
 	move.w	#NB_STATUS_LINES-1,d0
@@ -2127,7 +2127,6 @@ load_palette:
 * allows 8040-8FFF range
 
 osd_video_byte_dirty:
-	
 	movem.l	d0-d7/a0-a2,-(a7)
 	move.b	(a0),d0		| read written value again
 	move.l	a0,d7		| save address
@@ -2356,7 +2355,7 @@ update_main_tile:
 	.set	offset,0
 	.rept	8
 	clr.b	(offset,a1)
-	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
+	.set	offset,offset+NB_BYTES_PER_STATUS_ROW
 	.endr	
 	.endm
 	
@@ -2484,7 +2483,7 @@ update_status_tile:
 	move.b	d1,d3	| attribute
 	* flip X/Y = bits 6 and 7 (to clarify)
 
-	bsr		compute_status_tile_xy
+	jbsr		compute_status_tile_xy
 	
 
 	
@@ -2531,17 +2530,21 @@ update_status_tile:
 	rol.b	#2,d1			        | modifiers on first bits
 	and.w	#3,d1
 	
-
-	add.w	d1,d1
-	add.w	d1,d1
 	lea		status_mirror_jump_table(pc),a4
+	.ifdef	NO68020
+	add.w	d1,d1
+	add.w	d1,d1
 	move.l	(a4,d1.w),a4
 0:
 	BTST	#6,(_custom+dmaconr)
 	BNE.S	0b
 	jmp		(a4)
-	
-
+	.else
+0:
+	BTST	#6,(_custom+dmaconr)
+	BNE.S	0b
+	jmp		[(a4,d1.w*4)]
+	.endif
 	
 
 status_standard_tile:
@@ -2564,7 +2567,7 @@ status_standard_tile:
 0:
 	rts
 5:
-	CLEAR_MAIN_TILE_PLANE
+	CLEAR_STATUS_TILE_PLANE
 	jra		41b
 
 status_flipped_tile:	
@@ -2838,6 +2841,7 @@ update_controls:
 	lea		keyboard_table(pc),a0
 	tst.b	(1,a0)		| "1" key like in MAME
 	beq.b	0f
+	clr.b	(1,a0)
 	bclr	#BIT_START_1P,d0
 0:
 
@@ -3797,7 +3801,7 @@ pal_wait:
 		.section .bsschip
 		
 
-bg_screen_buffer:
+status_screen_buffer:
 	.skip	STATUS_SCREEN_SIZE
 	.skip	8
 	.skip	8	

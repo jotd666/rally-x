@@ -1,11 +1,11 @@
-R address: 0013CAA5 overwritten by status at 1C5E
-
+- controls buggy at times: check carry/x flags when reading controls
+  (demo is ok!!)
+- reduce display window
+- status: try to save memory by using narrow screen and negative modulus
 - invincibility/infinite fuel
-- 8380: last line "ROUND xxx" , 83A0: not displayed. 26 rows max
-  plus tile corruption there and there memwatch tile memory at some locations
 - car bounces even when no visible boundary. Also car enters in green parts
 - at 0832 write in 0 check with MAME
-- game restarts automatically need to reset "1" ???
+- game restarts automatically need to reset "1" ??? nope!!
 - engine sfx: make frequency vary
 
 missing sprites?
