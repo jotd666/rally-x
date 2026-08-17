@@ -77,7 +77,7 @@ OPT_ENABLE_MULTIPLEXED_SPRITES = 0
 
 NB_PLAYFIELD_PLANES = 4
 TOTAL_NB_COLORS = 1<<NB_PLAYFIELD_PLANES
-NB_BYTES_PER_MAIN_ROW = 80
+NB_BYTES_PER_MAIN_ROW = 64
 
 NB_STATUS_LINES = 256
 NB_BYTES_PER_STATUS_ROW = 40
@@ -336,7 +336,7 @@ _user:
 	lea		bobs_screen_buffer_1,a0
 	addq	#2,a0	| leave 16 bits hidden for left side clipping
 	move.l	a0,playfield_screen_data_1
-	move.l	a0,playfield_drawed_screen_ptr
+	move.l	a0,playfield_drawn_screen_ptr
 	move.l	a0,playfield_displayed_screen_ptr
 
 	lea		bg_screen_buffer,a0
@@ -1276,17 +1276,24 @@ position_hardware_sprites:
 	* we have the pointer on the secondary table which has a copy of 6 simultaneous sprites
 	move.l	d4,a5
 	move.w	d6,d4
+	.ifndef	NO68020
+	move.l	(a5,d4.w*4),a5
+	.else
 	add.w	d4,d4
 	add.w	d4,d4
-	move.w	d2,d3
 	move.l	(a5,d4.W),a5			| get buffer for this sprite index
-
+	.endif
+	
  	* add orientation
 	and.w	#3,d2
 	jeq	0f
+	.ifndef	NO68020
+	lea		(a5,d2.w*4),a5
+	.else
 	add.w	d2,d2
 	add.w	d2,d2
 	add.w	d2,a5
+	.endif
 0:
 
 	
@@ -1454,7 +1461,7 @@ update_one_bob:
 	add.w	(a0)+,d1		| add offset to Y
 	* A0 points on the first bitplane of the bob
 
-	move.l		playfield_drawed_screen_ptr(pc),a1
+	move.l		playfield_drawn_screen_ptr(pc),a1
 	
 	* D0 and D1 are already set
 	move.l	(NB_PLAYFIELD_PLANES*4,a0),d2
@@ -1850,7 +1857,7 @@ switch_screen_buffers:
 	* let's switch screen buffers, background (chars)
 	* toggle fg planes (double buffering)
 	* also toggle previous sprite positions
-	lea		playfield_drawed_screen_ptr(pc),a0
+	lea		playfield_drawn_screen_ptr(pc),a0
 	lea		bob_previous_positions_1(pc),a2
 	lea		bob_previous_positions_2(pc),a3
 	move.l	playfield_screen_data_1,a1
@@ -2016,7 +2023,7 @@ platform_init:
     move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
     move.w #BASE_BPLCON4_VALUE,bplcon4(a5)
  	*         VVHH
-    move.w #0x3479,d0
+    move.w #0x3489,d0
     move.w #0x24A0,d1
 	cmp.l	#NTSC_MONITOR_ID,monitor
 	jne		0f
@@ -2237,7 +2244,6 @@ compute_tile_xy:
 * < D1: tile attribute
 
 update_main_tile:
-	move.b	#0,0x110
 
 	moveq	#0,d2
 	moveq	#0,d3
@@ -2245,14 +2251,17 @@ update_main_tile:
 	move.b	d1,d3	| attribute
 	* flip X/Y = bits 6 and 7 (to clarify)
 
-	bsr		compute_tile_xy
+	jbsr		compute_tile_xy
 	
-
+	cmp.b	#0x52,d2
+	jne		0f
+	move.b	#0,0x110
+0:
 	
 	* updating bitplanes
 	move.l	#MAIN_SCREEN_PLANE_SIZE,d5
 	move.w	#NB_PLAYFIELD_PLANES-1,d4
-	move.l	playfield_drawed_screen_ptr,a1
+	move.l	playfield_drawn_screen_ptr,a1
 
 	lea		mulNB_BYTES_PER_MAIN_ROW_table,A2
 	add.w	d1,d1
@@ -2289,9 +2298,13 @@ update_main_tile:
 12:
 	.endif
 	move.l	d0,a2
+	.ifdef	NO68020
 	add.w	d3,d3
 	add.w	d3,d3
 	move.l	(a2,d3.w),d0			| pointer on tile bitplanes for that CLUT
+	.else
+	move.l	(a2,d3.w*4),d0
+	.endif
 	jeq		11f						| not necessarily a problem
 
 	move.l	d0,a2					| pointer on bitplanes
@@ -2299,10 +2312,14 @@ update_main_tile:
 	and.w	#3,d1
 	
 
-	add.w	d1,d1
-	add.w	d1,d1
 	lea		main_mirror_jump_table(pc),a4
+	.ifdef	NO68020
+	add.w	d1,d1
+	add.w	d1,d1
 	move.l	(a4,d1.w),a4
+	.else
+	move.l	(a4.d1.w*4),a4
+	.endif
 0:
 	BTST	#6,(_custom+dmaconr)
 	BNE.S	0b
@@ -2461,7 +2478,6 @@ main_mirror_flipped_tile:
 * < D1: tile attribute
 
 update_status_tile:
-	move.b	#1,0x110
 	moveq	#0,d2
 	moveq	#0,d3
 	move.b	d0,d2	| code
@@ -3590,7 +3606,7 @@ playfield_screen_data_2:
 	
 status_screen_ptr:
 	.long	0
-playfield_drawed_screen_ptr:
+playfield_drawn_screen_ptr:
 	.long	0
 playfield_displayed_screen_ptr:
 	.long	0

@@ -5,8 +5,15 @@
 
 ;CHIP_ONLY
 
-EXPMEM = $800000
+CHIP_BASE = $200
+
+	IFD	CHIP_ONLY
+EXPMEM = 0
+CHIPSIZE = $180000
+	ELSE
+EXPMEM = $80000
 CHIPSIZE = $80000
+	ENDC
 
 _base	SLAVE_HEADER					; ws_security + ws_id
 	dc.w	17					; ws_version (was 10)
@@ -44,11 +51,8 @@ _config
 	dc.b	"C1:X:cheat keys:4;"
 	dc.b	"C2:X:fast game:0;"
 	dc.b	"C2:X:start with 5 lives:1;"
-;	dc.b	"C2:X:leave gate bug:2;"	; not interesting, cassette version doesn't have it
 ;	dc.b	"C3:X:25 Hz update:0;"
-	IFD		CHIP_ONLY
-	dc.b	"C3:X:break at startup:31;"
-	ENDC
+
 	dc.b	0
 
 	IFD BARFLY
@@ -56,7 +60,7 @@ _config
 	ENDC
 
 DECL_VERSION:MACRO
-	dc.b	"1.1"
+	dc.b	"1.0"
 	IFD BARFLY
 		dc.b	" "
 		INCBIN	"T:date"
@@ -114,7 +118,7 @@ _Relocate	movem.l	d0-d1/a0-a2,-(sp)
 ;        pea     -1                      ;true
 ;        pea     WHDLTAG_LOADSEG
 		IFND		CHIP_ONLY
-        move.l  #$400,-(a7)       ;chip area
+        move.l  #CHIP_BASE,-(a7)       ;chip area
         pea     WHDLTAG_CHIPPTR        
         pea     8                       ;8 byte alignment
         pea     WHDLTAG_ALIGN

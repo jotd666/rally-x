@@ -123,6 +123,8 @@ sound_a110 = $a110
 sound_a116 = $a116
 pointer_on_port_a0x0_899e = $899e
 player_car_structure_8068 = $8068
+p1_lives_800f = $800f
+kill_flag_824c = $824c
 
 0000: C3 00 38    jp   boot_3800
 
@@ -551,7 +553,7 @@ irq_01f0:		; [global]
 036D: 06 05       ld   b,$05
 036F: DD 21 68 80 ld   ix,player_car_structure_8068
 0373: FD 21 04 80 ld   iy,$8004
-0377: 21 4C 82    ld   hl,$824C
+0377: 21 4C 82    ld   hl,kill_flag_824c
 037A: 7E          ld   a,(hl)
 037B: 35          dec  (hl)
 037C: FE 32       cp   $32
@@ -847,7 +849,7 @@ irq_01f0:		; [global]
 05C8: CD 1B 1E    call write_instructions_text_1e1b
 05CB: CD 1B 1E    call write_instructions_text_1e1b
 05CE: 3E 01       ld   a,$01
-05D0: 32 0F 80    ld   ($800F),a
+05D0: 32 0F 80    ld   (p1_lives_800f),a
 05D3: 32 20 80    ld   ($8020),a
 05D6: 32 4B 82    ld   ($824B),a
 05D9: 32 81 A1    ld   ($A181),a
@@ -1367,7 +1369,7 @@ clear_sprites_074c:
 0A52: 3A 21 80    ld   a,($8021)
 0A55: 32 20 80    ld   ($8020),a
 0A58: 3E 3C       ld   a,$3C
-0A5A: 32 4C 82    ld   ($824C),a
+0A5A: 32 4C 82    ld   (kill_flag_824c),a
 0A5D: 3E 01       ld   a,$01
 0A5F: 32 81 A1    ld   ($A181),a
 0A62: 21 F4 89    ld   hl,$89F4
@@ -3045,7 +3047,7 @@ write_maze_row_131e:
 15C4: 23          inc  hl
 15C5: CA AF 17    jp   z,$17AF
 15C8: 10 F3       djnz $15BD
-15CA: 3A 4C 82    ld   a,($824C)
+15CA: 3A 4C 82    ld   a,(kill_flag_824c)
 15CD: A7          and  a
 15CE: C2 73 16    jp   nz,$1673
 15D1: 1A          ld   a,(de)
