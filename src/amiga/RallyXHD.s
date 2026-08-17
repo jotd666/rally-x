@@ -47,6 +47,8 @@ _config
 	dc.b	"C1:X:infinite fuel:2;"
 
 	dc.b	"C1:X:cheat keys:4;"
+	dc.b	"C4:L:start level:1,2,3 (c1),4,5,6,7 (c2),8,9,10,11 (c3),"
+	dc.b	"12,13,14,15 (c4),16,17,18,19,20;"
 ;	dc.b	"C3:X:25 Hz update:0;"
 
 	dc.b	0

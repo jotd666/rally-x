@@ -73,8 +73,7 @@ infinite_lives_flag:
 	.byte	0
 infinite_fuel_flag:
 	.byte	0
-music_off_flag:
-	.byte 	0
+
 
 	.ifndef	RELEASE
 log_ptr:

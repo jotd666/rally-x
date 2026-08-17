@@ -128,6 +128,9 @@ kill_flag_824c = $824c
 ; during game: 0 vertical (up or down), $FF horizontal
 car_orientation_806b = $806b
 control_flags_8020 = $8020
+smoke_release_countdown_8291 = $8291
+player_1_current_level_plus_1_81b0 = $81b0
+player_2_current_level_plus_1_81b1 = $81b1
 
 0000: C3 00 38    jp   boot_3800
 
@@ -319,7 +322,7 @@ irq_0030:
 01AB: C5          push bc
 01AC: CD 7F 0E    call compute_hl_0e7f
 01AF: C1          pop  bc
-01B0: 7E          ld   a,(hl)
+01B0: 7E          ld   a,(hl)		; [unchecked_address]
 01B1: D6 BD       sub  $BD
 01B3: 28 14       jr   z,$01C9
 01B5: FE 09       cp   $09
@@ -921,7 +924,7 @@ irq_01f0:		; [global]
 0677: E6 1F       and  $1F
 0679: 20 F9       jr   nz,$0674
 067B: 3E 01       ld   a,$01
-067D: 32 B0 81    ld   ($81B0),a
+067D: 32 B0 81    ld   (player_1_current_level_plus_1_81b0),a
 0680: 21 3F E0    ld   hl,$E03F
 0683: 22 F2 82    ld   ($82F2),hl
 0686: 21 AB 81    ld   hl,$81AB
@@ -952,8 +955,9 @@ irq_01f0:		; [global]
 06B4: 32 20 80    ld   (control_flags_8020),a
 06B7: 32 81 A1    ld   ($A181),a
 06BA: FB          ei
-06BB: 32 B0 81    ld   ($81B0),a
-06BE: 32 B1 81    ld   ($81B1),a
+; set 1 to current level
+06BB: 32 B0 81    ld   (player_1_current_level_plus_1_81b0),a
+06BE: 32 B1 81    ld   (player_2_current_level_plus_1_81b1),a
 06C1: 21 0E 80    ld   hl,$800E
 06C4: 7E          ld   a,(hl)
 06C5: 23          inc  hl
@@ -1065,7 +1069,7 @@ clear_sprites_074c:
 07B8: 3E 01       ld   a,$01
 07BA: 32 B7 81    ld   ($81B7),a
 07BD: 2A 8A 89    ld   hl,($898A)
-07C0: 34          inc  (hl)
+07C0: 34          inc  (hl)			; increase level number
 07C1: AF          xor  a
 07C2: 2A 8C 89    ld   hl,($898C)
 07C5: 77          ld   (hl),a
@@ -1174,7 +1178,7 @@ clear_sprites_074c:
 0891: FE 0A       cp   $0A
 0893: 38 05       jr   c,$089A
 ; round >= 10
-0895: 04          inc  b
+0895: 04          inc  b		; round tens
 0896: D6 0A       sub  $0A
 0898: 18 F7       jr   $0891
 
@@ -1848,6 +1852,7 @@ increase_and_wrap_d5w_0d69:
 0DB3: D5          push de
 0DB4: C5          push bc
 ; read controls here during game (during demo it reads at 0!)
+; fire (smoke) is read there, directions are read later on
 0DB5: 2A 9E 89    ld   hl,(pointer_on_port_a0x0_899e)
 0DB8: 7E          ld   a,(hl)		; reads p1_a000
 0DB9: 21 90 82    ld   hl,$8290
@@ -1856,34 +1861,37 @@ increase_and_wrap_d5w_0d69:
 0DBE: CB 16       rl   (hl)		; when fire is pressed, this turns to $FE
 0DC0: 7E          ld   a,(hl)
 0DC1: E6 0F       and  $0F
-0DC3: FE 0C       cp   $0C
-0DC5: 23          inc  hl
-0DC6: 20 2C       jr   nz,$0DF4
+0DC3: FE 0C       cp   $0C		; long press (2 cycles)
+0DC5: 23          inc  hl		; 8291, smoke countdown (3,2,1,0)
+0DC6: 20 2C       jr   nz,smoke_release_end_0df4
+; release smoke 
 0DC8: 7E          ld   a,(hl)
 0DC9: A7          and  a
-0DCA: 20 28       jr   nz,$0DF4
+0DCA: 20 28       jr   nz,smoke_release_end_0df4	; skip if non null: already releasing
 0DCC: ED 5B 8A 89 ld   de,($898A)
 0DD0: 1A          ld   a,(de)
 0DD1: E6 03       and  $03
-0DD3: 28 1F       jr   z,$0DF4
+0DD3: 28 1F       jr   z,smoke_release_end_0df4
 0DD5: 3A 21 80    ld   a,($8021)
 0DD8: A7          and  a
-0DD9: 28 19       jr   z,$0DF4
+0DD9: 28 19       jr   z,smoke_release_end_0df4
 0DDB: ED 5B 8E 89 ld   de,($898E)
 0DDF: 13          inc  de
 0DE0: 1A          ld   a,(de)
 0DE1: A7          and  a
-0DE2: 28 10       jr   z,$0DF4
+0DE2: 28 10       jr   z,smoke_release_end_0df4
 0DE4: 06 03       ld   b,$03
 0DE6: 3D          dec  a
-0DE7: 28 0B       jr   z,$0DF4
+0DE7: 28 0B       jr   z,smoke_release_end_0df4
 0DE9: FE 0A       cp   $0A
 0DEB: CC AA 0D    call z,$0DAA
 0DEE: 10 F6       djnz $0DE6
 0DF0: 12          ld   (de),a
+; 3 more smoke clouds
 0DF1: 34          inc  (hl)
 0DF2: 34          inc  (hl)
 0DF3: 34          inc  (hl)
+smoke_release_end_0df4:
 0DF4: 7E          ld   a,(hl)
 0DF5: A7          and  a
 0DF6: 28 61       jr   z,$0E59
@@ -1913,18 +1921,18 @@ increase_and_wrap_d5w_0d69:
 0E28: 54          ld   d,h
 0E29: 5D          ld   e,l
 0E2A: CB DC       set  3,h
-0E2C: CB 7E       bit  7,(hl)		; [video_address]
+0E2C: CB 7E       bit  7,(hl)		; [unchecked_address]
 0E2E: 28 29       jr   z,$0E59
 0E30: 1A          ld   a,(de)		; [video_address]
 0E31: FE 81       cp   $81
 0E33: 20 24       jr   nz,$0E59
-0E35: CB BE       res  7,(hl)		; [video_address]
+0E35: CB BE       res  7,(hl)		; [unchecked_address]
 0E37: 06 03       ld   b,$03
 0E39: 3E BD       ld   a,$BD
 0E3B: 0E 03       ld   c,$03
 0E3D: E5          push hl
 0E3E: D5          push de
-0E3F: 12          ld   (de),a
+0E3F: 12          ld   (de),a			; [video_address]
 0E40: 3C          inc  a
 0E41: 36 45       ld   (hl),$45			; [video_address]
 0E43: CD 5D 0E    call advance_hl_and_de_0e5d
@@ -1934,8 +1942,8 @@ increase_and_wrap_d5w_0d69:
 0E4A: E1          pop  hl
 0E4B: CD 6C 0E    call advance_hl_and_de_0e6c
 0E4E: 10 EB       djnz $0E3B
-0E50: 21 91 82    ld   hl,$8291
-0E53: 35          dec  (hl)			; [video_address]
+0E50: 21 91 82    ld   hl,smoke_release_countdown_8291
+0E53: 35          dec  (hl)			; [unchecked_address]
 0E54: 21 F4 89    ld   hl,$89F4
 0E57: CB E6       set  4,(hl)		; [video_address]
 0E59: C1          pop  bc
@@ -3450,10 +3458,10 @@ write_maze_row_131e:
 18AB: A7          and  a
 18AC: 28 02       jr   z,$18B0
 18AE: CB 20       sla  b
-18B0: 0E 0A       ld   c,$0A
+18B0: 0E 0A       ld   c,$0A	; add 10x10 points
 18B2: C5          push bc
 18B3: CD 6F 1D    call $1D6F
-18B6: CD F5 1D    call $1DF5
+18B6: CD F5 1D    call add_10_points_1df5
 18B9: C1          pop  bc
 18BA: 0D          dec  c
 18BB: 20 F5       jr   nz,$18B2
@@ -3679,10 +3687,10 @@ move_wrap_pointer_1988:
 1A8E: CB 46       bit  0,(hl)
 1A90: 20 46       jr   nz,$1AD8
 1A92: 11 60 88    ld   de,$8860
-1A95: 1A          ld   a,(de)
+1A95: 1A          ld   a,(de)		; [unchecked_address]
 1A96: EE 1F       xor  $1F
 1A98: 06 08       ld   b,$08
-1A9A: 12          ld   (de),a
+1A9A: 12          ld   (de),a		; [unchecked_address]
 1A9B: 13          inc  de
 1A9C: 10 FC       djnz $1A9A
 1A9E: E5          push hl
@@ -3708,7 +3716,7 @@ move_wrap_pointer_1988:
 1AC5: 18 08       jr   $1ACF
 1AC7: 06 09       ld   b,$09
 1AC9: 3E 40       ld   a,$40
-1ACB: 12          ld   (de),a
+1ACB: 12          ld   (de),a		; [unchecked_address]
 1ACC: 13          inc  de
 1ACD: 10 FC       djnz $1ACB
 1ACF: CD E0 04    call $04E0
@@ -3735,7 +3743,7 @@ move_wrap_pointer_1988:
 1AFC: 06 08       ld   b,$08
 1AFE: 7E          ld   a,(hl)
 1AFF: EE 15       xor  $15
-1B01: 77          ld   (hl),a
+1B01: 77          ld   (hl),a		; [video_address]
 1B02: 23          inc  hl
 1B03: 10 FC       djnz $1B01
 1B05: C9          ret
@@ -3780,7 +3788,7 @@ rle_unpack_to_screen_1b15:
 1B85: C9          ret
 
 1B86: E5          push hl
-1B87: 21 91 82    ld   hl,$8291
+1B87: 21 91 82    ld   hl,smoke_release_countdown_8291
 1B8A: 36 03       ld   (hl),$03
 1B8C: E1          pop  hl
 1B8D: C9          ret
@@ -4046,7 +4054,7 @@ copy_status_row_1c4e:
 1D59: C8          ret  z
 1D5A: C5          push bc
 1D5B: CD B2 1C    call $1CB2
-1D5E: CD F5 1D    call $1DF5
+1D5E: CD F5 1D    call add_10_points_1df5
 1D61: CD 6F 1D    call $1D6F
 1D64: C1          pop  bc
 1D65: 05          dec  b
@@ -4064,7 +4072,7 @@ copy_status_row_1c4e:
 1D7D: 01 08 00    ld   bc,$0008
 1D80: FE 01       cp   $01
 1D82: 20 04       jr   nz,$1D88
-1D84: ED B0       ldir
+1D84: ED B0       ldir			; [video_address]
 1D86: 18 12       jr   $1D9A
 
 1D88: 1A          ld   a,(de)		; [video_address]
@@ -4125,20 +4133,26 @@ clear_screen_and_reset_scroll_1dcb:
 1DF2: 10 FC       djnz $1DF0
 1DF4: C9          ret
 
+; add 10 points with carry propagation
+; BCD emulation
+add_10_points_1df5:
 1DF5: 2A 90 89    ld   hl,($8990)
 1DF8: 3A 20 80    ld   a,(control_flags_8020)
 1DFB: A7          and  a
 1DFC: C8          ret  z
+; not demo mode: update score 10 points per 10 points
 1DFD: 23          inc  hl
 1DFE: 23          inc  hl
-1DFF: 7E          ld   a,(hl)		; [video_address]
+1DFF: 7E          ld   a,(hl)		; [unchecked_address] digit
 1E00: 3C          inc  a
 1E01: E6 0F       and  $0F
 1E03: 77          ld   (hl),a		; [video_address]
 1E04: FE 0A       cp   $0A
 1E06: D8          ret  c
+; 9->A: fix this!
 1E07: D6 0A       sub  $0A
 1E09: 77          ld   (hl),a		; [video_address]
+; and add 1 to higher digit
 1E0A: CB DD       set  3,l
 1E0C: 2D          dec  l
 1E0D: CB 9D       res  3,l

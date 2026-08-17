@@ -412,7 +412,8 @@ _user:
 	*move.b	difficulty_level+3,d0
 	*and.b	#3,d0
 	
-
+	move.l	start_level_option,d0
+	move.b	d0,start_level
 	
 	move.l	misc_options,d1
 	btst	#0,d1
@@ -670,6 +671,9 @@ demo_game:
 	
 	* copy ROM at the start. Memory is one big block now
 	lea	rom_base,a0
+	lea		(0x1FE0,a0),a1
+	move.l	#0x414C4C45,(a1)+
+	move.l	#0x4E474540,(a1)+
 	move.l	a6,a1
 	move.w	#0xFFF,d0
 0:
@@ -867,6 +871,7 @@ log_used_tiles:
 	add.w	d1,d0			| add clut
 	st.b	(a0,d0.w)
 	dbf		d7,0b
+	
 	* status screen
 	GET_MEMORY_BLOCKS_IN_A5_A6
 	add.w	#0x40,a5		| starts at 8040
@@ -2043,7 +2048,7 @@ platform_init:
     move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
     move.w #BASE_BPLCON4_VALUE,bplcon4(a5)
  	*         VVHH
-    move.w #0x3489,d0
+    move.w #0x3489+7,d0
     move.w #0x24A0,d1
 	cmp.l	#NTSC_MONITOR_ID,monitor
 	jne		0f
@@ -2299,9 +2304,13 @@ update_main_tile:
 	lea		main_tile_table,a0
 
 	
+	.ifdef	NO68020
 	add.w	d2,d2
 	add.w	d2,d2	
 	move.l	(a0,d2.w),d0		| tile pointer
+	.else
+	move.l	(a0,d2.w*4),d0
+	.endif
 	.ifndef	RELEASE
 	jne		12f
 	add.w	#0x8400,d7
@@ -2501,16 +2510,18 @@ update_status_tile:
 
 	jbsr		compute_status_tile_xy
 	
-
-	
 	* updating bitplanes
 	move.l	#STATUS_SCREEN_PLANE_SIZE,d5
 	move.w	#NB_PLAYFIELD_PLANES-1,d4
 	move.l	status_screen_ptr,a1
 
 	lea		mulNB_BYTES_PER_STATUS_ROW_table,A2
+	.ifdef	NO68020
 	add.w	d1,d1
 	move.w	(a2,d1.w),d1
+	.else
+	move.w	(a2,d1.w*2),d1
+	.endif
 	add.l	d1,d0
 	add.l	d0,a1
 
@@ -2520,16 +2531,23 @@ update_status_tile:
 
 	lea		status_tile_table,a0
 
-	
+	.ifdef	NO68020
 	add.w	d2,d2
 	add.w	d2,d2	
 	move.l	(a0,d2.w),d0		| tile pointer
+	.else
+	move.l	(a0,d2.w*4),d0
+	.endif
 	.ifndef	RELEASE
 	jne		12f
 	add.w	#0x8000,d7
+	.ifdef	NO68020
 	lsr.w	#2,d2
-	*BREAKPOINT	"game_tile_not_registered_error"
-	move.w	#0x0F0,_custom+color
+	.endif
+	cmp.b	#0xA,d2	| transient "A" letter in score, ignore
+	jeq		11f
+	BREAKPOINT	"status_tile_not_registered_error D2/D3/D7"
+	move.w	#0x0FF,_custom+color
 
 	jra		11f
 12:
@@ -2537,9 +2555,13 @@ update_status_tile:
 	move.l	d0,a2
 	move.b	d3,d1
 	and.w	#0x3F,d3
+	.ifdef	NO68020
 	add.w	d3,d3
 	add.w	d3,d3
 	move.l	(a2,d3.w),d0			| pointer on tile bitplanes for that CLUT
+	.else
+	move.l	(a2,d3.w*4),d0
+	.endif
 	jeq		11f						| not necessarily a problem
 
 	move.l	d0,a2					| pointer on bitplanes
@@ -3564,6 +3586,7 @@ misc_options:
 		.long	0
 		
 		.long	WHDLTAG_CUSTOM4_GET
+start_level_option:
 		.long	0
 
 		.long	WHDLTAG_CUSTOM5_GET
@@ -3770,13 +3793,16 @@ debug_color:
 	* main copperlist
 game_copperlist:
 	* all sprites have the same palette no need to specify odd or even
-	
+	.word	0x0801,0xFFFE
 	* black color background plane
+	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
+	DECL_COLORS	0,TOTAL_NB_COLORS
 
 	* enable sprite colors now
 
 main_bitplanes:
 	DECL_EVEN_BITPLANES	0,NB_PLAYFIELD_PLANES
+	.word	0x0901,0xFFFE	
 status_bitplanes:
 	DECL_EVEN_BITPLANES	4,NB_PLAYFIELD_PLANES
 
@@ -3787,6 +3813,12 @@ fine_x_scroll_value:
 	* priority: BOBs playfield on top
 	.word	bplcon2,BASE_BPLCON2_VALUE
 
+
+game_sprites:
+	DECL_SPRITES
+game_sprites_end:
+
+	.word	0x4001,0xFFFE
 status_colors:
 	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
 main_colors:
@@ -3796,11 +3828,6 @@ main_colors:
 sprite_colors:
 	DECL_COLORS	0,16
 	.word	bplcon3,BASE_BPLCON3_VALUE
-	.word	0x0801,0xFFFE
-game_sprites:
-	DECL_SPRITES
-game_sprites_end:
-
 
 
 	* mid-line wait & extra interrupt
@@ -3821,7 +3848,6 @@ pal_wait:
 
 
      .long    -2					
-	.ascii	"ENDCPLST"
 
 	* aligning on 8 bytes so .align will work
 	* in the next datachip sections

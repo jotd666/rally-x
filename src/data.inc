@@ -27,3 +27,6 @@ p1_lives_800f = 0x800f
 kill_flag_824c = 0x824c
 car_orientation_806b = 0x806b
 control_flags_8020 = 0x8020
+smoke_release_countdown_8291 = 0x8291
+player_1_current_level_plus_1_81b0 = 0x81b0
+player_2_current_level_plus_1_81b1 = 0x81b1

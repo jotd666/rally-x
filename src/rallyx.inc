@@ -351,6 +351,14 @@
 	.endm
 	
 	.macro GET_REG_ADDRESS	offset,reg,dest
+	.ifndef	RELEASE
+	swap	\reg
+	tst.w	\reg
+	jeq		okay\@
+	BREAKPOINT	"MSW of \reg is not zero!"
+okay\@:
+	swap	\reg
+	.endif
 	.ifeq	\offset
 	move.l	\reg,\dest
 	.else

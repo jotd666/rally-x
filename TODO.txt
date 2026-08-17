@@ -1,18 +1,16 @@
-- GAME OVER is in black should be white
-- smoke screen key doesn't work
-- sometimes cars are all red: snap sprites at this moment for mockup
-- reduce display window
-- status: try to save memory by using narrow screen and negative modulus
-- invincibility/infinite fuel
-- car bounces even when no visible boundary. Also car enters in green parts
-- at 0832 write in 0 check with MAME
-- game restarts automatically need to reset "1" ??? nope!!
-- engine sfx: make frequency vary
-
-
-display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0
+- display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0
 nope use bitmap & tile redraw
 bullet placement: first do with a mockup
+- GAME OVER is in black should be white
+- sometimes cars are all red: snap sprites at this moment for mockup
+
+- infinite fuel: not when level ends / skip fuel bonus
+- status: try to save memory by using narrow screen and negative modulus
+- invincibility
+- game restarts automatically need to reset "1" ??? nope!!
+- engine sfx: make frequency vary
+- level skip
+
 
 
 

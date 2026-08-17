@@ -317,7 +317,7 @@ with open(source_dir / "conv.s") as f:
             # try to preserve X flag
             # first use dbf
             line += "\tand.w\t#0xFF,d1\n\tsubq.w\t#1,d1\n"
-        elif address == 0x082E:
+        elif address in {0x082E,0x0832}:
             # avoid write in 0 when restarting game
             line = remove_instruction(lines,i)
             line = """
@@ -339,6 +339,10 @@ with open(source_dir / "conv.s") as f:
 \tjeq\t0f
 \tmove.b\t#0x3F,d5
 0:
+"""+line
+        elif address == 0x06BB:
+            line = """\tmove.b\tstart_level,d0
+\taddq\t#1,d0
 """+line
         # end game_specific
         ###############################################
