@@ -9,6 +9,8 @@ gamename = "rallyx"
 # TODO: write in A000, remove read inputs amiga68k
 input_dict = {
 "watchdog_a080":"",
+##"p1_a000":"read_p1_controls",
+##"p2_a080":"read_p2_controls",
 "scrollx_a130":"set_scroll_x",
 "scrolly_a140":"set_scroll_y",
 "dsw_a100":"read_dsw"
@@ -274,12 +276,14 @@ with open(source_dir / "conv.s") as f:
         elif address in {0x0f61}:
             # cmp+error+pop bc rewrite
             lines[i+1] = remove_error(lines[i+1])
-            lines[i+2] = lines[i+2].replace("move.w","movem.w") + "\tPUSH_SR\n"
+            # move => movem.w careful! damn sign extension
+            lines[i+2] = lines[i+2].replace("move.w","movem.w") + "\tPUSH_SR\n\tswap\td2\n\tclr.w\td2\n\tswap\td2\n"
             lines[i+3] += "\tPOP_SR\n"
             lines[i+5] = remove_error(lines[i+5])
         elif address in {0x1206,0x121b,0x1227}:
             # jsr+pop bc rewrite
-            line = line.replace("move.w","movem.w") + "\tPUSH_SR\n"
+            # move => movem.w careful! damn sign extension
+            line = line.replace("move.w","movem.w") + "\tPUSH_SR\n\tswap\td2\n\tclr.w\td2\n\tswap\td2\n"
             lines[i+1] += "\tPOP_SR\n"
             lines[i+3] = remove_error(lines[i+3])
         elif address == 0x17b6:
@@ -330,6 +334,12 @@ with open(source_dir / "conv.s") as f:
         # fix the interleaved instructions mess that corrupt car position
         elif address in {0x1BF7,0x1BFA}:
             line = change_instruction("jra\tl_1bfd",lines,i)
+        elif address == 0x1CCA:
+            line = """\ttst.b\tinfinite_fuel_flag
+\tjeq\t0f
+\tmove.b\t#0x3F,d5
+0:
+"""+line
         # end game_specific
         ###############################################
         if address in remove_error_in_prev_line:

@@ -1,5 +1,5 @@
-- controls buggy at times: check carry/x flags when reading controls
-  (demo is ok!!)
+- GAME OVER is in black should be white
+- smoke screen key doesn't work
 - sometimes cars are all red: snap sprites at this moment for mockup
 - reduce display window
 - status: try to save memory by using narrow screen and negative modulus

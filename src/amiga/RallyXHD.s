@@ -9,20 +9,16 @@ CHIP_BASE = $200
 
 	IFD	CHIP_ONLY
 EXPMEM = 0
-CHIPSIZE = $180000
+CHIPSIZE = $200000
 	ELSE
-EXPMEM = $80000
+EXPMEM = $800000
 CHIPSIZE = $80000
 	ENDC
 
 _base	SLAVE_HEADER					; ws_security + ws_id
 	dc.w	17					; ws_version (was 10)
 	dc.w	WHDLF_NoError
-    IFD CHIP_ONLY
-	dc.l	CHIPSIZE+$80000+EXPMEM					; ws_basememsize
-	ELSE
-	dc.l	CHIPSIZE
-	ENDC
+	dc.l	CHIPSIZE					; ws_basememsize
 	dc.l	0					; ws_execinstall
 	dc.w	start-_base		; ws_gameloader
 	dc.w	_data-_base					; ws_currentdir
@@ -48,9 +44,9 @@ _expmem
 _config
 	dc.b	"C1:X:invincible:0;"
 	dc.b	"C1:X:infinite lives:1;"
+	dc.b	"C1:X:infinite fuel:2;"
+
 	dc.b	"C1:X:cheat keys:4;"
-	dc.b	"C2:X:fast game:0;"
-	dc.b	"C2:X:start with 5 lives:1;"
 ;	dc.b	"C3:X:25 Hz update:0;"
 
 	dc.b	0
@@ -89,7 +85,7 @@ start:
     
     IFD CHIP_ONLY
     lea  _expmem(pc),a0
-    move.l  #$60000,(a0)
+    move.l  #$200,(a0)
 	ELSE
 	move.l	_expmem(pc),a0
 	add.l	#EXPMEM,a0

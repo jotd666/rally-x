@@ -1,3 +1,4 @@
+	.global infinite_fuel_flag
 	.global infinite_lives_flag
 	.global invincible_flag
 	.global start_level
@@ -70,7 +71,7 @@ invincible_flag:
 	.byte	0
 infinite_lives_flag:
 	.byte	0
-infinite_time_flag:
+infinite_fuel_flag:
 	.byte	0
 music_off_flag:
 	.byte 	0

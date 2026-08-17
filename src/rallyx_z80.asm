@@ -4,7 +4,7 @@
 ;	map(0xa000, 0xa000).portr("P1");
 ;	map(0xa080, 0xa080).portr("P2");
 ;	map(0xa100, 0xa100).portr("DSW");
-;	map(0xa000, 0xa00f).writeonly().share(m_radarattr);
+;	map(0xa000, 0xa00f).writeonly().share(m_radarattr);  A000-A003: not written in-game
 ;	map(0xa080, 0xa080).w("watchdog", FUNC(watchdog_timer_device::reset_w));
 ;	map(0xa100, 0xa11f).w(m_namco_sound, FUNC(namco_device::pacman_sound_w));
 ;	map(0xa130, 0xa130).w(FUNC(rallyx_state::scrollx_w));
@@ -1750,7 +1750,7 @@ carry_returning_0cb1:
 0D38: F2 3C 0D    jp   p,$0D3C
 0D3B: 25          dec  h
 0D3C: EB          ex   de,hl
-0D3D: CD F2 12    call carry_returning_12f2
+0D3D: CD F2 12    call check_blocked_ways_12f2
 0D40: 08          ex   af,af'
 0D41: 7A          ld   a,d
 0D42: 80          add  a,b
@@ -1758,7 +1758,7 @@ carry_returning_0cb1:
 0D44: 7B          ld   a,e
 0D45: 85          add  a,l
 0D46: 5F          ld   e,a
-0D47: CD F2 12    call carry_returning_12f2
+0D47: CD F2 12    call check_blocked_ways_12f2
 0D4A: 38 09       jr   c,$0D55
 0D4C: 7A          ld   a,d
 0D4D: 80          add  a,b
@@ -1766,7 +1766,7 @@ carry_returning_0cb1:
 0D4F: 7B          ld   a,e
 0D50: 85          add  a,l
 0D51: 5F          ld   e,a
-0D52: CD F2 12    call carry_returning_12f2
+0D52: CD F2 12    call check_blocked_ways_12f2
 0D55: 08          ex   af,af'
 0D56: E1          pop  hl
 0D57: 79          ld   a,c
@@ -2434,7 +2434,7 @@ write_maze_rows_1162:
 11F4: 6F          ld   l,a
 11F5: 5C          ld   e,h
 11F6: 55          ld   d,l
-11F7: CD F2 12    call carry_returning_12f2
+11F7: CD F2 12    call check_blocked_ways_12f2
 11FA: 38 E6       jr   c,$11E2
 11FC: C5          push bc
 11FD: 0E 0A       ld   c,$0A
@@ -2567,14 +2567,14 @@ write_flag_dots_12af:
 12C7: C5          push bc
 12C8: AF          xor  a
 12C9: EB          ex   de,hl
-12CA: CD F2 12    call carry_returning_12f2
+12CA: CD F2 12    call check_blocked_ways_12f2
 12CD: 30 1F       jr   nc,$12EE
 12CF: 15          dec  d
 12D0: 1D          dec  e
 12D1: 21 67 22    ld   hl,$2267
 12D4: 0E 03       ld   c,$03
 12D6: 06 03       ld   b,$03
-12D8: CD F2 12    call carry_returning_12f2
+12D8: CD F2 12    call check_blocked_ways_12f2
 12DB: 30 01       jr   nc,$12DE
 12DD: B6          or   (hl)
 12DE: 23          inc  hl
@@ -2594,7 +2594,11 @@ write_flag_dots_12af:
 12F0: E1          pop  hl
 12F1: C9          ret
 
-carry_returning_12f2:
+; < A: 4,0,$FF ???
+; < D
+; < E
+; returns C set if way is set
+check_blocked_ways_12f2:
 12F2: D5          push de
 12F3: C5          push bc
 12F4: 4F          ld   c,a
@@ -2623,13 +2627,13 @@ carry_returning_12f2:
 1315: 79          ld   a,c
 1316: C1          pop  bc
 1317: D1          pop  de
-1318: C9          ret
+1318: C9          ret		; return C set or not
 
 1319: 79          ld   a,c
 131A: C1          pop  bc
 131B: D1          pop  de
 131C: 37          scf
-131D: C9          ret
+131D: C9          ret		; return with C set
 
 write_maze_row_131e:
 131E: C5          push bc
@@ -3963,7 +3967,7 @@ copy_status_row_1c4e:
 1CC4: 2E 09       ld   l,$09
 1CC6: 25          dec  h
 1CC7: DD 75 00    ld   (ix+$00),l
-1CCA: DD 74 01    ld   (ix+$01),h
+1CCA: DD 74 01    ld   (ix+$01),h		; set fuel
 1CCD: 7C          ld   a,h
 1CCE: DD 5E 01    ld   e,(ix+$01)
 1CD1: 21 44 81    ld   hl,$8144

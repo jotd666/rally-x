@@ -403,6 +403,9 @@ _user:
 
 	BTST	#1,d0
 	sne		infinite_lives_flag
+	
+	BTST	#2,d0
+	sne		infinite_fuel_flag
 
 0:
 1:
@@ -739,6 +742,11 @@ _vblank:
 	btst	#5,d0
 	beq.b		1f
 
+	tst.b	freeze_enemies_flag
+	jeq		0f
+	jbsr	freeze_enemies
+	
+0:
 	move.l	_joypad_state(pc),d1
 	move.l	d1,d2
 	moveq	#1,d0
@@ -986,6 +994,18 @@ lose_all_lives:
 	movem.l	a5/a6,-(a7)
 	GET_MEMORY_BLOCKS_IN_A5_A6
 	movem.l	(a7)+,a5/a6
+	rts
+
+freeze_enemies:
+	movem.l	d0/a0/a5/a6,-(a7)
+	GET_MEMORY_BLOCKS_IN_A5_A6
+	lea		(0x88,a5),a0
+	moveq	#7,d0
+0:
+	move.b	#0x88,(a0)
+	add.w	#0x20,a0
+	dbf		d0,0b
+	movem.l	(a7)+,d0/a0/a5/a6
 	rts
 
 skip_level:
@@ -2252,11 +2272,7 @@ update_main_tile:
 
 	jbsr		compute_tile_xy
 	
-	cmp.b	#0x52,d2
-	jne		0f
-	move.b	#0,0x110
-0:
-	
+
 	* updating bitplanes
 	move.l	#MAIN_SCREEN_PLANE_SIZE,d5
 	move.w	#NB_PLAYFIELD_PLANES-1,d4
@@ -2786,6 +2802,7 @@ osd_video_control:
 * < D1: previous state
 update_controls:
 	moveq	#-1,d0
+
 	GET_MEMORY_START_IN_A6
 
 	lea		keyboard_table(pc),a0
@@ -2797,6 +2814,7 @@ update_controls:
 	tst.b	(0x4D,a0)		| "down" key
 	beq.b	0f
 	bclr	#BIT_DOWN,d0
+	bset	#BIT_UP,d0
 0:
 	tst.b	(0x4F,a0)		| "<-" key
 	beq.b	0f
@@ -2805,6 +2823,7 @@ update_controls:
 	tst.b	(0x4E,a0)		| "->" key
 	beq.b	0f
 	bclr	#BIT_RIGHT,d0
+	bset	#BIT_LEFT,d0
 0:
 	tst.b	(0x63,a0)		| "ctrl" key
 	beq.b	0f
@@ -2866,6 +2885,7 @@ update_controls:
 	move.l	a6,a1
 	add.l	#p1_a000,a1
 	move.b	d0,(a1)
+
 
 	jbsr		is_game_playing
 	jeq	0f
@@ -2958,6 +2978,13 @@ handle_keyboard:
 	move.w	#0x0FF,_custom+color
 	
 0:
+	cmp.b	#0x51,d0	| F2 key: freeze enemies
+	bne.b	0f
+	st.b	cheat_used
+	eor.b	#1,freeze_enemies_flag
+	move.w	#0x0FF,_custom+color
+	
+0:
 	cmp.b	#0x52,d0	| F3 key
 	bne.b	0f
 	st.b	cheat_used
@@ -3044,7 +3071,7 @@ beamdelay:
 
 SCORE_FILE_SIZE = 0x23
 
-LOG_BUFFER_SIZE = 0x20000
+LOG_BUFFER_SIZE = 0x400000
 
 	
 * < A0: buffer
@@ -3551,6 +3578,8 @@ dip_switches_2:
 	.byte	0
 ntsc_flag:
 	.byte 	0
+freeze_enemies_flag:
+	.byte	0
 mid_screen_interrupt_count:
 	.byte	0
 	.align	2
