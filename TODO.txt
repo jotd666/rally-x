@@ -1,7 +1,10 @@
-- display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0
-nope use bitmap & tile redraw
+- figure out sfx play analyse flag_picked_up_1896
+- display bullets (enemies on radar) :use bitmap & tile redraw
 bullet placement: first do with a mockup
 - cpu dependent loop 18FD
+- add music play hooks
+- rip extra life sound
+- kind of level skip flag picked always complete level trainer
 - GAME OVER is in black should be white
 - sometimes cars are all red: snap sprites at this moment for mockup
 

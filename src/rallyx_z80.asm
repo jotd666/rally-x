@@ -135,6 +135,14 @@ nb_credits_8024 = $8024
 nb_credit_sounds_to_play_82a8 = $82a8
 counter_824b = $824b
 var_81ab = $81ab
+nb_picked_flags_8250 = $8250
+; music control:
+; bit 7 on: game start music
+; bit 6 on: highscore?
+; bit 5 on: end level music
+; bit 4 on: in-game music
+; bit 0 on: idle, off: tune playing
+music_control_89f5 = $89f5
 
 0000: C3 00 38    jp   boot_3800
 
@@ -1038,8 +1046,9 @@ clear_sprites_074c:
 0762: 3E F7       ld   a,$F7
 0764: D3 00       out  ($00),a
 0766: FB          ei
+; play intro music
 0767: 3E 80       ld   a,$80
-0769: 32 F5 89    ld   ($89F5),a
+0769: 32 F5 89    ld   (music_control_89f5),a
 076C: CD 41 17    call $1741
 076F: CD 3A 1C    call $1C3A
 0772: 21 9B 1F    ld   hl,$1F9B
@@ -1202,8 +1211,8 @@ clear_sprites_074c:
 08B4: 7E          ld   a,(hl)
 08B5: E6 03       and  $03
 08B7: C2 E0 08    jp   nz,$08E0
-08BA: 21 F5 89    ld   hl,$89F5    ; [uncovered] 
-08BD: 36 40       ld   (hl),$40    ; [uncovered] 
+08BA: 21 F5 89    ld   hl,music_control_89f5    ; [uncovered] 
+08BD: 36 40       ld   (hl),$40    ; special music
 08BF: 3E 4A       ld   a,$4A    ; [uncovered] 
 08C1: CD CB 1D    call clear_screen_and_reset_scroll_1dcb    ; [uncovered] 
 08C4: 3A A8 81    ld   a,($81A8)    ; [uncovered] 
@@ -1214,7 +1223,7 @@ clear_sprites_074c:
 08D2: 32 20 80    ld   (control_flags_8020),a    ; [uncovered] 
 08D5: 32 81 A1    ld   ($A181),a    ; [uncovered] 
 08D8: FB          ei    ; [uncovered] 
-08D9: 21 F5 89    ld   hl,$89F5    ; [uncovered] 
+08D9: 21 F5 89    ld   hl,music_control_89f5    ; [uncovered] 
 08DC: CB 46       bit  0,(hl)    ; [uncovered] 
 08DE: 28 FC       jr   z,$08DC    ; [uncovered] 
 08E0: CD BA 0A    call init_player_car_0aba
@@ -1228,9 +1237,9 @@ clear_sprites_074c:
 08F3: 32 40 A1    ld   (scrolly_a140),a
 08F6: 32 30 A1    ld   (scrollx_a130),a
 08F9: CD 31 11    call write_maze_1131
-08FC: 21 F5 89    ld   hl,$89F5
+08FC: 21 F5 89    ld   hl,music_control_89f5
 08FF: CB 46       bit  0,(hl)
-0901: 28 FC       jr   z,$08FF
+0901: 28 FC       jr   z,$08FF		; music is playing: branch
 0903: 06 05       ld   b,$05
 0905: 11 20 00    ld   de,$0020
 0908: 0E 0D       ld   c,$0D
@@ -1386,7 +1395,7 @@ clear_sprites_074c:
 0A62: 21 F4 89    ld   hl,$89F4
 0A65: 36 40       ld   (hl),$40
 0A67: 23          inc  hl
-0A68: 36 10       ld   (hl),$10
+0A68: 36 10       ld   (hl),$10	; in-game music music_control_89f5
 0A6A: 2A 9C 89    ld   hl,($899C)
 0A6D: 36 01       ld   (hl),$01
 0A6F: CD 7D 09    call $097D
@@ -1432,7 +1441,7 @@ init_player_car_0aba:
 0AC8: 23          inc  hl
 0AC9: 10 FC       djnz $0AC7
 0ACB: 32 81 A1    ld   ($A181),a
-0ACE: 32 50 82    ld   ($8250),a
+0ACE: 32 50 82    ld   (nb_picked_flags_8250),a
 0AD1: DD 77 00    ld   (ix+$00),a
 0AD4: DD 77 01    ld   (ix+$01),a
 0AD7: DD 77 02    ld   (ix+$02),a
@@ -3408,9 +3417,9 @@ play_credit_sounds_154d:
 183A: 20 01       jr   nz,$183D
 183C: 19          add  hl,de
 183D: 2B          dec  hl
-183E: 3A 50 82    ld   a,($8250)
+183E: 3A 50 82    ld   a,(nb_picked_flags_8250)
 1841: 3C          inc  a
-1842: 32 50 82    ld   ($8250),a
+1842: 32 50 82    ld   (nb_picked_flags_8250),a
 1845: FE 0A       cp   $0A
 1847: 20 02       jr   nz,$184B
 1849: 3E 01       ld   a,$01    ; [uncovered] 
@@ -3420,7 +3429,7 @@ play_credit_sounds_154d:
 1851: CD 88 19    call move_wrap_pointer_1988
 1854: 36 AA       ld   (hl),$AA		; [video_address]
 1856: CD 8D 18    call $188D
-1859: 3A 50 82    ld   a,($8250)
+1859: 3A 50 82    ld   a,(nb_picked_flags_8250)
 185C: FE 0A       cp   $0A
 185E: 20 08       jr   nz,$1868
 1860: CD 88 19    call move_wrap_pointer_1988    ; [uncovered] 
@@ -3428,7 +3437,7 @@ play_credit_sounds_154d:
 1865: CD 8D 18    call $188D    ; [uncovered] 
 1868: 3A 23 80    ld   a,($8023)
 186B: A7          and  a
-186C: 28 28       jr   z,$1896
+186C: 28 28       jr   z,flag_picked_up_1896
 186E: E5          push hl
 186F: CD 88 19    call move_wrap_pointer_1988
 1872: 7E          ld   a,(hl)		; [video_address]
@@ -3437,7 +3446,7 @@ play_credit_sounds_154d:
 1877: 36 AC       ld   (hl),$AC		; [video_address]
 1879: CD 8D 18    call $188D
 187C: E1          pop  hl
-187D: 18 17       jr   $1896
+187D: 18 17       jr   flag_picked_up_1896
 
 187F: E1       pop  hl           ; [uncovered]
 1880: 11 20 00 ld   de,$0020     ; [uncovered]
@@ -3454,6 +3463,7 @@ play_credit_sounds_154d:
 1893: CB 9C       res  3,h
 1895: C9          ret
 
+flag_picked_up_1896:
 1896: 2A 8C 89    ld   hl,($898C)
 1899: 34          inc  (hl)
 189A: 7E          ld   a,(hl)
@@ -3461,7 +3471,7 @@ play_credit_sounds_154d:
 189D: 20 05       jr   nz,$18A4
 189F: 3E 03       ld   a,$03
 18A1: 32 20 80    ld   (control_flags_8020),a
-18A4: 3A 50 82    ld   a,($8250)
+18A4: 3A 50 82    ld   a,(nb_picked_flags_8250)
 18A7: 47          ld   b,a
 18A8: 3A 23 80    ld   a,($8023)
 18AB: A7          and  a
@@ -3481,6 +3491,7 @@ play_credit_sounds_154d:
 18C8: 7E          ld   a,(hl)
 18C9: FE 0A       cp   $0A
 18CB: C2 D7 15    jp   nz,$15D7
+; 10 flags were picked up: complete level
 18CE: 3A 21 80    ld   a,($8021)
 18D1: A7          and  a
 18D2: CA 8E 06    jp   z,$068E
@@ -3490,7 +3501,7 @@ play_credit_sounds_154d:
 18DC: E6 3F       and  $3F
 18DE: 77          ld   (hl),a
 18DF: 23          inc  hl
-18E0: 36 28       ld   (hl),$28
+18E0: 36 28       ld   (hl),$28		; plays end of level music music_control_89f5
 18E2: 3E EC       ld   a,$EC
 18E4: 32 14 80    ld   ($8014),a
 18E7: 3E 03       ld   a,$03
@@ -3686,7 +3697,7 @@ move_wrap_pointer_1988:
 1A75: CD 15 1B    call rle_unpack_to_screen_1b15
 1A78: 3E 83       ld   a,$83
 1A7A: 32 2F 86    ld   ($862F),a
-1A7D: 21 F5 89    ld   hl,$89F5
+1A7D: 21 F5 89    ld   hl,music_control_89f5
 1A80: CB D6       set  2,(hl)
 1A82: 3E 01       ld   a,$01
 1A84: 32 4B 82    ld   (counter_824b),a
@@ -4323,11 +4334,11 @@ handle_sounds_2400:
 2417: CB 77       bit  6,a
 2419: C2 39 26    jp   nz,$2639
 241C: 00          nop
-241D: 3A F5 89    ld   a,($89F5)
+241D: 3A F5 89    ld   a,(music_control_89f5)
 2420: CB 7F       bit  7,a
-2422: C2 D7 25    jp   nz,$25D7
+2422: C2 D7 25    jp   nz,$25D7		; intro music
 2425: CB 77       bit  6,a
-2427: C2 63 26    jp   nz,$2663
+2427: C2 63 26    jp   nz,$2663		; special music
 242A: CB 57       bit  2,a
 242C: C2 88 25    jp   nz,$2588
 242F: 3A F4 89    ld   a,($89F4)
@@ -4380,17 +4391,17 @@ handle_sounds_2400:
 249D: CB 4F       bit  1,a
 249F: C2 2F 27    jp   nz,$272F
 24A2: 36 03       ld   (hl),$03
-24A4: 3A F5 89    ld   a,($89F5)
+24A4: 3A F5 89    ld   a,(music_control_89f5)
 24A7: CB 6F       bit  5,a
-24A9: C2 37 27    jp   nz,$2737
+24A9: C2 37 27    jp   nz,$2737		; level completed music
 24AC: C3 52 24    jp   $2452
 
 24AF: CD 1C 25    call handle_in_game_music_251c
-24B2: 21 F5 89    ld   hl,$89F5
+24B2: 21 F5 89    ld   hl,music_control_89f5
 24B5: 7E          ld   a,(hl)
 24B6: E6 E0       and  $E0
 24B8: 20 5E       jr   nz,$2518
-24BA: 3A F5 89    ld   a,($89F5)
+24BA: 3A F5 89    ld   a,(music_control_89f5)
 24BD: CB 57       bit  2,a
 24BF: 20 57       jr   nz,$2518
 24C1: CB C6       set  0,(hl)
@@ -4409,6 +4420,7 @@ handle_sounds_2400:
 24D2: B1          or   c
 24D3: FE 00       cp   $00
 24D5: 20 3C       jr   nz,$2513
+; end of sound routine
 ; nullify all those addresses
 24D7: 32 15 A1    ld   (sound_a115),a
 24DA: 32 1A A1    ld   (sound_a11a),a
@@ -4440,7 +4452,7 @@ handle_sounds_2400:
 251A: 18 A7       jr   $24C3
 
 handle_in_game_music_251c:
-251C: 21 F5 89    ld   hl,$89F5
+251C: 21 F5 89    ld   hl,music_control_89f5
 251F: CB 5E       bit  3,(hl)
 2521: 28 0C       jr   z,$252F
 2523: CB 9E       res  3,(hl)
@@ -4448,7 +4460,7 @@ handle_in_game_music_251c:
 2527: 3E 00       ld   a,$00
 2529: 32 15 A1    ld   (sound_a115),a
 252C: 32 1A A1    ld   (sound_a11a),a
-252F: CB 66       bit  4,(hl)
+252F: CB 66       bit  4,(hl)		; in game music active?
 2531: 20 13       jr   nz,$2546
 2533: 21 C8 8A    ld   hl,$8AC8
 2536: CB BE       res  7,(hl)
@@ -4467,7 +4479,7 @@ handle_in_game_music_251c:
 2552: E6 0E       and  $0E
 2554: FE 00       cp   $00
 2556: 20 0A       jr   nz,$2562
-2558: 3A F5 89    ld   a,($89F5)
+2558: 3A F5 89    ld   a,(music_control_89f5)
 255B: CB 6F       bit  5,a
 255D: 20 03       jr   nz,$2562
 255F: CD 28 28    call $2828
@@ -4513,7 +4525,7 @@ handle_in_game_music_251c:
 25C6: CD 28 28    call $2828
 25C9: CD 45 28    call $2845
 25CC: CD 5D 28    call $285D
-25CF: 21 F5 89    ld   hl,$89F5
+25CF: 21 F5 89    ld   hl,music_control_89f5
 25D2: CB 96       res  2,(hl)
 25D4: C3 B2 24    jp   $24B2
 25D7: 3E 00       ld   a,$00
@@ -4551,7 +4563,7 @@ handle_in_game_music_251c:
 262B: CB AE       res  5,(hl)
 262D: CB B6       res  6,(hl)
 262F: CB BE       res  7,(hl)
-2631: 21 F5 89    ld   hl,$89F5
+2631: 21 F5 89    ld   hl,music_control_89f5
 2634: CB BE       res  7,(hl)
 2636: C3 B2 24    jp   $24B2
 2639: 21 54 8B    ld   hl,$8B54
@@ -4602,7 +4614,7 @@ handle_in_game_music_251c:
 26AF: CB AE       res  5,(hl)
 26B1: CB B6       res  6,(hl)
 26B3: CB BE       res  7,(hl)
-26B5: 21 F5 89    ld   hl,$89F5
+26B5: 21 F5 89    ld   hl,music_control_89f5
 26B8: CB B6       res  6,(hl)
 26BA: C3 B2 24    jp   $24B2
 26BD: 21 54 8A    ld   hl,$8A54
@@ -4672,7 +4684,7 @@ handle_in_game_music_251c:
 275A: 28 10       jr   z,$276C
 275C: FE 02       cp   $02
 275E: 28 08       jr   z,$2768
-2760: 21 F5 89    ld   hl,$89F5
+2760: 21 F5 89    ld   hl,music_control_89f5
 2763: CB AE       res  5,(hl)
 2765: C3 AF 24    jp   $24AF
 
