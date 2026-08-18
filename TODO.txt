@@ -11,8 +11,12 @@ bullet placement: first do with a mockup
 - engine sfx: make frequency vary
 - level skip
 
-
-
+4x4
+0: upper left white
+1: upper left red
+4: white
+5: red
+7: center red on white
 
 8180->8328 status radar: watchpoints
 wpset 8180,8,W

@@ -9,6 +9,11 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 
 tilesdir = os.path.join(this_dir,os.pardir,"sheets","sprites")
 
+radar_attributes = [0,0,0,0,9,1,1,1,1,1,1,1,1,0,0,0]
+radar_attributes = [int(x,16) for x in "00 00 00 00 0F 0D 0D 0C 0C 0C 0D 0C 0D 00 00 00".split()]
+radar_attributes = [int(x,16) for x in "00 00 00 00 0E 0C 0C 0C 0C 0C 0C 0D 0D 00 00 00".split()]
+
+
 def doit(binname):
     with open(os.path.join(this_dir,binname),"rb") as f:
         contents = f.read()
@@ -17,10 +22,7 @@ def doit(binname):
     side = 16
     transparent = (0,0,0)  # not possible to get it in the game
 
-    blank_image = Image.new("RGB",(side,side))
-    for i in range(side):
-        for j in range(side):
-            blank_image.putpixel((i,j),transparent)
+    blank_image = Image.new("RGB",(side,side),transparent)
 
 
     def load_tileset(image_name,side,dump_prefix=""):
@@ -46,7 +48,7 @@ def doit(binname):
             return None
 
     ts_title_list = [load_tileset(f"pal_{p:02x}.png",16) for p in range(64)]
-    layer = Image.new("RGB",(224,288),(130,130,130))
+    layer = Image.new("RGB",(288,256),(130,130,130))
 
     buffered_spriteram = contents
 
@@ -54,17 +56,6 @@ def doit(binname):
 
 
 
-
-##    move.b    (TARGET_SPRITE_LX,a0),d0
-##    move.b    (TARGET_SPRITE_HX,a0),d3
-##    bclr    #7,d3            | d4 is the color now
-##
-##    moveq    #0,d2
-##    moveq    #0,d4
-##    move.b    (TARGET_SPRITE_CODE,a0),d2
-##    move.b    d2,d4
-##    and.b    #3,d4        | flipX/Y attributes
-##    lsr.b    #2,d2        | code
 
     filtered = []
     for offs in range(0x14,0x14+7*2,2):
@@ -98,10 +89,31 @@ def doit(binname):
             print(f"offset={offs:04x}, code={tile_code:02x}, clut={tile_color}: name={name}, x={sx}, y={sy} flipx={flipx} flipy={flipy}")
             layer.paste(img,box=(sx,sy))
 
+#    m_radarx = m_videoram + 0x20 = 0x8020
+#    m_radary = m_radarx + 0x800 = 0x8820
+    radarx=0x20
+    radary=0x820
+
+    for offs in range(0x14,0x20):
+        radarattr = radar_attributes[offs & 0xF]
+        x = buffered_spriteram[radarx+offs]
+        dx = (~radarattr & 0x01) << 8
+        x += dx
+        oy = buffered_spriteram[radary+offs]
+        if oy:
+            y = 253 - oy
+            code = ((radarattr & 0x0e) >> 1) ^ 0x07
+            print(f"X={x:04x} Y={y:04x} code={code}")
+            color = (255,0,255) if code else (0,0,0)
+            layer.putpixel((x,y),color)
+            layer.putpixel((x+1,y+1),color)
+            layer.putpixel((x,y+1),color)
+            layer.putpixel((x+1,y),color)
+
     layer.save(f"{binname}.png")
 
 
-doit("rallyx_ram")
+doit("rallyx_ram_7cars")
 
 
 

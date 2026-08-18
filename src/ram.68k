@@ -51,8 +51,7 @@ high_score_beaten:
 	.word	0
 stack_top:
 	.long	0
-sprite_ram_9000:
-	.skip	0x500
+
 	
 regscopy:
 	.skip	56

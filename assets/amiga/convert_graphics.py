@@ -387,13 +387,13 @@ def write_tile_entries(f,prefix,tile_table):
                                 f.write("\t.long\t0\n")
 
 
-with open(os.path.join(src_dir,"palette.68k"),"w") as f:
+with (src_dir/"palette.68k").open("w") as f:
     f.write("main_palette:\n")
     bitplanelib.palette_dump(main_tile_palette,f,bitplanelib.PALETTE_FORMAT_ASMGNU)
     f.write("status_palette:\n")
     bitplanelib.palette_dump(status_tile_palette,f,bitplanelib.PALETTE_FORMAT_ASMGNU)
 
-with open(os.path.join(src_dir,"graphics.68k"),"w") as f:
+with (src_dir/"graphics.68k").open("w") as f:
     f.write("\t.global\tmain_tile_table\n")
     f.write("\t.global\tstatus_tile_table\n")
     f.write("\t.global\tsprite_table\n")
@@ -459,4 +459,15 @@ with open(os.path.join(src_dir,"graphics.68k"),"w") as f:
                     f.write(f"{name}_{orientation}:\n")
                     bitplanelib.dump_asm_bytes(t[orientation]["bitplanes"],f,mit_format=True)
 
+# X/Y status address table
+address = 0x8040
+table = []
+for y in range(32):
+    for x in range(4,8):
+        table.append(address+x)
+    for x in range(0,4):
+        table.append(address+x)
+    address += 0x20
 
+with (src_dir/"status_addresses.68k").open("w") as f:
+    bitplanelib.dump_asm_bytes(table,f,mit_format=True,size=2)
