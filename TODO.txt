@@ -1,6 +1,7 @@
 - display bullets (enemies on radar) use 64-wide sprites on AGA for sprite 0
 nope use bitmap & tile redraw
 bullet placement: first do with a mockup
+- cpu dependent loop 18FD
 - GAME OVER is in black should be white
 - sometimes cars are all red: snap sprites at this moment for mockup
 
@@ -18,21 +19,12 @@ bullet placement: first do with a mockup
 5: red
 7: center red on white
 
-8180->8328 status radar: watchpoints
-wpset 8180,8,W
-wpset 81a0,8,W
-wpset 81c0,8,W
-wpset 81e0,8,W
-wpset 8200,8,W
-wpset 8220,8,W
-wpset 8240,8,W
-wpset 8260,8,W
-wpset 8280,8,W
-wpset 82a0,8,W
-wpset 82c0,8,W
-wpset 82e0,8,W
-wpset 8300,8,W
-wpset 8320,8,W
+skip routine: bpset 0DB2,,{PC=$184;g}
+
+stop engine sound & in-game tunes: 
+bpset 27b3,,{PC=$184;g}
+bpset 251c,,{PC=$184;g}
+
 
 ECS: try to reduce colors: would work. Create separate AGA & OCS versions
 

@@ -131,6 +131,10 @@ control_flags_8020 = $8020
 smoke_release_countdown_8291 = $8291
 player_1_current_level_plus_1_81b0 = $81b0
 player_2_current_level_plus_1_81b1 = $81b1
+nb_credits_8024 = $8024
+nb_credit_sounds_to_play_82a8 = $82a8
+counter_824b = $824b
+var_81ab = $81ab
 
 0000: C3 00 38    jp   boot_3800
 
@@ -166,7 +170,8 @@ irq_0030:
 0060: ED B0       ldir
 0062: C3 E7 04    jp   $04E7
 
-	
+
+animate_all_0069:
 0069: 32 80 A0    ld   (watchdog_a080),a
 006C: FD 26 01    ld   iyh,$01
 006F: 2A 69 80    ld   hl,($8069)
@@ -373,13 +378,14 @@ irq_01f0:		; [global]
 01F8: AF          xor  a
 01F9: 32 81 A1    ld   ($A181),a
 01FC: 32 80 A0    ld   (watchdog_a080),a
-01FF: CD C5 14    call $14C5
-0202: CD 4D 15    call $154D
+01FF: CD C5 14    call check_insert_coin_14c5
+0202: CD 4D 15    call play_credit_sounds_154d
 0205: 3A 20 80    ld   a,(control_flags_8020)
 0208: A7          and  a
 0209: 28 05       jr   z,$0210
 020B: FE 02       cp   $02
 020D: C2 BD 03    jp   nz,$03BD
+; update scrolling
 0210: 3A 4D 80    ld   a,(scrollx_shadow_804d)
 0213: 32 30 A1    ld   (scrollx_a130),a
 0216: 3A 4F 80    ld   a,(scrolly_shadow_804f)
@@ -493,9 +499,9 @@ irq_01f0:		; [global]
 02E7: F1          pop  af
 02E8: C3 B7 02    jp   $02B7
 
-02EB: CD 69 00    call $0069
-02EE: CD B2 0D    call $0DB2
-02F1: CD 6B 1C    call $1C6B
+02EB: CD 69 00    call animate_all_0069
+02EE: CD B2 0D    call $0DB2		; ??
+02F1: CD 6B 1C    call $1C6B		; ??
 02F4: DD 21 68 80 ld   ix,player_car_structure_8068
 02F8: 06 09       ld   b,$09
 02FA: 21 94 82    ld   hl,$8294
@@ -505,7 +511,6 @@ irq_01f0:		; [global]
 0305: 20 04       jr   nz,$030B
 0307: 36 0E       ld   (hl),$0E
 0309: 18 06       jr   $0311
-
 030B: E6 07       and  $07
 030D: 20 02       jr   nz,$0311
 030F: 36 08       ld   (hl),$08
@@ -594,13 +599,12 @@ irq_01f0:		; [global]
 03AF: 3E 01       ld   a,$01
 03B1: 32 81 A1    ld   ($A181),a
 03B4: C3 D3 16    jp   $16D3
-
 03B7: FD 23       inc  iy
 03B9: FD 23       inc  iy
 03BB: 10 C7       djnz $0384
-03BD: 3A 4B 82    ld   a,($824B)
+03BD: 3A 4B 82    ld   a,(counter_824b)
 03C0: 3C          inc  a
-03C1: 32 4B 82    ld   ($824B),a
+03C1: 32 4B 82    ld   (counter_824b),a
 03C4: CD 72 0D    call $0D72
 03C7: 3A 6F 82    ld   a,($826F)
 03CA: 3C          inc  a
@@ -657,8 +661,8 @@ irq_01f0:		; [global]
 0438: 77          ld   (hl),a
 0439: 23          inc  hl
 043A: 77          ld   (hl),a
-043B: CD 00 24    call $2400
-043E: 3A 24 80    ld   a,($8024)
+043B: CD 00 24    call handle_sounds_2400
+043E: 3A 24 80    ld   a,(nb_credits_8024)
 0441: FE 09       cp   $09
 0443: 3E 00       ld   a,$00
 0445: 30 01       jr   nc,$0448
@@ -820,12 +824,12 @@ irq_01f0:		; [global]
 0572: F6 FE       or   $FE
 0574: 2F          cpl
 0575: 32 A9 81    ld   ($81A9),a
-0578: CD C5 14    call $14C5
+0578: CD C5 14    call check_insert_coin_14c5
 057B: 3A A9 81    ld   a,($81A9)
 057E: 32 83 A1    ld   ($A183),a
 0581: 32 A8 81    ld   ($81A8),a
 0584: CD 76 1B    call $1B76
-0587: 3A 24 80    ld   a,($8024)
+0587: 3A 24 80    ld   a,(nb_credits_8024)
 058A: A7          and  a
 058B: C2 AB 06    jp   nz,$06AB
 058E: 32 21 80    ld   ($8021),a
@@ -857,7 +861,7 @@ irq_01f0:		; [global]
 05CE: 3E 01       ld   a,$01
 05D0: 32 0F 80    ld   (p1_lives_800f),a
 05D3: 32 20 80    ld   (control_flags_8020),a
-05D6: 32 4B 82    ld   ($824B),a
+05D6: 32 4B 82    ld   (counter_824b),a
 05D9: 32 81 A1    ld   ($A181),a
 05DC: ED 5F       ld   a,r			; random
 05DE: E6 1F       and  $1F
@@ -892,14 +896,14 @@ irq_01f0:		; [global]
 0628: DD 77 03    ld   (ix+$03),a   ; [video_address]
 062B: DD 77 04    ld   (ix+$04),a   ; [video_address]
 062E: DD 77 05    ld   (ix+$05),a   ; [video_address]
-0631: 3A 4B 82    ld   a,($824B)
+0631: 3A 4B 82    ld   a,(counter_824b)
 0634: E6 3F       and  $3F
 0636: 28 EE       jr   z,$0626
 0638: E6 1F       and  $1F
 063A: 20 F5       jr   nz,$0631
-063C: 3A 4B 82    ld   a,($824B)
+063C: 3A 4B 82    ld   a,(counter_824b)
 063F: 3C          inc  a
-0640: 32 4B 82    ld   ($824B),a
+0640: 32 4B 82    ld   (counter_824b),a
 0643: 0D          dec  c
 0644: 3E 81       ld   a,$81
 0646: 20 03       jr   nz,$064B
@@ -919,19 +923,19 @@ irq_01f0:		; [global]
 0667: DD 36 05 AB ld   (ix+$05),$AB     ; [video_address]
 066B: DD 36 06 AC ld   (ix+$06),$AC     ; [video_address]
 066F: 3E 01       ld   a,$01
-0671: 32 4B 82    ld   ($824B),a
-0674: 3A 4B 82    ld   a,($824B)
+0671: 32 4B 82    ld   (counter_824b),a
+0674: 3A 4B 82    ld   a,(counter_824b)
 0677: E6 1F       and  $1F
 0679: 20 F9       jr   nz,$0674
 067B: 3E 01       ld   a,$01
 067D: 32 B0 81    ld   (player_1_current_level_plus_1_81b0),a
 0680: 21 3F E0    ld   hl,$E03F
 0683: 22 F2 82    ld   ($82F2),hl
-0686: 21 AB 81    ld   hl,$81AB
+0686: 21 AB 81    ld   hl,var_81ab
 0689: 36 03       ld   (hl),$03
 068B: C3 4C 07    jp   clear_sprites_074c
 
-068E: 21 4B 82    ld   hl,$824B
+068E: 21 4B 82    ld   hl,counter_824b
 0691: 36 88       ld   (hl),$88
 0693: 7E          ld   a,(hl)
 0694: A7          and  a
@@ -996,7 +1000,7 @@ irq_01f0:		; [global]
 0711: 21 6E 1F    ld   hl,$1F6E
 0714: CD 15 1B    call rle_unpack_to_screen_1b15
 start_game_test_loop_0717:
-0717: 3A 4B 82    ld   a,($824B)
+0717: 3A 4B 82    ld   a,(counter_824b)
 071A: E6 1F       and  $1F
 071C: CC 30 1C    call z,$1C30
 071F: E6 0F       and  $0F
@@ -1007,18 +1011,18 @@ start_game_test_loop_0717:
 072B: 3A 80 A0    ld   a,(p2_a080)
 072E: E6 40       and  $40
 0730: 20 E5       jr   nz,start_game_test_loop_0717
-0732: 3A 24 80    ld   a,($8024)    ; [uncovered] 
+0732: 3A 24 80    ld   a,(nb_credits_8024)    ; [uncovered] 
 0735: D6 02       sub  $02    ; [uncovered] 
 0737: 38 DE       jr   c,start_game_test_loop_0717    ; [uncovered] 
-0739: 32 24 80    ld   ($8024),a    ; [uncovered] 
-073C: 21 AB 81    ld   hl,$81AB    ; [uncovered] 
+0739: 32 24 80    ld   (nb_credits_8024),a    ; [uncovered] 
+073C: 21 AB 81    ld   hl,var_81ab    ; [uncovered] 
 073F: 36 03       ld   (hl),$03    ; [uncovered] 
 0741: 18 09       jr   clear_sprites_074c    ; [uncovered] 
 
 start_game_1_player_0743:
-0743: 21 24 80    ld   hl,$8024
+0743: 21 24 80    ld   hl,nb_credits_8024
 0746: 35          dec  (hl)
-0747: 21 AB 81    ld   hl,$81AB
+0747: 21 AB 81    ld   hl,var_81ab
 074A: 36 01       ld   (hl),$01
 clear_sprites_074c:
 074C: AF          xor  a
@@ -1047,7 +1051,7 @@ clear_sprites_074c:
 0782: CD 08 0B    call $0B08
 ; 1UP score
 0785: CD 4E 1C    call copy_status_row_1c4e
-0788: 3A AB 81    ld   a,($81AB)
+0788: 3A AB 81    ld   a,(var_81ab)
 078B: 47          ld   b,a
 078C: 0E 66       ld   c,$66
 078E: FE 01       cp   $01
@@ -1081,8 +1085,8 @@ clear_sprites_074c:
 07D4: 32 81 A1    ld   ($A181),a
 07D7: FB          ei
 07D8: 32 20 80    ld   (control_flags_8020),a
-07DB: 32 4B 82    ld   ($824B),a
-07DE: 3A 4B 82    ld   a,($824B)
+07DB: 32 4B 82    ld   (counter_824b),a
+07DE: 3A 4B 82    ld   a,(counter_824b)
 07E1: E6 3F       and  $3F
 07E3: 20 F9       jr   nz,$07DE
 07E5: AF          xor  a
@@ -1351,8 +1355,8 @@ clear_sprites_074c:
 0A1F: 3E 03       ld   a,$03
 0A21: 32 20 80    ld   (control_flags_8020),a
 0A24: 32 81 A1    ld   ($A181),a
-0A27: 32 4B 82    ld   ($824B),a
-0A2A: 3A 4B 82    ld   a,($824B)
+0A27: 32 4B 82    ld   (counter_824b),a
+0A2A: 3A 4B 82    ld   a,(counter_824b)
 0A2D: E6 3F       and  $3F
 0A2F: 20 F9       jr   nz,$0A2A
 0A31: 21 95 82    ld   hl,$8295
@@ -1387,7 +1391,7 @@ clear_sprites_074c:
 0A6D: 36 01       ld   (hl),$01
 0A6F: CD 7D 09    call $097D
 0A72: CD 6F 1D    call $1D6F
-0A75: CD 69 00    call $0069
+0A75: CD 69 00    call animate_all_0069
 0A78: 18 39       jr   $0AB3
 
 0A7A: 31 00 84    ld   sp,$8400
@@ -1399,7 +1403,7 @@ clear_sprites_074c:
 0A8A: C6 07       add  a,$07
 0A8C: FE 0F       cp   $0F
 0A8E: D4 55 10    call nc,$1055
-0A91: 3A 4B 82    ld   a,($824B)
+0A91: 3A 4B 82    ld   a,(counter_824b)
 0A94: FE 04       cp   $04
 0A96: D4 CB 1B    call nc,$1BCB
 0A99: 3A 22 80    ld   a,($8022)
@@ -2906,6 +2910,7 @@ write_maze_row_131e:
 14C3: E1          pop  hl
 14C4: C9          ret
 
+check_insert_coin_14c5:
 14C5: 00          nop
 14C6: E5          push hl
 14C7: D5          push de
@@ -2914,7 +2919,7 @@ write_maze_row_131e:
 14CA: 3A AA 82    ld   a,($82AA)
 14CD: A7          and  a
 14CE: 20 07       jr   nz,$14D7
-14D0: 21 24 80    ld   hl,$8024    ; [uncovered] 
+14D0: 21 24 80    ld   hl,nb_credits_8024    ; [uncovered] 
 14D3: 36 FF       ld   (hl),$FF    ; [uncovered] 
 14D5: 18 3C       jr   $1513    ; [uncovered] 
 
@@ -2934,12 +2939,12 @@ write_maze_row_131e:
 14ED: 7E          ld   a,(hl)
 14EE: E6 0F       and  $0F
 14F0: FE 0C       cp   $0C
-14F2: CC 18 15    call z,$1518
+14F2: CC 18 15    call z,coin_inserted_1518
 14F5: 2B          dec  hl
 14F6: 7E          ld   a,(hl)
 14F7: E6 0F       and  $0F
 14F9: FE 0C       cp   $0C
-14FB: CC 18 15    call z,$1518
+14FB: CC 18 15    call z,coin_inserted_1518
 14FE: 2B          dec  hl
 14FF: 7E          ld   a,(hl)
 1500: E6 0F       and  $0F
@@ -2956,8 +2961,9 @@ write_maze_row_131e:
 1516: E1          pop  hl
 1517: C9          ret
 
+coin_inserted_1518:
 1518: EB          ex   de,hl
-1519: 21 A8 82    ld   hl,$82A8
+1519: 21 A8 82    ld   hl,nb_credit_sounds_to_play_82a8
 151C: 34          inc  (hl)
 151D: 23          inc  hl
 151E: 34          inc  (hl)
@@ -2971,10 +2977,11 @@ write_maze_row_131e:
 1528: A7          and  a
 1529: C8          ret  z
 152A: EB          ex   de,hl
-152B: 21 24 80    ld   hl,$8024
+152B: 21 24 80    ld   hl,nb_credits_8024
+; B has the number of credits per coin
 152E: 34          inc  (hl)
 152F: 20 01       jr   nz,$1532
-1531: 35          dec  (hl)    ; [uncovered] 
+1531: 35          dec  (hl)    ; 0 credits wrap: make it 255 again
 1532: 10 FA       djnz $152E
 1534: EB          ex   de,hl
 1535: 3A 21 80    ld   a,($8021)
@@ -2991,9 +2998,11 @@ write_maze_row_131e:
 1549: 77          ld   (hl),a
 154A: C3 AB 06    jp   $06AB
 
-154D: 3A A8 82    ld   a,($82A8)
+play_credit_sounds_154d:
+154D: 3A A8 82    ld   a,(nb_credit_sounds_to_play_82a8)
 1550: A7          and  a
 1551: C8          ret  z
+; play one credit sound
 1552: E5          push hl
 1553: D5          push de
 1554: C5          push bc
@@ -3020,7 +3029,7 @@ write_maze_row_131e:
 156F: 20 0E       jr   nz,$157F
 1571: 2B          dec  hl
 1572: 36 00       ld   (hl),$00
-1574: 21 A8 82    ld   hl,$82A8
+1574: 21 A8 82    ld   hl,nb_credit_sounds_to_play_82a8
 1577: 35          dec  (hl)
 1578: 21 F6 89    ld   hl,$89F6
 157B: 36 80       ld   (hl),$80
@@ -3238,8 +3247,8 @@ write_maze_row_131e:
 172E: E6 03       and  $03
 1730: CA BD 07    jp   z,$07BD
 1733: AF          xor  a
-1734: 32 4B 82    ld   ($824B),a
-1737: 3A 4B 82    ld   a,($824B)
+1734: 32 4B 82    ld   (counter_824b),a
+1737: 3A 4B 82    ld   a,(counter_824b)
 173A: FE 78       cp   $78
 173C: 20 F9       jr   nz,$1737
 173E: C3 E5 07    jp   $07E5
@@ -3486,18 +3495,18 @@ write_maze_row_131e:
 18E4: 32 14 80    ld   ($8014),a
 18E7: 3E 03       ld   a,$03
 18E9: 32 20 80    ld   (control_flags_8020),a
-18EC: 32 4B 82    ld   ($824B),a
-18EF: 3A 4B 82    ld   a,($824B)
+18EC: 32 4B 82    ld   (counter_824b),a
+18EF: 3A 4B 82    ld   a,(counter_824b)
 18F2: E6 3F       and  $3F
-18F4: 20 F9       jr   nz,$18EF
+18F4: 20 F9       jr   nz,$18EF   ; [cpu_dependent_loop]
 18F6: CB 46       bit  0,(hl)
 18F8: 28 FC       jr   z,$18F6
 18FA: CD 2D 1D    call $1D2D
 18FD: 3E E0       ld   a,$E0
-18FF: 32 4B 82    ld   ($824B),a
-1902: 3A 4B 82    ld   a,($824B)
+18FF: 32 4B 82    ld   (counter_824b),a
+1902: 3A 4B 82    ld   a,(counter_824b)
 1905: A7          and  a
-1906: 20 FA       jr   nz,$1902
+1906: 20 FA       jr   nz,$1902   ; [cpu_dependent_loop]
 1908: C3 BD 07    jp   $07BD
 
 190B: 3A 92 82    ld   a,($8292)
@@ -3604,8 +3613,8 @@ move_wrap_pointer_1988:
 19B5: 35          dec  (hl)
 19B6: C2 F6 16    jp   nz,$16F6
 19B9: 3E A0       ld   a,$A0
-19BB: 32 4B 82    ld   ($824B),a
-19BE: 3A 4B 82    ld   a,($824B)
+19BB: 32 4B 82    ld   (counter_824b),a
+19BE: 3A 4B 82    ld   a,(counter_824b)
 19C1: A7          and  a
 19C2: 20 FA       jr   nz,$19BE
 19C4: AF          xor  a
@@ -3655,8 +3664,8 @@ move_wrap_pointer_1988:
 1A37: FD 36 02 7C ld   (iy+$02),$7C
 1A3B: FD 36 03 66 ld   (iy+$03),$66
 1A3F: 3E 01       ld   a,$01
-1A41: 32 4B 82    ld   ($824B),a
-1A44: 3A 4B 82    ld   a,($824B)
+1A41: 32 4B 82    ld   (counter_824b),a
+1A44: 3A 4B 82    ld   a,(counter_824b)
 1A47: E6 3F       and  $3F
 1A49: 20 F9       jr   nz,$1A44
 1A4B: 3A D0 82    ld   a,($82D0)
@@ -3680,8 +3689,8 @@ move_wrap_pointer_1988:
 1A7D: 21 F5 89    ld   hl,$89F5
 1A80: CB D6       set  2,(hl)
 1A82: 3E 01       ld   a,$01
-1A84: 32 4B 82    ld   ($824B),a
-1A87: 3A 4B 82    ld   a,($824B)
+1A84: 32 4B 82    ld   (counter_824b),a
+1A87: 3A 4B 82    ld   a,(counter_824b)
 1A8A: E6 0F       and  $0F
 1A8C: 20 F9       jr   nz,$1A87
 1A8E: CB 46       bit  0,(hl)
@@ -3878,7 +3887,7 @@ read_demo_controls_1b8e:
 1C20: DD 19       add  ix,de
 1C22: 10 AD       djnz $1BD1
 1C24: AF          xor  a
-1C25: 32 4B 82    ld   ($824B),a
+1C25: 32 4B 82    ld   (counter_824b),a
 1C28: C9          ret
 
 write_to_screen_1c29:
@@ -3889,7 +3898,7 @@ ldir_video_1c2b:
 1C2D: ED B0       ldir		; [video_address]
 1C2F: C9          ret
 
-1C30: 3A 24 80    ld   a,($8024)
+1C30: 3A 24 80    ld   a,(nb_credits_8024)
 1C33: A7          and  a
 1C34: 28 04       jr   z,$1C3A
 1C36: 06 01       ld   b,$01
@@ -3899,7 +3908,7 @@ ldir_video_1c2b:
 1C3C: 21 84 A1    ld   hl,$A184
 1C3F: 70          ld   (hl),b
 1C40: 23          inc  hl
-1C41: 3A 24 80    ld   a,($8024)
+1C41: 3A 24 80    ld   a,(nb_credits_8024)
 1C44: FE 01       cp   $01
 1C46: 20 02       jr   nz,$1C4A
 1C48: 06 00       ld   b,$00
@@ -4275,7 +4284,7 @@ display_credits_1ed2:
 1ED5: 21 64 1F    ld   hl,$1F64
 1ED8: 11 6A 86    ld   de,$866A
 1EDB: CD 29 1C    call write_to_screen_1c29
-1EDE: 3A 24 80    ld   a,($8024)
+1EDE: 3A 24 80    ld   a,(nb_credits_8024)
 1EE1: 21 72 86    ld   hl,$8672
 1EE4: 06 00       ld   b,$00
 1EE6: FE 63       cp   $63
@@ -4298,6 +4307,7 @@ display_credits_1ed2:
 1EFE: E1          pop  hl
 1EFF: C9          ret
 
+handle_sounds_2400:
 2400: 00          nop
 2401: E5          push hl
 2402: D5          push de
@@ -4333,7 +4343,7 @@ display_credits_1ed2:
 2448: CB BE       res  7,(hl)
 244A: 18 06       jr   $2452
 
-244C: CD B3 27    call $27B3
+244C: CD B3 27    call handle_engine_sound_27b3
 244F: C3 87 24    jp   $2487
 
 2452: 21 0D 8A    ld   hl,$8A0D
@@ -4375,7 +4385,7 @@ display_credits_1ed2:
 24A9: C2 37 27    jp   nz,$2737
 24AC: C3 52 24    jp   $2452
 
-24AF: CD 1C 25    call $251C
+24AF: CD 1C 25    call handle_in_game_music_251c
 24B2: 21 F5 89    ld   hl,$89F5
 24B5: 7E          ld   a,(hl)
 24B6: E6 E0       and  $E0
@@ -4429,6 +4439,7 @@ display_credits_1ed2:
 2518: CB 86       res  0,(hl)
 251A: 18 A7       jr   $24C3
 
+handle_in_game_music_251c:
 251C: 21 F5 89    ld   hl,$89F5
 251F: CB 5E       bit  3,(hl)
 2521: 28 0C       jr   z,$252F
@@ -4705,6 +4716,7 @@ display_credits_1ed2:
 27B0: CB A6       res  4,(hl)
 27B2: C9          ret
 
+handle_engine_sound_27b3:
 27B3: 3A F4 89    ld   a,($89F4)
 27B6: CB 77       bit  6,a
 27B8: 20 06       jr   nz,$27C0
