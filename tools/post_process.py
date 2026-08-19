@@ -344,6 +344,10 @@ with open(source_dir / "conv.s") as f:
             line = """\tmove.b\tstart_level,d0
 \taddq\t#1,d0
 """+line
+        # sounds
+        elif address == 0x1552:
+            line = change_instruction("move.w\t#CREDIT_01_SND,d0",lines,i)+"\tclr.b\t(a0)\njbra\tosd_sound_start\n"
+
         # end game_specific
         ###############################################
         if address in remove_error_in_prev_line:
@@ -407,6 +411,7 @@ with open(source_dir / "data.inc","w") as fw:
 with open(source_dir / f"{gamename}.68k","w") as fw:
 
     fw.write(f"""\t.include "data.inc"
+\t.include "sounds.inc"
 """)
     for g in global_symbols:
         fw.write(f"\t.global\t{g}\n")

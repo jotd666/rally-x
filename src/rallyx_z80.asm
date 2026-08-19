@@ -136,13 +136,25 @@ nb_credit_sounds_to_play_82a8 = $82a8
 counter_824b = $824b
 var_81ab = $81ab
 nb_picked_flags_8250 = $8250
-; music control:
-; bit 7 on: game start music
-; bit 6 on: highscore?
-; bit 5 on: end level music
-; bit 4 on: in-game music
+double_score_8023 = $8023
+; music control: set a bit (or several!) to start a tune. Bit 0 clears
+; when playing and resets to 1 once music has completed
+; bit 7: game start music
+; bit 6: highscore?
+; bit 5: end level music
+; bit 4: in-game music
 ; bit 0 on: idle, off: tune playing
 music_control_89f5 = $89f5
+; sound control:
+; bit 7: 
+; bit 6: engine loop
+; bit 5: low fuel warning alarm
+; bit 4: changes engine sound when dropping smoke cloud
+; bit 3: special flag picked up
+; bit 2: flag picked up
+; bit 1: fuel countdown
+; bit 0: extra life
+sound_control_89f4 = $89f4
 
 0000: C3 00 38    jp   boot_3800
 
@@ -662,10 +674,11 @@ irq_01f0:		; [global]
 0429: 30 03       jr   nc,$042E
 042B: 32 69 82    ld   ($8269),a
 042E: 00          nop
-042F: 21 F4 89    ld   hl,$89F4
+042F: 21 F4 89    ld   hl,sound_control_89f4
 0432: 3A 21 80    ld   a,($8021)
 0435: A7          and  a
 0436: 20 03       jr   nz,$043B
+; stop sound & music
 0438: 77          ld   (hl),a
 0439: 23          inc  hl
 043A: 77          ld   (hl),a
@@ -1392,14 +1405,14 @@ clear_sprites_074c:
 0A5A: 32 4C 82    ld   (kill_flag_824c),a
 0A5D: 3E 01       ld   a,$01
 0A5F: 32 81 A1    ld   ($A181),a
-0A62: 21 F4 89    ld   hl,$89F4
+0A62: 21 F4 89    ld   hl,sound_control_89f4
 0A65: 36 40       ld   (hl),$40
 0A67: 23          inc  hl
 0A68: 36 10       ld   (hl),$10	; in-game music music_control_89f5
 0A6A: 2A 9C 89    ld   hl,($899C)
 0A6D: 36 01       ld   (hl),$01
 0A6F: CD 7D 09    call $097D
-0A72: CD 6F 1D    call $1D6F
+0A72: CD 6F 1D    call update_score_to_screen_1d6f
 0A75: CD 69 00    call animate_all_0069
 0A78: 18 39       jr   $0AB3
 
@@ -1434,7 +1447,7 @@ clear_sprites_074c:
 init_player_car_0aba:
 0ABA: DD 21 68 80 ld   ix,player_car_structure_8068
 0ABE: AF          xor  a
-0ABF: 32 23 80    ld   ($8023),a
+0ABF: 32 23 80    ld   (double_score_8023),a
 0AC2: 21 48 80    ld   hl,$8048
 0AC5: 06 18       ld   b,$18
 0AC7: 77          ld   (hl),a
@@ -1856,7 +1869,7 @@ increase_and_wrap_d5w_0d69:
 0DA9: C9          ret
 
 0DAA: E5          push hl
-0DAB: 21 F4 89    ld   hl,$89F4
+0DAB: 21 F4 89    ld   hl,sound_control_89f4
 0DAE: CB EE       set  5,(hl)
 0DB0: E1          pop  hl
 0DB1: C9          ret
@@ -1957,7 +1970,7 @@ smoke_release_end_0df4:
 0E4E: 10 EB       djnz $0E3B
 0E50: 21 91 82    ld   hl,smoke_release_countdown_8291
 0E53: 35          dec  (hl)			; [unchecked_address]
-0E54: 21 F4 89    ld   hl,$89F4
+0E54: 21 F4 89    ld   hl,sound_control_89f4
 0E57: CB E6       set  4,(hl)		; [video_address]
 0E59: C1          pop  bc
 0E5A: D1          pop  de
@@ -2024,8 +2037,8 @@ compute_hl_0e7f:
 0EAD: A7          and  a
 0EAE: C2 A6 0F    jp   nz,$0FA6
 0EB1: DD 77 13    ld   (ix+$13),a
-0EB4: 21 F4 89    ld   hl,$89F4
-0EB7: CB F6       set  6,(hl)
+0EB4: 21 F4 89    ld   hl,sound_control_89f4
+0EB7: CB F6       set  6,(hl)			; add engine sound
 0EB9: 2A 27 80    ld   hl,(car_speed_8027)
 0EBC: ED 4B 9E 89 ld   bc,(pointer_on_port_a0x0_899e)
 ; read controls here (car directions, fire) also during demo
@@ -3001,7 +3014,7 @@ coin_inserted_1518:
 1540: CC D2 1E    call z,display_credits_1ed2
 1543: C9          ret
 
-1544: 21 F4 89    ld   hl,$89F4
+1544: 21 F4 89    ld   hl,sound_control_89f4
 1547: 77          ld   (hl),a
 1548: 23          inc  hl
 1549: 77          ld   (hl),a
@@ -3214,7 +3227,7 @@ play_credit_sounds_154d:
 16D5: 32 20 80    ld   (control_flags_8020),a
 16D8: 3E EC       ld   a,$EC
 16DA: 32 14 80    ld   ($8014),a
-16DD: 21 F4 89    ld   hl,$89F4
+16DD: 21 F4 89    ld   hl,sound_control_89f4
 16E0: 36 80       ld   (hl),$80
 16E2: 23          inc  hl
 16E3: 36 08       ld   (hl),$08
@@ -3324,6 +3337,7 @@ play_credit_sounds_154d:
 179D: CD 6C 0E    call advance_hl_and_de_0e6c
 17A0: 0D          dec  c
 17A1: 20 EB       jr   nz,$178E
+erase_chars_17a3:
 17A3: 2A 98 89    ld   hl,($8998)
 17A6: 06 04       ld   b,$04
 17A8: 3E 66       ld   a,$66
@@ -3336,12 +3350,12 @@ play_credit_sounds_154d:
 17B0: AF          xor  a
 17B1: 12          ld   (de),a
 17B2: 05          dec  b
-17B3: 21 F4 89    ld   hl,$89F4
-17B6: 0E 04       ld   c,$04
+17B3: 21 F4 89    ld   hl,sound_control_89f4
+17B6: 0E 04       ld   c,$04		; normal flag picked up sound
 17B8: 20 07       jr   nz,$17C1
-17BA: 0E 08       ld   c,$08
+17BA: 0E 08       ld   c,$08		; double score flag picked up sound
 17BC: 3E 01       ld   a,$01
-17BE: 32 23 80    ld   ($8023),a
+17BE: 32 23 80    ld   (double_score_8023),a	; enable double score
 17C1: 7E          ld   a,(hl)
 17C2: B1          or   c
 17C3: 77          ld   (hl),a
@@ -3435,7 +3449,7 @@ play_credit_sounds_154d:
 1860: CD 88 19    call move_wrap_pointer_1988    ; [uncovered] 
 1863: 36 AB       ld   (hl),$AB    		; [video_address]
 1865: CD 8D 18    call $188D    ; [uncovered] 
-1868: 3A 23 80    ld   a,($8023)
+1868: 3A 23 80    ld   a,(double_score_8023)
 186B: A7          and  a
 186C: 28 28       jr   z,flag_picked_up_1896
 186E: E5          push hl
@@ -3473,19 +3487,19 @@ flag_picked_up_1896:
 18A1: 32 20 80    ld   (control_flags_8020),a
 18A4: 3A 50 82    ld   a,(nb_picked_flags_8250)
 18A7: 47          ld   b,a
-18A8: 3A 23 80    ld   a,($8023)
+18A8: 3A 23 80    ld   a,(double_score_8023)
 18AB: A7          and  a
 18AC: 28 02       jr   z,$18B0
 18AE: CB 20       sla  b
 18B0: 0E 0A       ld   c,$0A	; add 10x10 points
 18B2: C5          push bc
-18B3: CD 6F 1D    call $1D6F
+18B3: CD 6F 1D    call update_score_to_screen_1d6f
 18B6: CD F5 1D    call add_10_points_1df5
 18B9: C1          pop  bc
 18BA: 0D          dec  c
 18BB: 20 F5       jr   nz,$18B2
 18BD: 10 F1       djnz $18B0
-18BF: CD 6F 1D    call $1D6F
+18BF: CD 6F 1D    call update_score_to_screen_1d6f
 18C2: CD 0B 19    call $190B
 18C5: 2A 8C 89    ld   hl,($898C)
 18C8: 7E          ld   a,(hl)
@@ -3495,8 +3509,8 @@ flag_picked_up_1896:
 18CE: 3A 21 80    ld   a,($8021)
 18D1: A7          and  a
 18D2: CA 8E 06    jp   z,$068E
-18D5: CD A3 17    call $17A3
-18D8: 21 F4 89    ld   hl,$89F4
+18D5: CD A3 17    call erase_chars_17a3
+18D8: 21 F4 89    ld   hl,sound_control_89f4
 18DB: 7E          ld   a,(hl)
 18DC: E6 3F       and  $3F
 18DE: 77          ld   (hl),a
@@ -3612,7 +3626,7 @@ move_wrap_pointer_1988:
 1998: 32 20 80    ld   (control_flags_8020),a
 199B: 3E EC       ld   a,$EC
 199D: 32 14 80    ld   ($8014),a
-19A0: 21 F4 89    ld   hl,$89F4
+19A0: 21 F4 89    ld   hl,sound_control_89f4
 19A3: 36 80       ld   (hl),$80
 19A5: 23          inc  hl
 19A6: 36 08       ld   (hl),$08
@@ -3629,7 +3643,7 @@ move_wrap_pointer_1988:
 19C1: A7          and  a
 19C2: 20 FA       jr   nz,$19BE
 19C4: AF          xor  a
-19C5: 32 F4 89    ld   ($89F4),a
+19C5: 32 F4 89    ld   (sound_control_89f4),a
 19C8: DD 7E 0C    ld   a,(ix+$0c)
 19CB: D6 08       sub  $08
 19CD: 47          ld   b,a
@@ -3743,7 +3757,7 @@ move_wrap_pointer_1988:
 1AD2: CD F5 1A    call $1AF5
 1AD5: E1          pop  hl
 1AD6: 18 AA       jr   $1A82
-1AD8: CD A3 17    call $17A3
+1AD8: CD A3 17    call erase_chars_17a3
 1ADB: CD 06 1B    call $1B06
 1ADE: 21 60 88    ld   hl,$8860
 1AE1: 06 08       ld   b,$08
@@ -3980,9 +3994,9 @@ copy_status_row_1c4e:
 1CA3: DD 7E 01    ld   a,(ix+$01)
 1CA6: FE 0A       cp   $0A
 1CA8: 20 08       jr   nz,$1CB2
-1CAA: 3A F4 89    ld   a,($89F4)
+1CAA: 3A F4 89    ld   a,(sound_control_89f4)
 1CAD: F6 20       or   $20
-1CAF: 32 F4 89    ld   ($89F4),a
+1CAF: 32 F4 89    ld   (sound_control_89f4),a
 1CB2: DD 2A 8E 89 ld   ix,($898E)
 1CB6: DD 66 01    ld   h,(ix+$01)
 1CB9: DD 6E 00    ld   l,(ix+$00)
@@ -4060,22 +4074,22 @@ copy_status_row_1c4e:
 1D38: DD 7E 00    ld   a,(ix+$00)
 1D3B: DD B6 01    or   (ix+$01)
 1D3E: C8          ret  z
-1D3F: 3A F4 89    ld   a,($89F4)
+1D3F: 3A F4 89    ld   a,(sound_control_89f4)
 1D42: E6 03       and  $03
 1D44: F6 02       or   $02
-1D46: 32 F4 89    ld   ($89F4),a
+1D46: 32 F4 89    ld   (sound_control_89f4),a		; play fuel countdown
 1D49: AF          xor  a
 1D4A: 32 69 82    ld   ($8269),a
 1D4D: 3A 69 82    ld   a,($8269)
 1D50: 3D          dec  a
-1D51: 20 FA       jr   nz,$1D4D
+1D51: 20 FA       jr   nz,$1D4D		; [cpu_dependent_loop]
 1D53: DD 7E 00    ld   a,(ix+$00)
 1D56: DD B6 01    or   (ix+$01)
 1D59: C8          ret  z
 1D5A: C5          push bc
 1D5B: CD B2 1C    call $1CB2
 1D5E: CD F5 1D    call add_10_points_1df5
-1D61: CD 6F 1D    call $1D6F
+1D61: CD 6F 1D    call update_score_to_screen_1d6f
 1D64: C1          pop  bc
 1D65: 05          dec  b
 1D66: 28 C5       jr   z,$1D2D
@@ -4083,9 +4097,10 @@ copy_status_row_1c4e:
 1D6A: 28 DD       jr   z,$1D49
 1D6C: C3 53 1D    jp   $1D53
 
+update_score_to_screen_1d6f:
 1D6F: 3A 20 80    ld   a,(control_flags_8020)
 1D72: A7          and  a
-1D73: C8          ret  z
+1D73: C8          ret  z		; returns if demo mode
 1D74: 3A D0 82    ld   a,($82D0)
 1D77: 11 60 80    ld   de,$8060
 1D7A: 2A 90 89    ld   hl,($8990)
@@ -4094,7 +4109,6 @@ copy_status_row_1c4e:
 1D82: 20 04       jr   nz,$1D88
 1D84: ED B0       ldir			; [video_address]
 1D86: 18 12       jr   $1D9A
-
 1D88: 1A          ld   a,(de)		; [video_address]
 1D89: FE 40       cp   $40
 1D8B: 28 03       jr   z,$1D90
@@ -4128,7 +4142,7 @@ copy_status_row_1c4e:
 1DBE: DD E5       push ix    ; [uncovered] 
 1DC0: CD 7D 09    call $097D    ; [uncovered] 
 1DC3: DD E1       pop  ix    ; [uncovered] 
-1DC5: 21 F4 89    ld   hl,$89F4    ; [uncovered] 
+1DC5: 21 F4 89    ld   hl,sound_control_89f4    ; [uncovered] 
 1DC8: CB C6       set  0,(hl)    ; [uncovered] 
 1DCA: C9          ret    ; [uncovered] 
 
@@ -4341,7 +4355,7 @@ handle_sounds_2400:
 2427: C2 63 26    jp   nz,$2663		; special music
 242A: CB 57       bit  2,a
 242C: C2 88 25    jp   nz,$2588
-242F: 3A F4 89    ld   a,($89F4)
+242F: 3A F4 89    ld   a,(sound_control_89f4)
 2432: CB 7F       bit  7,a
 2434: CA 4C 24    jp   z,$244C
 2437: 3E FF       ld   a,$FF
@@ -4350,7 +4364,7 @@ handle_sounds_2400:
 243D: 32 70 A1    ld   ($A170),a
 2440: 20 F7       jr   nz,$2439
 2442: 32 80 A1    ld   ($A180),a
-2445: 21 F4 89    ld   hl,$89F4
+2445: 21 F4 89    ld   hl,sound_control_89f4
 2448: CB BE       res  7,(hl)
 244A: 18 06       jr   $2452
 
@@ -4360,7 +4374,7 @@ handle_sounds_2400:
 2452: 21 0D 8A    ld   hl,$8A0D
 2455: 3A F6 89    ld   a,($89F6)
 2458: 36 01       ld   (hl),$01
-245A: 3A F4 89    ld   a,($89F4)
+245A: 3A F4 89    ld   a,(sound_control_89f4)
 245D: CB 47       bit  0,a
 245F: C2 CD 26    jp   nz,$26CD
 2462: CB 6F       bit  5,a
@@ -4375,13 +4389,13 @@ handle_sounds_2400:
 2479: CB AE       res  5,(hl)
 247B: CB B6       res  6,(hl)
 247D: CB BE       res  7,(hl)
-247F: 21 F4 89    ld   hl,$89F4
+247F: 21 F4 89    ld   hl,sound_control_89f4
 2482: CB AE       res  5,(hl)
 2484: C3 AF 24    jp   $24AF
 
 2487: 21 0D 8A    ld   hl,$8A0D
 248A: 36 00       ld   (hl),$00
-248C: 3A F4 89    ld   a,($89F4)
+248C: 3A F4 89    ld   a,(sound_control_89f4)
 248F: CB 5F       bit  3,a
 2491: C2 1F 27    jp   nz,$271F
 2494: 36 01       ld   (hl),$01
@@ -4405,7 +4419,7 @@ handle_sounds_2400:
 24BD: CB 57       bit  2,a
 24BF: 20 57       jr   nz,$2518
 24C1: CB C6       set  0,(hl)
-24C3: 21 F4 89    ld   hl,$89F4
+24C3: 21 F4 89    ld   hl,sound_control_89f4
 24C6: 7E          ld   a,(hl)
 24C7: 23          inc  hl
 24C8: 46          ld   b,(hl)
@@ -4475,7 +4489,7 @@ handle_in_game_music_251c:
 2546: 21 C8 8A    ld   hl,$8AC8
 2549: 11 A1 2B    ld   de,$2BA1
 254C: CD 93 28    call $2893
-254F: 3A F4 89    ld   a,($89F4)
+254F: 3A F4 89    ld   a,(sound_control_89f4)
 2552: E6 0E       and  $0E
 2554: FE 00       cp   $00
 2556: 20 0A       jr   nz,$2562
@@ -4486,7 +4500,7 @@ handle_in_game_music_251c:
 2562: 21 D4 8A    ld   hl,$8AD4
 2565: 11 30 2B    ld   de,$2B30
 2568: CD 93 28    call $2893
-256B: 3A F4 89    ld   a,($89F4)
+256B: 3A F4 89    ld   a,(sound_control_89f4)
 256E: CB 47       bit  0,a
 2570: 20 0E       jr   nz,$2580
 2572: CB 6F       bit  5,a
@@ -4652,7 +4666,7 @@ handle_in_game_music_251c:
 270F: 21 F6 89    ld   hl,$89F6
 2712: CB BE       res  7,(hl)
 2714: C3 1C 24    jp   $241C
-2717: 21 F4 89    ld   hl,$89F4
+2717: 21 F4 89    ld   hl,sound_control_89f4
 271A: CB 86       res  0,(hl)
 271C: C3 AF 24    jp   $24AF
 271F: 21 74 8A    ld   hl,$8A74
@@ -4677,7 +4691,7 @@ handle_in_game_music_251c:
 274A: CB AE       res  5,(hl)
 274C: CB BE       res  7,(hl)
 274E: 3A 0D 8A    ld   a,($8A0D)
-2751: 21 F4 89    ld   hl,$89F4
+2751: 21 F4 89    ld   hl,sound_control_89f4
 2754: FE 00       cp   $00
 2756: 28 18       jr   z,$2770
 2758: FE 01       cp   $01
@@ -4724,19 +4738,19 @@ handle_in_game_music_251c:
 27A7: CB AE       res  5,(hl)
 27A9: CB B6       res  6,(hl)
 27AB: CB BE       res  7,(hl)
-27AD: 21 F4 89    ld   hl,$89F4
+27AD: 21 F4 89    ld   hl,sound_control_89f4
 27B0: CB A6       res  4,(hl)
 27B2: C9          ret
 
 handle_engine_sound_27b3:
-27B3: 3A F4 89    ld   a,($89F4)
+27B3: 3A F4 89    ld   a,(sound_control_89f4)
 27B6: CB 77       bit  6,a
 27B8: 20 06       jr   nz,$27C0
 27BA: 3E 00       ld   a,$00
 27BC: 32 1F A1    ld   (sound_a11f),a
 27BF: C9          ret
 
-27C0: 3A F4 89    ld   a,($89F4)
+27C0: 3A F4 89    ld   a,(sound_control_89f4)
 27C3: CB 67       bit  4,a
 27C5: C2 80 27    jp   nz,$2780
 27C8: 3A 6A 80    ld   a,($806A)

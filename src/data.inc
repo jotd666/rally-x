@@ -35,4 +35,6 @@ nb_credit_sounds_to_play_82a8 = 0x82a8
 counter_824b = 0x824b
 var_81ab = 0x81ab
 nb_picked_flags_8250 = 0x8250
+double_score_8023 = 0x8023
 music_control_89f5 = 0x89f5
+sound_control_89f4 = 0x89f4

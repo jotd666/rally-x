@@ -14,6 +14,7 @@ bullet placement: first do with a mockup
 - game restarts automatically need to reset "1" ??? nope!!
 - engine sfx: make frequency vary
 - level skip
+- insert coin/start with fire/up (check: control_flags_8020)
 
 4x4
 0: upper left white
@@ -22,6 +23,7 @@ bullet placement: first do with a mockup
 5: red
 7: center red on white
 
+complete level on first flag: bpset 18CB,,{PC=$18CE;g}
 skip routine: bpset 0DB2,,{PC=$184;g}
 
 stop engine sound & in-game tunes: 
