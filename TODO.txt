@@ -1,10 +1,7 @@
-- palette of radar not correct: fix positions of white, black, red
-- loop engine: don't play if engine bit is set, code osd_stop_engine_sound
-  select channels properly TOTEST
+- palette of radar not correct: white, black/gray, red palette colors
+- add explosion/crash sound on rock/car
 - insert coin: blue car stays displayed
 
-- display bullets (enemies on radar) :use bitmap & tile redraw
-bullet placement: first do with a mockup
 - cpu dependent loop 18FD
 - add music play hooks
 - kind of level skip flag picked always complete level trainer

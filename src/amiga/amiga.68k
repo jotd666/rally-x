@@ -853,10 +853,56 @@ _vblank:
     movem.l (a7)+,d0-d7/a0-a6
     rte
 	
+*TEST_RADAR_ERASE = 1
+
+erase_radar_dots:
+	* first erase previous dots
+	lea		previous_radar_addresses,a1
+	moveq	#0,d0
+0:
+	move.w	(a1)+,d0	| address
+	jeq		10f			| null: end
+	lea		(a6,d0.l),a0
+	.ifdef	TEST_RADAR_ERASE
+	move.b	#0x48,(a0)
+	move.b	#0x66,(0x800,a0)
+	.endif
+	jbsr	osd_video_byte_dirty		| repaint original radar char
+	move.w	(a1)+,d0
+	jeq		0b
+	* either horiz or vertical extra erase
+	* bit 0: horiz extend, bit 1: vertical extend
+	btst	#0,d0
+	jeq		2f
+	addq	#1,a0			| next col too
+
+	.ifdef	TEST_RADAR_ERASE
+	move.b	#0x48,(a0)
+	move.b	#0x66,(0x800,a0)	
+	.endif
+	
+	jbsr	osd_video_byte_dirty
+2:
+	btst	#1,d0
+	jeq		0b
+	add	#0x20,a0		| next row too
+	.ifdef	TEST_RADAR_ERASE
+	move.b	#0x48,(a0)
+	move.b	#0x66,(0x800,a0)	
+	.endif
+	jbsr	osd_video_byte_dirty
+	jra		0b
+10:
+	* reset
+	lea		previous_radar_addresses,a0
+	move.l	a0,previous_radar_addresses_ptr
+	rts
+	
 update_radar_dots:
 	GET_MEMORY_BLOCKS_IN_A5_A6
-
-
+	
+	jbsr	erase_radar_dots
+	
 	moveq	#0,d5
 	* for offs in range(0x14,0x20):
 	move.w	#0x14,d3		| offset
@@ -894,12 +940,19 @@ update_radar_dots:
 	sne		d2		| not correct
 	jbsr	draw_radar_dot
 
+	move.l	previous_radar_addresses_ptr,a0
+	move.w	d0,(a0)+  | address
+	move.w	d1,(a0)+  | refresh flags
+	move.l	a0,previous_radar_addresses_ptr
 2:
 	move.w	d7,d3	| restore d3	
 	addq	#1,d3
 	cmp.w	#0x20,d3
 	jne		0b
 	
+	* null terminate
+	move.l	previous_radar_addresses_ptr,a0
+	clr.l	(a0)
 	rts
 
 	.ifndef	RELEASE
@@ -1251,7 +1304,7 @@ draw_radar_dot:
 	moveq	#0,d6
 	move.w	d0,d3
 	lsr.w	#3,d3	| X displacement in bytes
-	subq	#2,d3	| correction
+	subq	#2,d3	| correction (empric)
 	move.w	d1,d4	| save Y
 	lsr.w	#3,d4	| in bytes
 	and.w	#7,d0	| displacement in pixels
@@ -1288,18 +1341,23 @@ draw_radar_dot:
 	* d3=x, d4=y
 	moveq	#0,d0
 	moveq	#0,d1
-	sub.w	#224/8,d3	| origin at zero
+
+
+	sub.w	#224/8-2,d3	| origin at zero
 	jcs		0f		| cannot happen
+
+	* compensate (empiric:)
+	sub.w	#8,d3
+	sub.w	#1,d4
+	
+	
 	lea		status_addresses,a2
 	lsl.w	#4,d4
 	add.w	d3,d3
 	add.w	d4,d3
 	move.w  (a2,d3.w),d0
 	
-	*lea		(a6,d0.l),a0
-	*move.b	#0x48,(a0)
-	*move.b	#0x66,(0x800,a0)	
-	*jbsr	osd_video_byte_dirty
+
 	* now bits to tell how many chars we need
 	* to refresh the 2x2 square
 	lsr.w	#4,d4
@@ -3650,8 +3708,12 @@ status_log_name:
 looped_sound_enabled:
 	.long	0
 
+previous_radar_addresses_ptr:
+	.long	0
 
-
+previous_radar_addresses:
+	.skip	0x40		| 16 entries more than enough
+	
 music_playing:
 	.byte	0
 

@@ -371,7 +371,7 @@ animate_all_0069:
 01CF: 0E 03       ld   c,$03
 01D1: E5          push hl
 01D2: D5          push de
-01D3: 1A          ld   a,(de)
+01D3: 1A          ld   a,(de)		; [unchecked_address]
 01D4: D6 BD       sub  $BD
 01D6: FE 09       cp   $09
 01D8: 30 05       jr   nc,$01DF
