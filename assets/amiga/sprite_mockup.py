@@ -12,7 +12,7 @@ tilesdir = os.path.join(this_dir,os.pardir,"sheets","sprites")
 radar_attributes = [0,0,0,0,9,1,1,1,1,1,1,1,1,0,0,0]
 radar_attributes = [int(x,16) for x in "00 00 00 00 0F 0D 0D 0C 0C 0C 0D 0C 0D 00 00 00".split()]
 radar_attributes = [int(x,16) for x in "00 00 00 00 0E 0C 0C 0C 0C 0C 0C 0D 0D 00 00 00".split()]
-
+radar_attributes = [int(x,16) for x in "FF 00 00 00 0F 0D 0D 0C 0C 0C 0D 0C 0D 00 00 00".split()]
 
 def doit(binname):
     with open(os.path.join(this_dir,binname),"rb") as f:
@@ -113,7 +113,7 @@ def doit(binname):
     layer.save(f"{binname}.png")
 
 
-doit("rallyx_ram_7cars")
+doit("video")
 
 
 

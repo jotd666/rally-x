@@ -45,7 +45,7 @@ $(AMIGASRC)/graphics.68k: $(ASSETS)/convert_graphics.py
 
 $(AMIGASRC)/sounds.68k: $(ASSETS)/convert_sounds.py 
 	cmd /c $(ASSETS)\convert_sounds.py
-	del $(OBJS)\sound_entries.o
+	del $(OBJS)\sound_entries.o $(OBJS)\sounds.o
 	
 $(MAIN): $(OBJS)
 	$(GCC_BIN)/m68k-amigaos-ld $(OPT_RELEASE_LINK) -o $(MAIN) $(OBJS)

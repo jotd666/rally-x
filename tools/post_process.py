@@ -346,7 +346,52 @@ with open(source_dir / "conv.s") as f:
 """+line
         # sounds
         elif address == 0x1552:
-            line = change_instruction("move.w\t#CREDIT_01_SND,d0",lines,i)+"\tclr.b\t(a0)\njbra\tosd_sound_start\n"
+            line = change_instruction("move.l\td0,-(a7)",lines,i)+"""\tmove.w\t#CREDIT_01_SND,d0
+\tclr.b\t(a0)
+\tjbsr\tosd_sound_start
+\tmove.l\t(a7)+,d0
+\trts
+"""
+        elif address == 0x17c4:
+            line += """
+\tmove.w\t#FLAG_02_SND,d0
+\tcmp.b\t#4,d2
+\tjeq\t0f
+\tmove.w\t#MULTIPLIER_FLAG_03_SND,d0
+0:
+\tjbsr\tosd_sound_start
+"""
+        elif address == 0x0E57:
+            line += """\tmove.w\t#SMOKE_04_SND,d0
+\tjbsr\tosd_sound_start
+"""
+        elif address == 0x1D46:
+            line += """\tmove.w\t#FUEL_05_SND,d0
+\tjbsr\tosd_sound_start
+"""
+        elif address == 0x1CAF:
+            line += """\tmove.w\t#FUEL_WARNING_08_SND,d0
+\tjbsr\tosd_sound_start
+"""
+        elif address == 0x0A65:
+            line += """\tmove.w\t#ENGINE_06_SND,d0
+\tjbsr\tosd_sound_start
+"""
+        elif address == 0x0EB7:
+            line += """\tbtst\t#6,(a0)
+\tjne\t0f  | already playing
+\tmove.w\t#ENGINE_06_SND,d0
+\tjbsr\tosd_sound_start
+0:
+"""
+        elif address == 0x1DC8:
+            line += """\tmove.w\t#EXTRA_LIFE_07_SND,d0
+\tjbsr\tosd_sound_start
+"""
+        elif address in {0x2448,0x16E0,0x18DF,0x19A3}:
+            line += """\tjbsr\tosd_stop_engine_sound
+"""
+
 
         # end game_specific
         ###############################################

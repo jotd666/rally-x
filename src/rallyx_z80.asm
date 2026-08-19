@@ -146,7 +146,7 @@ double_score_8023 = $8023
 ; bit 0 on: idle, off: tune playing
 music_control_89f5 = $89f5
 ; sound control:
-; bit 7: 
+; bit 7: stop engine loop
 ; bit 6: engine loop
 ; bit 5: low fuel warning alarm
 ; bit 4: changes engine sound when dropping smoke cloud
@@ -1406,7 +1406,7 @@ clear_sprites_074c:
 0A5D: 3E 01       ld   a,$01
 0A5F: 32 81 A1    ld   ($A181),a
 0A62: 21 F4 89    ld   hl,sound_control_89f4
-0A65: 36 40       ld   (hl),$40
+0A65: 36 40       ld   (hl),$40		; start engine
 0A67: 23          inc  hl
 0A68: 36 10       ld   (hl),$10	; in-game music music_control_89f5
 0A6A: 2A 9C 89    ld   hl,($899C)
@@ -1870,8 +1870,8 @@ increase_and_wrap_d5w_0d69:
 
 0DAA: E5          push hl
 0DAB: 21 F4 89    ld   hl,sound_control_89f4
-0DAE: CB EE       set  5,(hl)
-0DB0: E1          pop  hl
+0DAE: CB EE       set  5,(hl)		; also low fuel warning
+0DB0: E1          pop  hl		; [breakpoint]
 0DB1: C9          ret
 
 0DB2: E5          push hl
@@ -1971,7 +1971,7 @@ smoke_release_end_0df4:
 0E50: 21 91 82    ld   hl,smoke_release_countdown_8291
 0E53: 35          dec  (hl)			; [unchecked_address]
 0E54: 21 F4 89    ld   hl,sound_control_89f4
-0E57: CB E6       set  4,(hl)		; [video_address]
+0E57: CB E6       set  4,(hl)		; [unchecked_address] smoke sound
 0E59: C1          pop  bc
 0E5A: D1          pop  de
 0E5B: E1          pop  hl
@@ -3008,12 +3008,12 @@ coin_inserted_1518:
 1534: EB          ex   de,hl
 1535: 3A 21 80    ld   a,($8021)
 1538: A7          and  a
-1539: 28 09       jr   z,$1544
+1539: 28 09       jr   z,zero_sounds_1544
 153B: 3A 20 80    ld   a,(control_flags_8020)
 153E: FE 01       cp   $01
 1540: CC D2 1E    call z,display_credits_1ed2
 1543: C9          ret
-
+zero_sounds_1544:
 1544: 21 F4 89    ld   hl,sound_control_89f4
 1547: 77          ld   (hl),a
 1548: 23          inc  hl
@@ -3228,7 +3228,7 @@ play_credit_sounds_154d:
 16D8: 3E EC       ld   a,$EC
 16DA: 32 14 80    ld   ($8014),a
 16DD: 21 F4 89    ld   hl,sound_control_89f4
-16E0: 36 80       ld   (hl),$80
+16E0: 36 80       ld   (hl),$80		; stop sound
 16E2: 23          inc  hl
 16E3: 36 08       ld   (hl),$08
 16E5: CD 6E 17    call $176E
@@ -3513,7 +3513,7 @@ flag_picked_up_1896:
 18D8: 21 F4 89    ld   hl,sound_control_89f4
 18DB: 7E          ld   a,(hl)
 18DC: E6 3F       and  $3F
-18DE: 77          ld   (hl),a
+18DE: 77          ld   (hl),a		; stop engine sound
 18DF: 23          inc  hl
 18E0: 36 28       ld   (hl),$28		; plays end of level music music_control_89f5
 18E2: 3E EC       ld   a,$EC
@@ -3729,24 +3729,24 @@ move_wrap_pointer_1988:
 1A9C: 10 FC       djnz $1A9A
 1A9E: E5          push hl
 1A9F: 11 2F 86    ld   de,$862F
-1AA2: 1A          ld   a,(de)
+1AA2: 1A          ld   a,(de)		; [video_address]
 1AA3: 11 28 86    ld   de,$8628
 1AA6: FE 40       cp   $40
 1AA8: 20 1D       jr   nz,$1AC7
 1AAA: 21 64 80    ld   hl,$8064
 1AAD: 01 04 00    ld   bc,$0004
-1AB0: ED B0       ldir
+1AB0: ED B0       ldir		; [video_address]
 1AB2: 0E 04       ld   c,$04
 1AB4: 21 60 80    ld   hl,$8060
-1AB7: ED B0       ldir
+1AB7: ED B0       ldir		; [video_address]
 1AB9: 3E 22       ld   a,$22
-1ABB: 12          ld   (de),a
+1ABB: 12          ld   (de),a		; [video_address]
 1ABC: 1B          dec  de
-1ABD: 1A          ld   a,(de)
+1ABD: 1A          ld   a,(de)		; [video_address]
 1ABE: FE 40       cp   $40
 1AC0: 20 FA       jr   nz,$1ABC
 1AC2: 3E 22       ld   a,$22
-1AC4: 12          ld   (de),a
+1AC4: 12          ld   (de),a		; [video_address]
 1AC5: 18 08       jr   $1ACF
 1AC7: 06 09       ld   b,$09
 1AC9: 3E 40       ld   a,$40
@@ -3775,7 +3775,7 @@ move_wrap_pointer_1988:
 1AF8: 01 1C 00    ld   bc,$001C
 1AFB: 09          add  hl,bc
 1AFC: 06 08       ld   b,$08
-1AFE: 7E          ld   a,(hl)
+1AFE: 7E          ld   a,(hl)		; [unchecked_address]
 1AFF: EE 15       xor  $15
 1B01: 77          ld   (hl),a		; [video_address]
 1B02: 23          inc  hl
@@ -3995,7 +3995,7 @@ copy_status_row_1c4e:
 1CA6: FE 0A       cp   $0A
 1CA8: 20 08       jr   nz,$1CB2
 1CAA: 3A F4 89    ld   a,(sound_control_89f4)
-1CAD: F6 20       or   $20
+1CAD: F6 20       or   $20			; fuel low warning
 1CAF: 32 F4 89    ld   (sound_control_89f4),a
 1CB2: DD 2A 8E 89 ld   ix,($898E)
 1CB6: DD 66 01    ld   h,(ix+$01)
@@ -4143,7 +4143,7 @@ update_score_to_screen_1d6f:
 1DC0: CD 7D 09    call $097D    ; [uncovered] 
 1DC3: DD E1       pop  ix    ; [uncovered] 
 1DC5: 21 F4 89    ld   hl,sound_control_89f4    ; [uncovered] 
-1DC8: CB C6       set  0,(hl)    ; [uncovered] 
+1DC8: CB C6       set  0,(hl)    ; extra life sound
 1DCA: C9          ret    ; [uncovered] 
 
 clear_screen_and_reset_scroll_1dcb:
@@ -4365,7 +4365,7 @@ handle_sounds_2400:
 2440: 20 F7       jr   nz,$2439
 2442: 32 80 A1    ld   ($A180),a
 2445: 21 F4 89    ld   hl,sound_control_89f4
-2448: CB BE       res  7,(hl)
+2448: CB BE       res  7,(hl)		; stop engine sound
 244A: 18 06       jr   $2452
 
 244C: CD B3 27    call handle_engine_sound_27b3

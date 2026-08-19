@@ -11,7 +11,8 @@ sound_dir = this_dir / ".." / "sounds"
 # default channel = 3, default priority = 40
 # put below some exceptions
 sound_settings_dict = {
-
+6 : {"channel":2,"priority":50,"loops":True},   # engine
+4 : {"channel":1,"priority":50},   # smoke
 }
 
 def convert():
@@ -41,7 +42,7 @@ def convert():
 
     sound_dict = {}
     sfx_list = set()
-    snd_chan = 0
+    snd_chan = 3
     # scan directory for speech
     for f in sound_dir.glob("*.wav"):
         sound_name = f.stem
@@ -60,10 +61,10 @@ def convert():
                     sfx_sample_rate = extra_info.get("sample_rate",lq_sample_rate)
 
 
-                    sound_dict[entry] = {"channel":extra_info.get("channel",snd_chan+2),  # default: not auto!
+                    sound_dict[entry] = {"channel":extra_info.get("channel",snd_chan),  # default: not auto!
                     "priority":extra_info.get("priority",40),"index":index,"sample_rate":sfx_sample_rate,
                     "loops":extra_info.get("loops",False)}
-                    snd_chan  = (snd_chan + 1) % 2
+
             except ValueError:
                 pass
 
