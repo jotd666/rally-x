@@ -1,27 +1,26 @@
-- palette of radar not correct: white, black/gray, red palette colors
 - add explosion/crash sound on rock/car
-- insert coin: blue car stays displayed
+- sometimes starts with 99 credits
+- game restarts automatically need to reset "1" ??? nope!!
+- cars have a tendency to lock themselves (cloud)
 
+- ECS: try to reduce colors: would work. Create separate AGA & OCS versions
 - cpu dependent loop 18FD
 - add music play hooks
 - kind of level skip flag picked always complete level trainer
-- GAME OVER is in black should be white
+- GAME OVER is in black should be white: sprite colors share colors with
+  second layer?
 - sometimes cars are all red: snap sprites at this moment for mockup
 
 - infinite fuel: not when level ends / skip fuel bonus
 - status: try to save memory by using narrow screen and negative modulus
 - invincibility
-- game restarts automatically need to reset "1" ??? nope!!
 - engine sfx: make frequency vary
 - level skip
 - insert coin/start with fire/up (check: control_flags_8020)
 
-4x4
-0: upper left white
-1: upper left red
-4: white
-5: red
-7: center red on white
+- cheat add to score
+- highscore load/save
+
 
 complete level on first flag: bpset 18CB,,{PC=$18CE;g}
 skip routine: bpset 0DB2,,{PC=$184;g}
@@ -31,7 +30,6 @@ bpset 27b3,,{PC=$184;g}
 bpset 251c,,{PC=$184;g}
 
 
-ECS: try to reduce colors: would work. Create separate AGA & OCS versions
 
 
 after maze drawn: 08FC

@@ -922,10 +922,10 @@ update_radar_dots:
 	lea	(0x2000,a5),a4		| reload radar attributes (0xA004-0xA010)
 	move.b	(a4,d4.w),d5
 	* code = ((radarattr & 0x0e) >> 1) ^ 0x07
-	move.b	d5,d6
-	and.b	#0xE,d6
-	lsr.b	#1,d6
-	eor.b	#7,d6
+	move.b	d5,d2
+	and.b	#0xE,d2
+	lsr.b	#1,d2
+	eor.b	#7,d2		| code (0,1,3 here)
 	
 	* y = 253-y
 	neg.w	d1
@@ -936,8 +936,7 @@ update_radar_dots:
 	bset	#8,d0			| x+=256
 1:
 
-	tst.b	d6
-	sne		d2		| not correct
+	
 	jbsr	draw_radar_dot
 
 	move.l	previous_radar_addresses_ptr,a0
@@ -1320,10 +1319,10 @@ draw_radar_dot:
 	add.w	d3,d1
 	move.w	#STATUS_SCREEN_PLANE_SIZE,d5
 	move.l	status_screen_ptr,a1
-	add.w	d1,a1
+	add.w	d1,a1		| skip first bitplane (black color #1)
 	lea		(a1,d5.w),a2
 	lea		(a2,d5.w),a3
-	lea		(a3,d5.w),a4
+	*lea		(a3,d5.w),a4
 	jbsr	put_radar_pixel
 	subq	#1,d0
 	jpl		0f
@@ -1371,14 +1370,19 @@ draw_radar_dot:
 	rts
 	
 put_radar_pixel:
+	move.b	d2,0x110
+	cmp.b	#1,d2
+	jne		0f
 	bclr	d0,(a1)
 	bclr	d0,(NB_BYTES_PER_STATUS_ROW,a1)
-	bset	d0,(a2)
-	bset	d0,(NB_BYTES_PER_STATUS_ROW,a2)
-	bset	d0,(a4)
-	bset	d0,(NB_BYTES_PER_STATUS_ROW,a4)
-	tst.b	d2
+	rts
+0:
+	cmp.b	#3,d2
 	jne		0f
+	bclr	d0,(a2)
+	bclr	d0,(NB_BYTES_PER_STATUS_ROW,a2)
+	rts
+0:
 	bset	d0,(a3)
 	bset	d0,(NB_BYTES_PER_STATUS_ROW,a3)
 0:
@@ -3228,6 +3232,10 @@ handle_keyboard:
 *0:
 *
 10:
+	cmp.b	#0x45,d0
+	jne		0f
+	st.b	kill_flag
+0:
 	.ifndef	RELEASE
 	cmp.b	#34,d0
 	bne		0f
@@ -3889,7 +3897,7 @@ scroll_y:
 	.byte	0
 	
 _keyexit:
-	.byte	0x45	| ESC by default unless whdload overwrites it
+	.byte	0x59	| F10 by default unless whdload overwrites it
 
 	
 cheat_used:
@@ -4048,14 +4056,21 @@ sprite_colors:
 pal_intreq_block_game:
 	.word	 intreq,0x8014  | call copper interrupt in the middle of a frame, also flag so copper interrupt knows that we're going to call copper int
 
-
+	* Y of the radar, dynamic colors that match the bitset ops
+	* from draw_radar_dot
+	.word	0x9401,0xFFFE
+	.word	color+14+32,0x888	| flashing gray from car radar dot
+	.word	color+4+32,0xA00    | red enemy cars
+	
 	.word	0xF001,0xFFFE	| if we don't add an extra wait, NTSC version locks up
 	
 	* pal limit
     .word  0xFFDF,0xFFFE       | PAL wait
 	* extra wait for PAL (NTSC can't afford this)
 pal_wait:
-	.word	0x0C01,0xFFFE
+	.word	0x0401,0xFFFE
+	.word	color+14+32,0x04b0	| restore
+	.word	color+4+32,0x0060   | radar dot colors
 	.word	 intreq,0x8010
 
 

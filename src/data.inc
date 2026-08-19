@@ -38,3 +38,4 @@ nb_picked_flags_8250 = 0x8250
 double_score_8023 = 0x8023
 music_control_89f5 = 0x89f5
 sound_control_89f4 = 0x89f4
+p2_lives_8010 = 0x8010

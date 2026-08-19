@@ -1,6 +1,7 @@
 	.global infinite_fuel_flag
 	.global infinite_lives_flag
 	.global invincible_flag
+	.global kill_flag
 	.global start_level
 	.global vb_ticks_count
 	.global break_at_startup_flag
@@ -94,7 +95,7 @@ iyh:
 iyl:
 	.byte	0
 
-no_sync_flag:
+kill_flag:
 	.byte 	0
 break_at_startup_flag:
 	.byte	0

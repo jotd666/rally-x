@@ -155,6 +155,7 @@ music_control_89f5 = $89f5
 ; bit 1: fuel countdown
 ; bit 0: extra life
 sound_control_89f4 = $89f4
+p2_lives_8010 = $8010
 
 0000: C3 00 38    jp   boot_3800
 
@@ -615,10 +616,12 @@ irq_01f0:		; [global]
 03A8: ED 44       neg
 03AA: FE 0B       cp   $0B
 03AC: 30 09       jr   nc,$03B7
+killed_03ae:
 03AE: FB          ei
 03AF: 3E 01       ld   a,$01
 03B1: 32 81 A1    ld   ($A181),a
-03B4: C3 D3 16    jp   $16D3
+03B4: C3 D3 16    jp   player_killed_by_car_16d3
+
 03B7: FD 23       inc  iy
 03B9: FD 23       inc  iy
 03BB: 10 C7       djnz $0384
@@ -3104,7 +3107,7 @@ play_credit_sounds_154d:
 15CE: C2 73 16    jp   nz,$1673
 15D1: 1A          ld   a,(de)
 15D2: FE 03       cp   $03
-15D4: CA 96 19    jp   z,$1996
+15D4: CA 96 19    jp   z,player_killed_by_rock_1996
 15D7: DD 21 88 80 ld   ix,enemy_car_structs_8088
 15DB: FD 21 A8 80 ld   iy,$80A8
 15DF: 06 07       ld   b,$07
@@ -3223,6 +3226,7 @@ play_credit_sounds_154d:
 16D1: A7          and  a
 16D2: C9          ret
 
+player_killed_by_car_16d3:
 16D3: 3E 03       ld   a,$03
 16D5: 32 20 80    ld   (control_flags_8020),a
 16D8: 3E EC       ld   a,$EC
@@ -3622,6 +3626,7 @@ move_wrap_pointer_1988:
 1994: 78          ld   a,b
 1995: C9          ret
 
+player_killed_by_rock_1996:
 1996: 3E 03       ld   a,$03
 1998: 32 20 80    ld   (control_flags_8020),a
 199B: 3E EC       ld   a,$EC

@@ -392,7 +392,18 @@ with open(source_dir / "conv.s") as f:
             line += """\tjbsr\tosd_stop_engine_sound
 """
 
-
+        elif address == 0x06CE:
+            line += "\tjbsr\tclear_sprites\n"
+        elif address == 0x0377:
+            line += """\ttst.b\tkill_flag
+\tjeq\t0f
+\tclr.b\tkill_flag
+\tGET_ADDRESS    p1_lives_800f,a0
+\tmove.b\t#1,(a0)+
+\tmove.b\t#1,(a0)
+\tjra\tkilled_03ae
+0:
+"""
         # end game_specific
         ###############################################
         if address in remove_error_in_prev_line:
@@ -462,3 +473,10 @@ with open(source_dir / f"{gamename}.68k","w") as fw:
         fw.write(f"\t.global\t{g}\n")
 
     fw.writelines(new_lines)
+    fw.write("""clear_sprites:
+\tGET_UNCHECKED_ADDRESS\t0x8014,a0
+\tclr.l\t(a0)+
+\tclr.l\t(a0)+
+\tclr.l\t(a0)+
+\trts
+""")
