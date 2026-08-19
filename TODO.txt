@@ -1,10 +1,13 @@
+- cheat add to score
+- highscore load/save
+- game restarts automatically need to reset "1" ??? nope!!
+- cars have a tendency to lock themselves (cloud): add invincibility
+  and see what happens
+
 - add explosion/crash sound on rock/car
 - sometimes starts with 99 credits
-- game restarts automatically need to reset "1" ??? nope!!
-- cars have a tendency to lock themselves (cloud)
-
 - ECS: try to reduce colors: would work. Create separate AGA & OCS versions
-- cpu dependent loop 18FD
+- cpu dependent loop 18FD look for more
 - add music play hooks
 - kind of level skip flag picked always complete level trainer
 - GAME OVER is in black should be white: sprite colors share colors with
@@ -12,14 +15,10 @@
 - sometimes cars are all red: snap sprites at this moment for mockup
 
 - infinite fuel: not when level ends / skip fuel bonus
-- status: try to save memory by using narrow screen and negative modulus
-- invincibility
 - engine sfx: make frequency vary
 - level skip
 - insert coin/start with fire/up (check: control_flags_8020)
 
-- cheat add to score
-- highscore load/save
 
 
 complete level on first flag: bpset 18CB,,{PC=$18CE;g}
