@@ -1,14 +1,16 @@
 - after game over no credits, explanation screen is buggy
 - ECS: try to reduce colors: would work. Create separate AGA & OCS versions
+  status can use heavy color change copper
+- engine sfx: make frequency vary depending on orientation
 - cars have a tendency to lock themselves: add invincibility
   and see what happens maybe random isn't correct: try to fix random
   in real game see what it does
 - cheat add to score: > 20000 doesn't work
   we should call the "addtoscore" routine
-- add unused tune to "game over" screen: to test
+- add unused tune to "game over" screen: doesn't work, music stop called?
 - highscore load/save
 - sometimes starts with 99 credits
-  status can use heavy color change copper
+  
 - cpu dependent loop 18FD look for more
 - kind of level skip flag picked always complete level trainer
 - GAME OVER is in black should be white: sprite colors share colors with
@@ -16,9 +18,9 @@
 - sometimes cars are all red: snap sprites at this moment for mockup
 
 - infinite fuel: not when level ends / skip fuel bonus
-- engine sfx: make frequency vary
 - level skip
 - insert coin/start with fire/up (check: control_flags_8020)
+  => start works, insert coin does not
 
 
 

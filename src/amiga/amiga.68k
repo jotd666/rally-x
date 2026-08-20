@@ -921,7 +921,17 @@ update_radar_dots:
 	and.b	#0xE,d2
 	lsr.b	#1,d2
 	eor.b	#7,d2		| code (0,1,3 here)
-	
+
+	* set player car color properly
+	tst.b	d2
+	jne		10f
+	clr.w	player_radar_dot_color
+10:
+	cmp.b	#3,d2
+	jne		10f
+	move.w	#0x888,player_radar_dot_color
+10:
+
 	* y = 253-y
 	neg.w	d1
 	add.w	#253,d1
@@ -1339,7 +1349,6 @@ draw_radar_dot:
 	add.w	d1,a1		| skip first bitplane (black color #1)
 	lea		(a1,d5.w),a2
 	lea		(a2,d5.w),a3
-	*lea		(a3,d5.w),a4
 	jbsr	put_radar_pixel
 	subq	#1,d0
 	jpl		0f
@@ -1387,21 +1396,16 @@ draw_radar_dot:
 	rts
 	
 put_radar_pixel:
-	move.b	d2,0x110
 	cmp.b	#1,d2
 	jne		0f
 	bclr	d0,(a1)
 	bclr	d0,(NB_BYTES_PER_STATUS_ROW,a1)
 	rts
 0:
-	cmp.b	#3,d2
-	jne		0f
-	bclr	d0,(a2)
-	bclr	d0,(NB_BYTES_PER_STATUS_ROW,a2)
-	rts
-0:
+	* 0 and 3
 	bset	d0,(a3)
 	bset	d0,(NB_BYTES_PER_STATUS_ROW,a3)
+
 0:
 	rts
 	
@@ -4075,7 +4079,9 @@ pal_intreq_block_game:
 	* Y of the radar, dynamic colors that match the bitset ops
 	* from draw_radar_dot
 	.word	0x9401,0xFFFE
-	.word	color+14+32,0x888	| flashing gray from car radar dot
+	.word	color+14+32
+player_radar_dot_color:
+	.word	0x888	| flashing gray from car radar dot
 	.word	color+4+32,0xA00    | red enemy cars
 	
 	.word	0xF001,0xFFFE	| if we don't add an extra wait, NTSC version locks up
