@@ -4076,11 +4076,17 @@ status_colors:
 main_colors:
 	DECL_COLORS	0,TOTAL_NB_COLORS
 	
+	.ifdef	AGA_VERSION
 	.word	bplcon3,BASE_BPLCON3_VALUE+(1<<13)
 sprite_colors:
 	DECL_COLORS	0,16
 	.word	bplcon3,BASE_BPLCON3_VALUE
-
+	.else
+	* ECS
+sprite_colors:
+	DECL_COLORS	16,16
+	
+	.endif
 
 	* mid-line wait & extra interrupt
 	.word	0x8001,0xFFFE
@@ -4088,12 +4094,12 @@ pal_intreq_block_game:
 	.word	 intreq,0x8014  | call copper interrupt in the middle of a frame, also flag so copper interrupt knows that we're going to call copper int
 
 	* Y of the radar, dynamic colors that match the bitset ops
-	* from draw_radar_dot
+	* from draw_radar_dot. On AGA dyn color shift is 32 on ECS it's 16 (second/status playfield)
 	.word	0x9401,0xFFFE
-	.word	color+14+32
+	.word	color+14+TOTAL_NB_COLORS*2
 player_radar_dot_color:
 	.word	0x888	| flashing gray from car radar dot
-	.word	color+4+32,0xA00    | red enemy cars
+	.word	color+4+TOTAL_NB_COLORS*2,0xA00    | red enemy cars
 	
 	.word	0xF001,0xFFFE	| if we don't add an extra wait, NTSC version locks up
 	
