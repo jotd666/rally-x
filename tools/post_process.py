@@ -375,29 +375,37 @@ with open(source_dir / "conv.s") as f:
             line += """\tmove.w\t#FUEL_WARNING_08_SND,d0
 \tjbsr\tosd_sound_start
 """
+        elif address == 0x0A68:
+            line += generate_play_code("MAIN_TUNE")
         elif address == 0x0769:
             line += generate_play_code("START_TUNE")
         elif address == 0x18E0:
             line += generate_play_code("LEVEL_COMPLETED_TUNE")
+        elif address == 0x19BB:
+            line += generate_play_code("GAME_OVER_TUNE")
 ##        elif address == 0x0A65:
 ##            line += generate_play_code("ENGINE_06")
-        elif address == 0x0EB7:
-            line += """\tbtst\t#6,(a0)
-\tjne\t0f  | already playing
-\tmove.w\t#ENGINE_06_SND,d0
-\tjbsr\tosd_sound_start
-0:
-"""
+##        elif address == 0x0EB7:
+##            line += """\tbtst\t#6,(a0)
+##\tjne\t0f  | already playing
+##\tmove.w\t#ENGINE_06_SND,d0
+##\tjbsr\tosd_sound_start
+##0:
+##"""
         elif address == 0x1DC8:
             line += generate_play_code("EXTRA_LIFE_07")
+        elif address in {0x19A8,0x16E3}:
+            line += generate_play_code("BLAST_09")  # added sound
 
         elif address in {0x2448,0x16E0,0x18DF,0x19A3}:
             line += """\tjbsr\tosd_stop_engine_sound
+\tjbsr\tosd_music_stop
 """
         elif address == 0x0A27:
             line += "\tjbsr\tosd_wait_music_end   | force wait\n"
-        elif address == 0x06CE:
-            line += "\tjbsr\tclear_sprites\n"
+        elif address == 0x1DF2:  # clear screen: ()press start / high scores, ...): add clear sprites
+            # for some reason there's a mode that hides sprites? nvm, screw it
+            line += "\tjbsr\tclear_sprites   | force sprite clear\n"
         elif address == 0x0377:
             line += """\ttst.b\tkill_flag
 \tjeq\t0f

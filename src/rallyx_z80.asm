@@ -127,6 +127,7 @@ p1_lives_800f = $800f
 kill_flag_824c = $824c
 ; during game: 0 vertical (up or down), $FF horizontal
 car_orientation_806b = $806b
+; control_flags_8020: 0: intro, 1: press start, 2: running, 3: dead/waiting
 control_flags_8020 = $8020
 smoke_release_countdown_8291 = $8291
 player_1_current_level_plus_1_81b0 = $81b0
@@ -138,6 +139,7 @@ var_81ab = $81ab
 nb_picked_flags_8250 = $8250
 double_score_8023 = $8023
 pointer_on_player_score_8990 = $8990
+high_score_beaten_82d0 = $82d0
 
 ; music control: set a bit (or several!) to start a tune. Bit 0 clears
 ; when playing and resets to 1 once music has completed
@@ -145,6 +147,7 @@ pointer_on_player_score_8990 = $8990
 ; bit 6: unused music?
 ; bit 5: end level music
 ; bit 4: in-game music
+; bit 3: stop music
 ; bit 2: high score music
 ; bit 0 on: idle, off: tune playing
 music_control_89f5 = $89f5
@@ -380,8 +383,8 @@ animate_all_0069:
 01D6: FE 09       cp   $09
 01D8: 30 05       jr   nc,$01DF
 01DA: 3E 81       ld   a,$81
-01DC: 12          ld   (de),a
-01DD: 36 15       ld   (hl),$15
+01DC: 12          ld   (de),a		; [video_address]
+01DD: 36 15       ld   (hl),$15		; [video_address]
 01DF: CD 5D 0E    call advance_hl_and_de_0e5d
 01E2: 0D          dec  c
 01E3: 20 EE       jr   nz,$01D3
@@ -1225,7 +1228,7 @@ clear_sprites_074c:
 08A7: CD AF 12    call write_flag_dots_12af
 08AA: CD 1B 1D    call $1D1B
 08AD: AF          xor  a
-08AE: 32 D0 82    ld   ($82D0),a
+08AE: 32 D0 82    ld   (high_score_beaten_82d0),a
 08B1: 2A 8A 89    ld   hl,($898A)
 08B4: 7E          ld   a,(hl)
 08B5: E6 03       and  $03
@@ -3238,14 +3241,14 @@ player_killed_by_car_16d3:
 16DD: 21 F4 89    ld   hl,sound_control_89f4
 16E0: 36 80       ld   (hl),$80		; stop sound
 16E2: 23          inc  hl
-16E3: 36 08       ld   (hl),$08
+16E3: 36 08       ld   (hl),$08		; stop music
 16E5: CD 6E 17    call $176E
 16E8: 3A 21 80    ld   a,($8021)
 16EB: A7          and  a
 16EC: CA 8E 06    jp   z,$068E
 16EF: 2A 88 89    ld   hl,($8988)
 16F2: 35          dec  (hl)
-16F3: CA B9 19    jp   z,$19B9
+16F3: CA B9 19    jp   z,game_over_19b9
 16F6: 21 AA 81    ld   hl,$81AA
 16F9: 7E          ld   a,(hl)
 16FA: 47          ld   b,a
@@ -3646,6 +3649,7 @@ player_killed_by_rock_1996:
 19B2: 2A 88 89    ld   hl,($8988)
 19B5: 35          dec  (hl)
 19B6: C2 F6 16    jp   nz,$16F6
+game_over_19b9:
 19B9: 3E A0       ld   a,$A0
 19BB: 32 4B 82    ld   (counter_824b),a
 19BE: 3A 4B 82    ld   a,(counter_824b)
@@ -3689,6 +3693,7 @@ player_killed_by_rock_1996:
 1A15: FD 36 02 74 ld   (iy+$02),$74
 1A19: FD 36 03 66 ld   (iy+$03),$66
 1A1D: 18 20       jr   $1A3F
+
 1A1F: DD 36 00 E3 ld   (ix+$00),$E3
 1A23: DD 36 01 AC ld   (ix+$01),$AC
 1A27: DD 36 02 E7 ld   (ix+$02),$E7
@@ -3702,9 +3707,10 @@ player_killed_by_rock_1996:
 1A44: 3A 4B 82    ld   a,(counter_824b)
 1A47: E6 3F       and  $3F
 1A49: 20 F9       jr   nz,$1A44
-1A4B: 3A D0 82    ld   a,($82D0)
+1A4B: 3A D0 82    ld   a,(high_score_beaten_82d0)
 1A4E: A7          and  a
-1A4F: CA D8 1A    jp   z,$1AD8
+1A4F: CA D8 1A    jp   z,game_over_1ad8
+; high score beaten: display congratulations screen
 1A52: 3E 75       ld   a,$75
 1A54: CD CB 1D    call clear_screen_and_reset_scroll_1dcb
 1A57: 21 29 1B    ld   hl,$1B29
@@ -3728,7 +3734,7 @@ player_killed_by_rock_1996:
 1A8A: E6 0F       and  $0F
 1A8C: 20 F9       jr   nz,$1A87
 1A8E: CB 46       bit  0,(hl)
-1A90: 20 46       jr   nz,$1AD8
+1A90: 20 46       jr   nz,game_over_1ad8
 1A92: 11 60 88    ld   de,$8860
 1A95: 1A          ld   a,(de)		; [unchecked_address]
 1A96: EE 1F       xor  $1F
@@ -3766,6 +3772,7 @@ player_killed_by_rock_1996:
 1AD2: CD F5 1A    call $1AF5
 1AD5: E1          pop  hl
 1AD6: 18 AA       jr   $1A82
+game_over_1ad8:
 1AD8: CD A3 17    call erase_chars_17a3
 1ADB: CD 06 1B    call $1B06
 1ADE: 21 60 88    ld   hl,$8860
@@ -4110,7 +4117,7 @@ update_score_to_screen_1d6f:
 1D6F: 3A 20 80    ld   a,(control_flags_8020)
 1D72: A7          and  a
 1D73: C8          ret  z		; returns if demo mode
-1D74: 3A D0 82    ld   a,($82D0)
+1D74: 3A D0 82    ld   a,(high_score_beaten_82d0)
 1D77: 11 60 80    ld   de,$8060
 1D7A: 2A 90 89    ld   hl,(pointer_on_player_score_8990)
 1D7D: 01 08 00    ld   bc,$0008
@@ -4128,7 +4135,7 @@ update_score_to_screen_1d6f:
 1D92: 0D          dec  c
 1D93: 20 F3       jr   nz,$1D88
 1D95: 3E 01       ld   a,$01    ; [uncovered] 
-1D97: 32 D0 82    ld   ($82D0),a    ; [uncovered] 
+1D97: 32 D0 82    ld   (high_score_beaten_82d0),a    ; [uncovered] 
 1D9A: 3A B2 81    ld   a,($81B2)
 1D9D: 4F          ld   c,a
 1D9E: 3A AA 81    ld   a,($81AA)
@@ -4362,9 +4369,9 @@ handle_sounds_2400:
 2420: CB 7F       bit  7,a
 2422: C2 D7 25    jp   nz,$25D7		; intro music
 2425: CB 77       bit  6,a
-2427: C2 63 26    jp   nz,$2663		; special music
+2427: C2 63 26    jp   nz,$2663		; ??? music
 242A: CB 57       bit  2,a
-242C: C2 88 25    jp   nz,$2588
+242C: C2 88 25    jp   nz,$2588		; high score music
 242F: 3A F4 89    ld   a,(sound_control_89f4)
 2432: CB 7F       bit  7,a
 2434: CA 4C 24    jp   z,$244C

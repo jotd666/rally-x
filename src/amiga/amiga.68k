@@ -1077,19 +1077,16 @@ osd_wait:
 	bne.b	2b
 	rts
 
-
-
-	
-	
-
-	
-
 * Z: set if playing
 is_game_playing:
 	movem.l	a5/a6,-(a7)
 	GET_MEMORY_BLOCKS_IN_A5_A6
 	* both flags are at 1 when actual game is playing (not demo)
-	cmp.l	a6,a6
+	cmp.b	#2,(control_flags_8020-0x8000,a5)
+	jeq		0f
+	cmp.b	#3,(control_flags_8020-0x8000,a5)
+	jeq		0f
+0:
 	movem.l	(a7)+,a5/a6
 	rts
 	
@@ -3115,35 +3112,37 @@ update_controls:
 	bclr	#BIT_COIN_1,d0
 0:
 
-*	jbsr		is_game_playing
-*	jeq	1f
-*	move.l	_joypad_state,d1
-*	* game not playing, we can start with joypad
-*	btst	#JPB_BTN_UP,d1		| "1" key like in MAME
-*	beq.b	0f
-*	bclr	#BIT_START_1P,d0
-*0:
-*	btst	#JPB_BTN_DOWN,d1		| "2" key like in MAME
-*	beq.b	0f
-*	bclr	#BIT_START_2P,d0
-*0:	
-*1:	
-	move.l	a6,a1
-	add.l	#p1_a000,a1
-	move.b	d0,(a1)
-
-
 	jbsr		is_game_playing
-	jeq	0f
+	sne		d7
+	jeq	1f
+	move.l	_joypad_state,d1
+	* game not playing, we can start with joypad
+	btst	#JPB_BTN_UP,d1		| "1" key like in MAME
+	beq.b	0f
+	bclr	#BIT_START_1P,d0
+0:
 	* game not playing, we can insert coin/start with joypad
 	btst	#JPB_BTN_RED,d1		| "5" key like in MAME
 	jeq		0f
 	btst	#JPB_BTN_RED,d2
 	jne		0f
-	nop
+	bclr	#BIT_COIN_1,d0
 0:
+1:	
+	move.l	a6,a1
+	add.l	#p1_a000,a1
+	move.b	d0,(a1)
+
 
 	moveq	#-1,d0
+	
+	tst.b	d7
+	jeq	0f
+	btst	#JPB_BTN_DOWN,d1		| "2" key like in MAME
+	beq.b	0f
+	bclr	#BIT_START_2P,d0
+0:	
+
 	tst.b	(2,a0)		| "2" key like in MAME
 	beq.b	0f
 	bclr	#BIT_START_2P,d0
@@ -3474,6 +3473,7 @@ osd_sound_start:
 	movem.l	d0/d1/d2/a0/a1/a6,-(a7)
 	lea		_custom,a6
 
+	
 	bclr	#7,d0			| stop loop command
 	sne		d2
 

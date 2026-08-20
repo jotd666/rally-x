@@ -76,7 +76,7 @@ def convert():
     "START_TUNE_SND"      :{"index":0x10,"pattern":0,"volume":music_volume},
     "MAIN_TUNE_SND"      :{"index":0x11,"pattern":2,"volume":music_volume},
     "LEVEL_COMPLETED_TUNE_SND"      :{"index":0x12,"pattern":5,"volume":music_volume},
-    "WTF_TUNE_SND"      :{"index":0x13,"pattern":6,"volume":music_volume},
+    "GAME_OVER_TUNE_SND"      :{"index":0x13,"pattern":6,"volume":music_volume},
     }
 
     sound_dict.update(music_dict)
