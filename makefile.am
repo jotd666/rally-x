@@ -43,7 +43,7 @@ clean:
 $(AMIGASRC)/graphics.68k: $(ASSETS)/convert_graphics.py
 	cmd /c $(ASSETS)\convert_graphics.py
 
-$(AMIGASRC)/sounds.68k: $(ASSETS)/convert_sounds.py 
+$(AMIGASRC)/sounds.68k: $(ASSETS)/convert_sounds.py $(ASSETS)/../sounds/rallyx_conv.mod
 	cmd /c $(ASSETS)\convert_sounds.py
 	del $(OBJS)\sound_entries.o $(OBJS)\sounds.o
 	

@@ -189,7 +189,7 @@ w\@:
 	.global	osd_get_random
 	.global	osd_set_scroll_x
 	.global	osd_set_scroll_y
-	.global	osd_read_system
+	.global	osd_wait_music_end
 	
 	.global	is_game_playing
 	.global osd_read_high_scores
@@ -612,11 +612,13 @@ call_bcpl:
 	movem.l (sp)+,d2-d7/a2-a6
 	rts
 
-
-osd_get_random:
-	moveq	#0,d0	| ATM fixed
+osd_wait_music_end:
+0:
+	tst.b	music_playing
+	jne		0b
 	rts
 	
+osd_get_random:
 * > D0: pseudo random value (8 bits, all other bits zeroed)
 	movem.l	a0,-(a7)
 	lea	seed(pc),a0
@@ -632,7 +634,7 @@ osd_get_random:
 	rts
 seed:
 	dc.l	0x12345678
-
+	
 osd_set_scroll_x:
 	move.b	d0,scroll_x
 	rts
@@ -747,6 +749,12 @@ _vblank:
 	btst	#5,d0
 	beq.b		1f
 
+	tst.b	_mt_E8Trigger
+	jeq		0f
+	clr.b	_mt_E8Trigger
+	clr.b	music_playing
+	
+0:
 	tst.b	freeze_enemies_flag
 	jeq		0f
 	jbsr	freeze_enemies
@@ -766,19 +774,6 @@ _vblank:
 	bne.b	0f
 	bsr		toggle_pause
 0:
-	* here music doesn't loop. We have to stop it when it ends
-	move.w	music_tick,d1
-	beq.b	13f
-	bmi.b	13f		| negative: infinite, not interruptible
-	
-	subq	#1,d1
-
-	move.w	d1,music_tick
-	bne.b	13f
-	move.b	music_track_start_number,d1
-	jbsr		osd_music_stop
-
-13:
 	
 	* ack vbl twice (040/pistorm bug)
 	move.w	#0x20,(intreq,a5)
@@ -1122,10 +1117,35 @@ skip_level:
 	movem.l	(a7)+,a5/a6
 	rts
 
-add_10000_points:
-	movem.l	a5/a6,-(a7)
+add_1000_points:
+	movem.l	a5/a6/d0,-(a7)
+	moveq	#0,d0
 	GET_MEMORY_BLOCKS_IN_A5_A6
-	movem.l	(a7)+,a5/a6
+	move.w	(pointer_on_player_score_8990-0x8000,a5),d0
+	rol.w	#8,d0
+	lea		(a6,d0.l),a0
+	cmp.b	#0x40,(a0)
+	jne		0f
+	clr.b	(a0)
+0:
+	add.b	#1,(a0)
+	jbsr	osd_video_byte_dirty
+	cmp.b	#10,(a0)
+	jne		0f
+	clr.b	(a0)
+	jbsr	osd_video_byte_dirty
+	addq	#7,a0
+	cmp.b	#9,(a0)
+	jeq		0f
+	cmp.b	#0x40,(a0)
+	jne		1f
+	clr.b	(a0)
+1:
+	add.b	#1,(a0)
+0:
+	jbsr	osd_video_byte_dirty
+
+	movem.l	(a7)+,a5/a6/d0
 	rts
 
 
@@ -3216,7 +3236,7 @@ handle_keyboard:
 	st.b	cheat_used
 	* add 10000 points
 	move.w	#0x0FF,_custom+color
-	jbsr	add_10000_points
+	jbsr	add_1000_points
 	
 0:
 	cmp.b	#0x53,d0	| F4 key
@@ -3500,10 +3520,7 @@ osd_sound_start:
 
 	* music
 4:
-	* don't play if already playing
-	* (music_tick value is not important for looped tunes
-	* as long as it's not zero)
-
+	clr.b	_mt_E8Trigger
 
 	* here we allow music to override another looping music
 	*tst.w	music_tick

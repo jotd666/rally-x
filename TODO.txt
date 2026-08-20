@@ -1,10 +1,10 @@
-- cheat add to score
+- cheat add to score: > 20000 doesn't work
+  we should call the "addtoscore" routine
+- highscore screen: should also clear sprites (GAME OVER remains)
 - highscore load/save
-- game restarts automatically need to reset "1" ??? nope it continues play
-  with  255 lives
-- cars have a tendency to lock themselves (cloud): add invincibility
+- game continues play  with  255 lives unless highscore
+- cars have a tendency to lock themselves: add invincibility
   and see what happens
-- game starts before intro music has ended reverse that
 - add explosion/crash sound on rock/car
 - sometimes starts with 99 credits
 - ECS: try to reduce colors: would work. Create separate AGA & OCS versions

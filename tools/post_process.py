@@ -394,7 +394,8 @@ with open(source_dir / "conv.s") as f:
         elif address in {0x2448,0x16E0,0x18DF,0x19A3}:
             line += """\tjbsr\tosd_stop_engine_sound
 """
-
+        elif address == 0x0A27:
+            line += "\tjbsr\tosd_wait_music_end   | force wait\n"
         elif address == 0x06CE:
             line += "\tjbsr\tclear_sprites\n"
         elif address == 0x0377:

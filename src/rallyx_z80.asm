@@ -137,6 +137,8 @@ counter_824b = $824b
 var_81ab = $81ab
 nb_picked_flags_8250 = $8250
 double_score_8023 = $8023
+pointer_on_player_score_8990 = $8990
+
 ; music control: set a bit (or several!) to start a tune. Bit 0 clears
 ; when playing and resets to 1 once music has completed
 ; bit 7: game start music
@@ -1381,6 +1383,7 @@ clear_sprites_074c:
 0A21: 32 20 80    ld   (control_flags_8020),a
 0A24: 32 81 A1    ld   ($A181),a
 0A27: 32 4B 82    ld   (counter_824b),a
+; when reaches here the intro/start tune just ended
 0A2A: 3A 4B 82    ld   a,(counter_824b)
 0A2D: E6 3F       and  $3F
 0A2F: 20 F9       jr   nz,$0A2A
@@ -1874,7 +1877,7 @@ increase_and_wrap_d5w_0d69:
 0DAA: E5          push hl
 0DAB: 21 F4 89    ld   hl,sound_control_89f4
 0DAE: CB EE       set  5,(hl)		; also low fuel warning
-0DB0: E1          pop  hl		; [breakpoint]
+0DB0: E1          pop  hl
 0DB1: C9          ret
 
 0DB2: E5          push hl
@@ -4108,7 +4111,7 @@ update_score_to_screen_1d6f:
 1D73: C8          ret  z		; returns if demo mode
 1D74: 3A D0 82    ld   a,($82D0)
 1D77: 11 60 80    ld   de,$8060
-1D7A: 2A 90 89    ld   hl,($8990)
+1D7A: 2A 90 89    ld   hl,(pointer_on_player_score_8990)
 1D7D: 01 08 00    ld   bc,$0008
 1D80: FE 01       cp   $01
 1D82: 20 04       jr   nz,$1D88
@@ -4130,7 +4133,7 @@ update_score_to_screen_1d6f:
 1D9E: 3A AA 81    ld   a,($81AA)
 1DA1: A1          and  c
 1DA2: C0          ret  nz
-1DA3: 2A 90 89    ld   hl,($8990)
+1DA3: 2A 90 89    ld   hl,(pointer_on_player_score_8990)
 1DA6: ED 5B B3 81 ld   de,($81B3)
 1DAA: 06 08       ld   b,$08
 1DAC: 1A          ld   a,(de)
@@ -4173,9 +4176,10 @@ clear_screen_and_reset_scroll_1dcb:
 1DF4: C9          ret
 
 ; add 10 points with carry propagation
+; note: score is stored in 80A0 directly on screen
 ; BCD emulation
 add_10_points_1df5:
-1DF5: 2A 90 89    ld   hl,($8990)
+1DF5: 2A 90 89    ld   hl,(pointer_on_player_score_8990)
 1DF8: 3A 20 80    ld   a,(control_flags_8020)
 1DFB: A7          and  a
 1DFC: C8          ret  z
@@ -4191,7 +4195,7 @@ add_10_points_1df5:
 ; 9->A: fix this!
 1E07: D6 0A       sub  $0A
 1E09: 77          ld   (hl),a		; [video_address]
-; and add 1 to higher digit
+; and add 1 to higher digit which is located a little further
 1E0A: CB DD       set  3,l
 1E0C: 2D          dec  l
 1E0D: CB 9D       res  3,l
