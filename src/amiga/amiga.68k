@@ -253,7 +253,7 @@ _user:
 	lsr.l	#2,d0		| number of longs
 	
 
-	bsr	get_args_BCPL
+	jbsr	get_args_BCPL
 
 0:	
 	lea		program_args,a0
@@ -273,16 +273,6 @@ _user:
 	* cheat isn't used as long as no cheat key is used
 	or.l	#0x10,cheat_flags
 2:
-
-	move.l	(A0)+,D0	| FIVELIVES/K
-	beq.b	2f
-	bset	#1,dsw_options+3
-2:
-	move.l	(A0)+,D0	| FAST/K
-	beq.b	2f
-	bset	#0,dsw_options+3
-2:
-
 
 	lea		_custom,a5
 	lea		debug_copperlist,a0
@@ -3952,8 +3942,11 @@ _end_of_ng_code:
 
 
 
-
-	.include "palette.68k"
+	.ifdef	AGA_VERSION
+	.include "palette_aga.68k"
+	.else
+	.include "palette_ecs.68k"	
+	.endif
 	.include "cluts.68k"
 
 	
