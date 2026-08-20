@@ -78,7 +78,12 @@ _custom = 0xDFF000
 
 OPT_ENABLE_MULTIPLEXED_SPRITES = 0
 
+	.ifdef	AGA_VERSION
 NB_PLAYFIELD_PLANES = 4
+	.else
+NB_PLAYFIELD_PLANES = 3	
+	.endif
+	
 TOTAL_NB_COLORS = 1<<NB_PLAYFIELD_PLANES
 NB_BYTES_PER_MAIN_ROW = 64
 
@@ -2253,7 +2258,7 @@ quit_to_os:
 
 	
 platform_init:
-	bsr		store_system
+	jbsr		store_system
 	
 
 	lea		_custom,a5
@@ -2270,11 +2275,14 @@ platform_init:
 	move.w	#0x1FE,pal_intreq_block_game
 	move.w	#0x1FE,pal_wait			| else intreq never happens
 0:
-    *move.w #0x6600,bplcon0(a5)		| dual playfield ECS
+	.ifdef	AGA_VERSION
     move.w #0x0610+BORDERBLANK,bplcon0(a5) | 8 bitplanes, dual playfield, borderblank
     move.w #BASE_BPLCON2_VALUE,bplcon2(a5)
     move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
     move.w #BASE_BPLCON4_VALUE,bplcon4(a5)
+	.else
+    move.w #0x6600,bplcon0(a5)		| dual playfield ECS
+	.endif
  	*         VVHH
     move.w #0x3489+7,d0
     move.w #0x24A0,d1
@@ -2283,8 +2291,8 @@ platform_init:
 	sub.w	#NTSC_Y_SHIFT<<8,d0
 	sub.w	#NTSC_Y_SHIFT<<8,d1
 0:	
-     move.w d0,diwstrt(a5)
-     move.w d1,diwstop(a5)
+    move.w d0,diwstrt(a5)
+    move.w d1,diwstop(a5)
 
     move.w #0x0038,ddfstrt(a5)
     move.w #0x00D0,ddfstop(a5)
