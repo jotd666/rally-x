@@ -139,6 +139,6 @@ progstart
     dc.l    0
 
 exe:
-	dc.b	"rallyx",0
+	dc.b	"rallyx_ecs",0
 
 	

@@ -19,8 +19,11 @@ AttnFlags = 0x128
 AFB_68010 = 0
 AFB_68020 = 1
 
+	.ifdef	MC68020
+	.else
 NO68020 = 1
-
+	.endif
+	
 PREVIOUS_SPRITE_SIZE = 8
 CURRENT_SPRITE_SIZE = 4
 
@@ -2567,7 +2570,7 @@ update_main_tile:
 	add.w	d1,d1
 	move.l	(a4,d1.w),a4
 	.else
-	move.l	(a4.d1.w*4),a4
+	move.l	(a4,d1.w*4),a4
 	.endif
 0:
 	BTST	#6,(_custom+dmaconr)
@@ -2806,7 +2809,7 @@ update_status_tile:
 0:
 	BTST	#6,(_custom+dmaconr)
 	BNE.S	0b
-	jmp		[(a4,d1.w*4)]
+	jmp		([a4,d1.w*4])
 	.endif
 	
 
