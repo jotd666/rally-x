@@ -3128,8 +3128,8 @@ update_controls:
 	* game not playing, we can insert coin/start with joypad
 	btst	#JPB_BTN_RED,d1		| "5" key like in MAME
 	jeq		0f
-	btst	#JPB_BTN_RED,d2
-	jne		0f
+	*btst	#JPB_BTN_RED,d2  * no need for prev inputs here
+	*jne		0f
 	bclr	#BIT_COIN_1,d0
 0:
 1:	

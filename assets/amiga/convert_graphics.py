@@ -386,6 +386,9 @@ def write_tile_entries(f,prefix,tile_table):
                             for _ in range(nb_planes):
                                 f.write("\t.long\t0\n")
 
+if dump_it:
+    bitplanelib.palette_dump(main_tile_palette,dump_dir / "main_tile_palette_orig.png",pformat=bitplanelib.PALETTE_FORMAT_PNG)
+    bitplanelib.palette_dump(status_tile_palette,dump_dir / "status_tile_palette_orig.png",pformat=bitplanelib.PALETTE_FORMAT_PNG)
 
 with (src_dir/"palette.68k").open("w") as f:
     f.write("main_palette:\n")
