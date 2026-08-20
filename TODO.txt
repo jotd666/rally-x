@@ -1,14 +1,15 @@
 - cheat add to score
 - highscore load/save
-- game restarts automatically need to reset "1" ??? nope!!
+- game restarts automatically need to reset "1" ??? nope it continues play
+  with  255 lives
 - cars have a tendency to lock themselves (cloud): add invincibility
   and see what happens
-
+- game starts before intro music has ended reverse that
 - add explosion/crash sound on rock/car
 - sometimes starts with 99 credits
 - ECS: try to reduce colors: would work. Create separate AGA & OCS versions
+  status can use heavy color change copper
 - cpu dependent loop 18FD look for more
-- add music play hooks
 - kind of level skip flag picked always complete level trainer
 - GAME OVER is in black should be white: sprite colors share colors with
   second layer?

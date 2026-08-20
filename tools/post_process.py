@@ -151,6 +151,10 @@ this_dir = pathlib.Path(__file__).absolute().parent
 
 source_dir = this_dir / "../src"
 
+def generate_play_code(ident):
+    return f"""\tmove.w\t#{ident}_SND,d0
+\tjbsr\tosd_sound_start
+"""
 # various dirty but at least automatic patches applying on the converted code
 with open(source_dir / "conv.s") as f:
     lines = list(f)
@@ -362,21 +366,21 @@ with open(source_dir / "conv.s") as f:
 \tjbsr\tosd_sound_start
 """
         elif address == 0x0E57:
-            line += """\tmove.w\t#SMOKE_04_SND,d0
-\tjbsr\tosd_sound_start
-"""
+            line += generate_play_code("SMOKE_04")
+
         elif address == 0x1D46:
-            line += """\tmove.w\t#FUEL_05_SND,d0
-\tjbsr\tosd_sound_start
-"""
+            line += generate_play_code("FUEL_05")
+
         elif address == 0x1CAF:
             line += """\tmove.w\t#FUEL_WARNING_08_SND,d0
 \tjbsr\tosd_sound_start
 """
-        elif address == 0x0A65:
-            line += """\tmove.w\t#ENGINE_06_SND,d0
-\tjbsr\tosd_sound_start
-"""
+        elif address == 0x0769:
+            line += generate_play_code("START_TUNE")
+        elif address == 0x18E0:
+            line += generate_play_code("LEVEL_COMPLETED_TUNE")
+##        elif address == 0x0A65:
+##            line += generate_play_code("ENGINE_06")
         elif address == 0x0EB7:
             line += """\tbtst\t#6,(a0)
 \tjne\t0f  | already playing
@@ -385,9 +389,8 @@ with open(source_dir / "conv.s") as f:
 0:
 """
         elif address == 0x1DC8:
-            line += """\tmove.w\t#EXTRA_LIFE_07_SND,d0
-\tjbsr\tosd_sound_start
-"""
+            line += generate_play_code("EXTRA_LIFE_07")
+
         elif address in {0x2448,0x16E0,0x18DF,0x19A3}:
             line += """\tjbsr\tosd_stop_engine_sound
 """
