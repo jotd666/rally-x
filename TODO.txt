@@ -1,8 +1,9 @@
 - cheat add to score: > 20000 doesn't work
   we should call the "addtoscore" routine
+- add unused tune to "game over" screen
 - highscore screen: should also clear sprites (GAME OVER remains)
 - highscore load/save
-- game continues play  with  255 lives unless highscore
+- game continues play with 255 lives
 - cars have a tendency to lock themselves: add invincibility
   and see what happens
 - add explosion/crash sound on rock/car

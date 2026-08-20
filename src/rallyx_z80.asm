@@ -142,9 +142,10 @@ pointer_on_player_score_8990 = $8990
 ; music control: set a bit (or several!) to start a tune. Bit 0 clears
 ; when playing and resets to 1 once music has completed
 ; bit 7: game start music
-; bit 6: highscore?
+; bit 6: unused music?
 ; bit 5: end level music
 ; bit 4: in-game music
+; bit 2: high score music
 ; bit 0 on: idle, off: tune playing
 music_control_89f5 = $89f5
 ; sound control:
@@ -3720,7 +3721,7 @@ player_killed_by_rock_1996:
 1A78: 3E 83       ld   a,$83
 1A7A: 32 2F 86    ld   ($862F),a
 1A7D: 21 F5 89    ld   hl,music_control_89f5
-1A80: CB D6       set  2,(hl)
+1A80: CB D6       set  2,(hl)			; highscore music
 1A82: 3E 01       ld   a,$01
 1A84: 32 4B 82    ld   (counter_824b),a
 1A87: 3A 4B 82    ld   a,(counter_824b)
