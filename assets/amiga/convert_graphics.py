@@ -48,13 +48,6 @@ def doit(aga,dump_it):
     # for HW sprites just read 1 sprite sheet, as long as all 4 (3) colors are distinct
     _,hw_sprite_set = load_tileset(sprite_sheet_dict[0xB],0xB,16,"hw_sprites",dump_dir,dump=dump_it,name_dict=sprite_names,cluts=hw_sprite_cluts,start_palette_index=0xB)
 
-    # orange in first position
-    main_tile_palette = sorted(main_tile_palette)
-    main_tile_palette.remove(orange)
-    main_tile_palette = [orange]+main_tile_palette
-    # black in any position but first, which is ignored
-    status_tile_palette = sorted(status_tile_palette)
-    status_tile_palette.insert(0,(0x1,0x1,0x1))  # dummy
 
     if not aga:
         # we have to reduce colors for both main & status parts
@@ -62,7 +55,6 @@ def doit(aga,dump_it):
         color_replacement_dict = {t:black for t in to_remove}    # those colors aren't really used
         color_replacement_dict[(255, 255, 151)] = (255, 255, 0)  # merge yellows
         status_tile_palette = apply_color_replacement(status_tile_set_list,color_replacement_dict)
-        status_tile_palette.insert(0,(1,1,1)) # duplicate black (transparent color, second playfield)
 
 
         color_replacement_dict = {
@@ -74,10 +66,17 @@ def doit(aga,dump_it):
 }
         main_tile_palette = apply_color_replacement(main_tile_set_list,color_replacement_dict)
 
+    # orange in first position
+    main_tile_palette = sorted(main_tile_palette)
+    main_tile_palette.remove(orange)
+    main_tile_palette = [orange]+main_tile_palette
+    print(len(main_tile_palette))
+    # black in any position but first, which is ignored
+    status_tile_palette = sorted(status_tile_palette)
+    status_tile_palette.insert(0,(0x1,0x1,0x1))  # dummy
 
     suffix = "aga" if aga else "ecs"
 
-    save_palettes(f"palette_{suffix}.68k",main_tile_palette,status_tile_palette,dump_it=dump_it)
 
     sprite_table = [None]*NB_SPRITES
 
@@ -88,6 +87,9 @@ def doit(aga,dump_it):
     # pad if needed
     main_tile_palette += [(0X10,0x20,0x30)]*(nb_colors-len(main_tile_palette))
     status_tile_palette += [(0X10,0x20,0x30)]*(nb_colors-len(status_tile_palette))
+
+    save_palettes(f"palette_{suffix}.68k",main_tile_palette,status_tile_palette,dump_it=dump_it)
+
     main_tile_table,next_cache_id = read_tileset(main_tile_set_list,main_tile_palette,[True,False,False,False],cache=tile_plane_cache,nb_planes=nb_planes)
     status_tile_table,_ = read_tileset(status_tile_set_list,status_tile_palette,[True,False,False,False],cache=tile_plane_cache,nb_planes=nb_planes,next_cache_id=next_cache_id)
 

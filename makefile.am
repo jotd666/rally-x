@@ -67,9 +67,9 @@ $(PROGNAME)_000.o: $(PROGNAME).68k $(PROGNAME).inc data.inc sounds.inc
 	$(ASM) $(PROGNAME).68k -o $(PROGNAME)_000.o
 $(PROGNAME)_020.o: $(PROGNAME).68k $(PROGNAME).inc data.inc sounds.inc
 	$(ASM) $(PROGNAME).68k -o $(PROGNAME)_020.o
-amiga_aga.o: $(AMIGASRC)/amiga.68k $(PROGNAME).inc $(AMIGASRC)/scroll_table_16.68k $(AMIGASRC)/ReadJoyPad.i $(AMIGASRC)/palette.68k
+amiga_aga.o: $(AMIGASRC)/amiga.68k options.inc $(PROGNAME).inc $(AMIGASRC)/scroll_table_16.68k $(AMIGASRC)/ReadJoyPad.i $(AMIGASRC)/palette_aga.68k
 	$(ASM_020) -Iamiga $(AMIGASRC)/amiga.68k -o amiga_aga.o
-amiga_ecs.o: $(AMIGASRC)/amiga.68k $(PROGNAME).inc $(AMIGASRC)/scroll_table_16.68k $(AMIGASRC)/ReadJoyPad.i $(AMIGASRC)/palette.68k
+amiga_ecs.o: $(AMIGASRC)/amiga.68k options.inc $(PROGNAME).inc $(AMIGASRC)/scroll_table_16.68k $(AMIGASRC)/ReadJoyPad.i $(AMIGASRC)/palette_ecs.68k
 	$(ASM) -Iamiga $(AMIGASRC)/amiga.68k -o amiga_ecs.o
 vbr.o: $(AMIGASRC)/vbr.68k
 	$(ASM_020) -Iamiga $(AMIGASRC)/vbr.68k -o vbr.o

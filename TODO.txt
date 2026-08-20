@@ -1,17 +1,13 @@
 - after game over no credits, explanation screen is buggy
-- ECS: try to reduce colors: would work. Create separate AGA & OCS versions
-  status can use heavy color change copper
+- ECS: status can use heavy color change copper
 	.word	0x0000,0x0000,0x0000,0x0249,0x0000,0x02dd,0x0000,0x04b0
 	.word	0x0000,0x0000,0x0000,0x0d00,0x0000,0x0ddd,0x0ff0,0x0ff9
-=> useful colors for ECS ff9=>ff0 status
-=> pick order carefully
-	.word	0x0000,0x0000,0x0249,0x02dd,0x04b0,0x0d00,0x0ddd,0x0ff0,0x0ff9
-	         black   black  cyan   blue    green  red    white  yell   yell2
-			 
+	status colors are completely wrong
+	
 - engine sfx: make frequency vary depending on orientation
 - cars have a tendency to lock themselves: add invincibility
   and see what happens maybe random isn't correct: try to fix random
-  in real game see what it does
+  in real game see what it does / where is that used on cars lock up?
 - cheat add to score: > 20000 doesn't work
   we should call the "addtoscore" routine
 - add unused tune to "game over" screen: doesn't work, music stop called?

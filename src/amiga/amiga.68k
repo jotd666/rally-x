@@ -2271,7 +2271,8 @@ platform_init:
     move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
     move.w #BASE_BPLCON4_VALUE,bplcon4(a5)
 	.else
-    move.w #0x6600,bplcon0(a5)		| dual playfield ECS
+    move.w #(BORDERBLANK<<5),bplcon3(a5)
+    move.w #0x6600+BORDERBLANK,bplcon0(a5)		| dual playfield ECS
 	.endif
  	*         VVHH
     move.w #0x3489+7,d0
@@ -3325,7 +3326,7 @@ beamdelay:
 
 SCORE_FILE_SIZE = 0x23
 
-LOG_BUFFER_SIZE = 0x400000
+
 
 	
 * < A0: buffer
@@ -4027,11 +4028,11 @@ blank_sound:
 	ds.l	4
 	
 debug_copperlist:
-	dc.w	bplcon0,0x200
-	dc.w	color
+	.word	bplcon0,0x200
+	.word	color
 debug_color:
-	dc.w	0
-	dc.l	-2
+	.word	0
+	.long	-2
 	
 
 	

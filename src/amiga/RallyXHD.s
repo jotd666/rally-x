@@ -10,8 +10,9 @@ CHIP_BASE = $200
 	IFD	CHIP_ONLY
 EXPMEM = 0
 CHIPSIZE = $200000
+dd
 	ELSE
-EXPMEM = $800000
+EXPMEM = $80000
 CHIPSIZE = $80000
 	ENDC
 
@@ -69,7 +70,7 @@ DECL_VERSION:MACRO
 	ENDC
 	ENDM
 _data   dc.b    0
-_name	dc.b	"Rally'X",0
+_name	dc.b	"Rally'X (OCS)",0
 _copy	dc.b	'2026 JOTD',0
 _info
     dc.b    "Original by Namco 1980",0
