@@ -344,6 +344,8 @@ with open(source_dir / "conv.s") as f:
 \tmove.b\t#0x3F,d5
 0:
 """+line
+        elif address == 0x1aef:
+            line = "\ttst.b\td0\n"+line
         elif address == 0x06BB:
             line = """\tmove.b\tstart_level,d0
 \taddq\t#1,d0
@@ -381,8 +383,8 @@ with open(source_dir / "conv.s") as f:
             line += generate_play_code("START_TUNE")
         elif address == 0x18E0:
             line += generate_play_code("LEVEL_COMPLETED_TUNE")
-        elif address == 0x19BB:
-            line += generate_play_code("GAME_OVER_TUNE")
+        elif address == 0x19B9:
+            line = generate_play_code("GAME_OVER_TUNE")+line
 ##        elif address == 0x0A65:
 ##            line += generate_play_code("ENGINE_06")
 ##        elif address == 0x0EB7:

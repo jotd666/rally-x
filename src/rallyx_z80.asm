@@ -3709,7 +3709,7 @@ game_over_19b9:
 1A49: 20 F9       jr   nz,$1A44
 1A4B: 3A D0 82    ld   a,(high_score_beaten_82d0)
 1A4E: A7          and  a
-1A4F: CA D8 1A    jp   z,game_over_1ad8
+1A4F: CA D8 1A    jp   z,game_really_over_1ad8
 ; high score beaten: display congratulations screen
 1A52: 3E 75       ld   a,$75
 1A54: CD CB 1D    call clear_screen_and_reset_scroll_1dcb
@@ -3734,7 +3734,7 @@ game_over_19b9:
 1A8A: E6 0F       and  $0F
 1A8C: 20 F9       jr   nz,$1A87
 1A8E: CB 46       bit  0,(hl)
-1A90: 20 46       jr   nz,game_over_1ad8
+1A90: 20 46       jr   nz,game_really_over_1ad8
 1A92: 11 60 88    ld   de,$8860
 1A95: 1A          ld   a,(de)		; [unchecked_address]
 1A96: EE 1F       xor  $1F
@@ -3772,7 +3772,7 @@ game_over_19b9:
 1AD2: CD F5 1A    call $1AF5
 1AD5: E1          pop  hl
 1AD6: 18 AA       jr   $1A82
-game_over_1ad8:
+game_really_over_1ad8:
 1AD8: CD A3 17    call erase_chars_17a3
 1ADB: CD 06 1B    call $1B06
 1ADE: 21 60 88    ld   hl,$8860
