@@ -2,7 +2,8 @@
   8FE7... attributes for instructions is completely shifted
   bonus flag list is also printed too low/too high
 - GAME OVER is in black should be white
-- add shell for floppy	
+- cycle exact adf not working / completely broken is this the same
+  issue as digdug2?
 - engine sfx: make frequency vary depending on orientation
 - cars have a tendency to lock themselves: add invincibility
   and see what happens maybe random isn't correct: try to fix random

@@ -50,7 +50,6 @@ next\@:
 	lea		rom_buffer,a6
 	.else
 	move.l		rom_start_0000,a6
-
 	.endif
 	.endm
 	

@@ -664,7 +664,7 @@ demo_game:
 0:	
 	* compute ram start
 	lea		rom_buffer,a6
-	.ifndef	RELEASE
+	.ifne	OPT_ALIGNED_MEMORY
 	* align so real addresses are $xxxx0yyy
 	* and lower 16-bit match original RAM offsets
 	move.l	a6,d0
@@ -672,7 +672,6 @@ demo_game:
 	add.l	#0x10000,d0
 	move.l	d0,a6
 	move.l	a6,rom_start_0000
-
 	.endif
 	
 	* copy ROM at the start. Memory is one big block now
@@ -2778,7 +2777,9 @@ update_status_tile:
 	.else
 	move.l	(a0,d2.w*4),d0
 	.endif
-	.ifndef	RELEASE
+	.ifdef	RELEASE
+	jeq		11f
+	.else
 	jne		12f
 	add.w	#0x8000,d7
 	.ifdef	NO68020

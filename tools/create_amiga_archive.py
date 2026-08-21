@@ -1,37 +1,104 @@
-import subprocess,os,glob,shutil,pathlib
+import subprocess,os,glob,shutil,pathlib,zipfile
 
-progdir = pathlib.Path(__file__).parent.parent.absolute()
+this_dir = pathlib.Path(__file__).parent.absolute()
+progdir = this_dir.parent
 
-gamename = "digdug2"
+# packaging tools used:
+#
+# paraj lha from https://github.com/mras0/plha.git
+# exe2adf from https://www.exe2adf.com/
+# l-packer from https://www.pouet.net/prod.php?which=105264
+
+gamename = "rallyx"
+suffixes = ["_ecs","_aga"]
+
+build_dist = True
+clean_dist = True
+create_dist = True
+create_floppy = True
+
 # JOTD path for cranker, adapt to whatever your path is :)
 os.environ["PATH"] += os.pathsep+r"K:\progs\cli"
+distdir = progdir / "dist"
+outdir = distdir / f"{gamename}_HD"
+flopdir = distdir / f"{gamename}_floppy"
+assets = progdir /"assets"/"amiga"
 
 cmd_prefix = ["make","-f",os.path.join(progdir,"makefile.am")]
 
-subprocess.check_call(cmd_prefix+["clean"],cwd=progdir /"src")
-
-subprocess.check_call(cmd_prefix+["RELEASE_BUILD=1"],cwd=progdir /"src")
-# create archive
-
-outdir = progdir / f"{gamename}_HD"
-
-if os.path.exists(outdir):
-    for x in outdir.glob("*"):
-        x.unlink()
-else:
-    outdir.mkdir()
-for file in ["readme.md",f"{gamename}_ocs.slave",f"{gamename}_aga.slave"]:  #f"{gamename}.slave",
-    shutil.copy(progdir / file,outdir)
-
-assets = progdir /"assets"/"amiga"
-shutil.copy(assets/"DigDug2-A.info",outdir)
-shutil.copy(assets/"DigDug2-B.info",outdir)
+if build_dist:
+    for s in ["convert_sounds.py","convert_graphics.py"]:
+        subprocess.check_call(["cmd","/c",s],cwd=os.path.join(progdir,"assets","amiga"))
 
 
+    subprocess.check_call(cmd_prefix+["clean"],cwd=progdir /"src")
 
-for ext in ["aga","ocs"]:
-    exename = f"{gamename}_{ext}"
-    shutil.copy(progdir/exename,outdir)
-    subprocess.run(["cranker_windows.exe","-f",progdir/exename,"-o",progdir/f"{exename}.rnc"],check=True)
+    subprocess.check_call(cmd_prefix+["RELEASE_BUILD=1"],cwd=progdir /"src")
+    # create archive
 
-subprocess.run(cmd_prefix+["clean"],cwd=progdir/"src",check=True)
+
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    outdir.mkdir(exist_ok=True,parents=True)
+
+    for file in ["readme.md",f"{gamename}.slave"]:
+        shutil.copy(progdir / file,outdir)
+
+    shutil.copy(assets/f"RallyX.info",outdir)
+
+    for ext in suffixes:
+        exename = f"{gamename}{ext}"
+        shutil.copy(progdir/exename,outdir)
+
+if create_dist:
+
+    arcname = progdir / f"{gamename}_HD.lha"
+    arcname.unlink(missing_ok=True)
+    cmd = ["lha","-r","a",arcname,"*"]
+
+    subprocess.run(cmd,cwd=outdir,check=True)
+
+
+# create floppy
+if create_floppy:
+    if os.path.isdir(flopdir):
+        shutil.rmtree(flopdir)
+    flopdir.mkdir(exist_ok=True,parents=True)
+
+    xtra_dir = flopdir/"xtra"
+    xtra_dir.mkdir(exist_ok=True)
+    for ext in suffixes:
+        exename = f"{gamename}{ext}"
+        print(f"packing {exename}...")
+        # cranker creates incorrect exe
+        #subprocess.run(["cranker_windows.exe","-m","-t","Vulgus port by JOTD, music by no9","-f",progdir/exename,"-o",progdir/f"{exename}.rnc"],check=True)
+        # l-packer creates proper exe, but needs slightly more memory, so add21k is needed
+        subprocess.run(["l-packer.exe",progdir/exename,xtra_dir/exename],check=True)
+
+    # copy shell
+    shutil.copy(progdir/gamename,flopdir)
+
+    exename = flopdir/gamename
+
+    #shutil.copy(assets/"disk.info",flopdir)
+    adf_name = progdir/(gamename.title()+".adf")
+
+
+    with (xtra_dir/"floppy").open("w"):
+        pass
+
+    shutil.copy(progdir / "readme.md",xtra_dir)
+    shutil.copy(assets / "disk.info",xtra_dir)
+
+    adf_name.unlink(missing_ok=True)
+    cmd = ["exe2adf","--add21k","-i",exename,"-a",adf_name,"-l",gamename.title(),"-d",xtra_dir]
+    print("Running: {}".format(" ".join(map(str,cmd))))
+    subprocess.run(cmd,cwd=flopdir,check=True)
+
+    # create a .zip for the floppy
+
+    with zipfile.ZipFile(progdir / f"{gamename.title()}_adf.zip",mode="w",compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.write(adf_name,arcname=adf_name.name)
+
+if clean_dist:
+    subprocess.run(cmd_prefix+["clean"],cwd=progdir/"src",check=True)

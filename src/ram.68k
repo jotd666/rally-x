@@ -1,3 +1,5 @@
+	.include	"options.inc"
+
 	.global infinite_fuel_flag
 	.global infinite_lives_flag
 	.global invincible_flag
@@ -18,7 +20,7 @@
 	.global vbl_sync_counter
 	.global vbl_sync_flag
 	.global no_sync_flag
-	.ifndef	RELEASE
+	.ifne	OPT_ALIGNED_MEMORY
 	.global rom_start_0000
 	.endif
 	.global rom_buffer
@@ -33,19 +35,21 @@
 	.endif
 
 	.align	2
-
 	
 
+* rom starts before RAM, at 0
+	.ifeq	OPT_ALIGNED_MEMORY
 rom_buffer:
-	.ifdef	RELEASE
-	.skip	0x10000
+	.skip	ROM_SIZE
+
+	.skip	RAM_SIZE
 	.else
+rom_buffer:
 	.skip	0x20000
 rom_start_0000:
 	.long	0
-ram_start_8000:
-	.long	0
 	.endif
+
 
 	
 
