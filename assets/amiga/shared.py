@@ -214,6 +214,7 @@ def remove_colors(imgname):
                 img.putpixel((x,y),(0,0,0))
     return img
 
+
 def add_hw_sprite(index,name,cluts=[0]):
     if isinstance(index,range):
         pass
@@ -260,6 +261,8 @@ plane_orientations = [("standard",lambda x:x),
 ("flip",ImageOps.flip),
 ("flip_mirror",lambda x:ImageOps.flip(ImageOps.mirror(x)))]
 
+def swap_colors(p,c1,c2):
+    p[c1],p[c2] = p[c2],p[c1]
 
 def apply_color_replacement(sprite_set_list,quantized):
     """ change colors for list of tilesets (tiles, sprites)

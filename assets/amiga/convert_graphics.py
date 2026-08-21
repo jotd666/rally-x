@@ -3,7 +3,7 @@ import os,sys,bitplanelib,pathlib,json,collections
 
 
 from shared import *
-dump_it = True
+
 
 def doit(aga,dump_it):
     if dump_it:
@@ -70,13 +70,32 @@ def doit(aga,dump_it):
     main_tile_palette = sorted(main_tile_palette)
     main_tile_palette.remove(orange)
     main_tile_palette = [orange]+main_tile_palette
-    print(len(main_tile_palette))
     # black in any position but first, which is ignored
     status_tile_palette = sorted(status_tile_palette)
-    status_tile_palette.insert(0,(0x1,0x1,0x1))  # dummy
+    status_tile_palette.append((0x1,0x1,0x1))  # dummy
+    # reorganize colors
+    stp = set(status_tile_palette)
+    status_tile_palette = [None]*nb_colors
+    # fix the order so radar colors are right
+    for p,c in [(0,(0x1,0x1,0x1)),(1,black),(3,(33, 71, 151)),(5,(33, 222, 222)),(6,(255, 255, 0)),
+    (7,(71, 184, 0))]:
+        stp.remove(c)
+        status_tile_palette[p] = c
+    count=0
+    # fill with remaining colors, order doesn't matter
+    for i,c in enumerate(status_tile_palette):
+        if not c:
+            status_tile_palette[i] = stp.pop()
 
     suffix = "aga" if aga else "ecs"
 
+    if not aga and dump_it:
+        bitplanelib.palette_dump(main_tile_palette,dump_dir / "main_tile_palette_ecs.png",pformat=bitplanelib.PALETTE_FORMAT_PNG)
+        bitplanelib.palette_dump(status_tile_palette,dump_dir / "status_tile_palette_ecs.png",pformat=bitplanelib.PALETTE_FORMAT_PNG)
+        with (dump_dir/"main_colors_ecs.txt").open("w") as f:
+            bitplanelib.palette_dump(main_tile_palette,f,bitplanelib.PALETTE_FORMAT_TEXT)
+        with (dump_dir/"status_colors_ecs.txt").open("w") as f:
+            bitplanelib.palette_dump(status_tile_palette,f,bitplanelib.PALETTE_FORMAT_TEXT)
 
     sprite_table = [None]*NB_SPRITES
 
@@ -100,5 +119,5 @@ def doit(aga,dump_it):
     save_graphics(f"graphics_{suffix}.68k",main_tile_table,status_tile_table,sprite_table,tile_plane_cache)
 
 write_status_addresses()
-doit(aga=True,dump_it=dump_it)
-doit(aga=False,dump_it=False)
+doit(aga=True,dump_it=False)
+doit(aga=False,dump_it=True)

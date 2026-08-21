@@ -7,7 +7,9 @@
 - engine sfx: make frequency vary depending on orientation
 - cars have a tendency to lock themselves: add invincibility
   and see what happens maybe random isn't correct: try to fix random
-  in real game see what it does / where is that used on cars lock up?
+  in real game see what it does / where is that random used on cars lock up?
+  also check car kill collision test?
+  
 - cheat add to score: > 20000 doesn't work
   we should call the "addtoscore" routine
 - add unused tune to "game over" screen: doesn't work, music stop called?

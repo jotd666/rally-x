@@ -47,13 +47,18 @@ NTSC_Y_SHIFT = 12
 Y_MAX = 256
 
 BORDERBLANK = 1
+	.ifdef	AGA_VERSION
 BASE_BPLCON3_VALUE = (1<<12)+(BORDERBLANK<<5)  | dpf second playfield palette starts at color 16!
+BASE_BPLCON4_VALUE = 0x0022		| sprites take their palette on colors 32-48
+	.else
+BASE_BPLCON3_VALUE = 0x0C00+(BORDERBLANK<<5)  | dpf second playfield palette starts at color 16!
+*BASE_BPLCON4_VALUE = 0x0000	| sprites take their palette on colors 32-48
+	.endif
 * sprites above main playfield but below status.
 * except sprites 0-1 that are above all (for radar in AGA mode)
 * Status above main
 BASE_BPLCON2_VALUE = 0x004C
 
-BASE_BPLCON4_VALUE = 0x0022		| sprites take their palette on colors 32-48
 
 
 * changing those offsets can make
@@ -2267,13 +2272,13 @@ platform_init:
 0:
 	.ifdef	AGA_VERSION
     move.w #0x0610+BORDERBLANK,bplcon0(a5) | 8 bitplanes, dual playfield, borderblank
-    move.w #BASE_BPLCON2_VALUE,bplcon2(a5)
-    move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
     move.w #BASE_BPLCON4_VALUE,bplcon4(a5)
 	.else
-    move.w #(BORDERBLANK<<5),bplcon3(a5)
-    move.w #0x6600+BORDERBLANK,bplcon0(a5)		| dual playfield ECS
+     move.w #0x6600+BORDERBLANK,bplcon0(a5)		| dual playfield ECS
 	.endif
+    move.w #BASE_BPLCON3_VALUE,bplcon3(a5)
+    move.w #BASE_BPLCON2_VALUE,bplcon2(a5)
+
  	*         VVHH
     move.w #0x3489+7,d0
     move.w #0x24A0,d1
