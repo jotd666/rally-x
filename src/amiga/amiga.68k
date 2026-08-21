@@ -1159,6 +1159,14 @@ add_1000_points:
 	rts
 
 
+high_score_beaten:
+	movem.l	a5/a6,-(a7)
+	GET_MEMORY_BLOCKS_IN_A5_A6
+	move.b	#1,(high_score_beaten_82d0-0x8000,a5)
+	movem.l	(a7)+,a5/a6
+	rts
+
+
 	
 * what: blits data on bg plane, no horizontal shifting (erase)
 * args:
@@ -3252,6 +3260,7 @@ handle_keyboard:
 	cmp.b	#0x53,d0	| F4 key
 	bne.b	0f
 	st.b	cheat_used
+	jbsr	high_score_beaten
 	move.w	#0x0FF,_custom+color
 	eor.b	#1,invincible_flag
 0:

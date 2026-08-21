@@ -59,8 +59,11 @@ regscopy:
 
 fprime:
 	.word	0
-
+iyl:
+	.word	0		| so it can be saved on stack
 aprime:
+	.byte	0
+iyh:
 	.byte	0
 i:
 	.byte	0
@@ -90,10 +93,8 @@ vbl_sync_flag:
 	.byte	0
 vbl_sync_counter:
 	.byte	0
-iyh:
-	.byte	0
-iyl:
-	.byte	0
+
+
 
 kill_flag:
 	.byte 	0

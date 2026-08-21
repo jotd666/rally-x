@@ -38,6 +38,7 @@ nb_picked_flags_8250 = 0x8250
 double_score_8023 = 0x8023
 pointer_on_player_score_8990 = 0x8990
 high_score_beaten_82d0 = 0x82d0
+pointer_on_player_lives_8988 = 0x8988
 music_control_89f5 = 0x89f5
 sound_control_89f4 = 0x89f4
 p2_lives_8010 = 0x8010

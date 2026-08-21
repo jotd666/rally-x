@@ -377,8 +377,15 @@ with open(source_dir / "conv.s") as f:
             line += """\tmove.w\t#FUEL_WARNING_08_SND,d0
 \tjbsr\tosd_sound_start
 """
+        # save/restore iyl during interrupts
+        elif address == 0x01F0:
+            line = "\tmove.w\tiyl,-(a7)\n"+line
+        elif address == 0x0460:
+            line += "\tmove.w\t(a7)+,iyl\n"
         elif address == 0x0A68:
             line += generate_play_code("MAIN_TUNE")
+        elif address == 0x1A80:
+            line += generate_play_code("HIGH_SCORE_TUNE")
         elif address == 0x0769:
             line += generate_play_code("START_TUNE")
         elif address == 0x18E0:

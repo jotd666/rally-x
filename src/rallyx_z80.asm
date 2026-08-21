@@ -140,6 +140,7 @@ nb_picked_flags_8250 = $8250
 double_score_8023 = $8023
 pointer_on_player_score_8990 = $8990
 high_score_beaten_82d0 = $82d0
+pointer_on_player_lives_8988 = $8988
 
 ; music control: set a bit (or several!) to start a tune. Bit 0 clears
 ; when playing and resets to 1 once music has completed
@@ -1308,7 +1309,7 @@ clear_sprites_074c:
 096F: 10 F8       djnz $0969
 0971: D1          pop  de
 0972: DD 21 44 83 ld   ix,$8344		; [video_address]
-0976: 2A 88 89    ld   hl,($8988)
+0976: 2A 88 89    ld   hl,(pointer_on_player_lives_8988)
 0979: 4E          ld   c,(hl)
 097A: 0C          inc  c
 097B: 18 17       jr   $0994
@@ -1320,7 +1321,7 @@ clear_sprites_074c:
 0988: 21 BB 1F    ld   hl,$1FBB
 098B: CD 4E 1C    call copy_status_row_1c4e
 098E: 10 F8       djnz $0988
-0990: 2A 88 89    ld   hl,($8988)
+0990: 2A 88 89    ld   hl,(pointer_on_player_lives_8988)
 0993: 4E          ld   c,(hl)
 0994: 0D          dec  c
 0995: C8          ret  z
@@ -1332,7 +1333,7 @@ clear_sprites_074c:
 09A0: DD 77 20    ld   (ix+$20),a   ; [video_address]
 09A3: 3C          inc  a
 09A4: DD 77 21    ld   (ix+$21),a   ; [video_address]
-09A7: DD 7D       ld   a,ixl
+09A7: DD 7D       ld   a,ixl		; increase & mask lsb
 09A9: 3C          inc  a
 09AA: 3C          inc  a
 09AB: E6 F7       and  $F7
@@ -1492,20 +1493,20 @@ init_player_car_0aba:
 0B10: A7          and  a
 0B11: D1          pop  de
 0B12: C8          ret  z
-0B13: C5          push bc    ; [uncovered] 
-0B14: 01 08 00    ld   bc,$0008    ; [uncovered] 
-0B17: 09          add  hl,bc    ; [uncovered] 
-0B18: EB          ex   de,hl    ; [uncovered] 
-0B19: 0E 20       ld   c,$20    ; [uncovered] 
-0B1B: 09          add  hl,bc    ; [uncovered] 
-0B1C: EB          ex   de,hl    ; [uncovered] 
-0B1D: C1          pop  bc    ; [uncovered] 
-0B1E: E3          ex   (sp),hl    ; [uncovered] 
-0B1F: 23          inc  hl    ; [uncovered] 
-0B20: 23          inc  hl    ; [uncovered] 
-0B21: 23          inc  hl    ; [uncovered] 
-0B22: E3          ex   (sp),hl    ; [uncovered] 
-0B23: C9          ret    ; [uncovered] 
+0B13: C5          push bc    ; [uncovered]
+0B14: 01 08 00    ld   bc,$0008
+0B17: 09          add  hl,bc    
+0B18: EB          ex   de,hl    
+0B19: 0E 20       ld   c,$20    
+0B1B: 09          add  hl,bc    
+0B1C: EB          ex   de,hl    
+0B1D: C1          pop  bc 
+0B1E: E3          ex   (sp),hl  
+0B1F: 23          inc  hl    
+0B20: 23          inc  hl    
+0B21: 23          inc  hl   
+0B22: E3          ex   (sp),hl  
+0B23: C9          ret 
 
 0B24: DD 21 88 80 ld   ix,enemy_car_structs_8088
 0B28: FD 21 68 80 ld   iy,player_car_structure_8068
@@ -1694,17 +1695,17 @@ init_player_car_0aba:
 
 0C98: FD 7E 0C    ld   a,(iy+$0c)      ; [uncovered]
 0C9B: DD 96 0C    sub  (ix+$0c)        ; [uncovered]
-0C9E: 57          ld   d,a             ; [uncovered]
-0C9F: 30 02       jr   nc,$0CA3        ; [uncovered]
-0CA1: ED 44       neg                  ; [uncovered]
-0CA3: 5F          ld   e,a             ; [uncovered]
-0CA4: FD 7E 0E    ld   a,(iy+$0e)      ; [uncovered]
-0CA7: DD 96 0E    sub  (ix+$0e)        ; [uncovered]
-0CAA: 67          ld   h,a             ; [uncovered]
-0CAB: 30 02       jr   nc,$0CAF        ; [uncovered]
-0CAD: ED 44       neg                  ; [uncovered]
-0CAF: 6F          ld   l,a             ; [uncovered]
-0CB0: C9          ret                  ; [uncovered]
+0C9E: 57          ld   d,a       
+0C9F: 30 02       jr   nc,$0CA3  
+0CA1: ED 44       neg            
+0CA3: 5F          ld   e,a       
+0CA4: FD 7E 0E    ld   a,(iy+$0e)
+0CA7: DD 96 0E    sub  (ix+$0e)  
+0CAA: 67          ld   h,a       
+0CAB: 30 02       jr   nc,$0CAF  
+0CAD: ED 44       neg            
+0CAF: 6F          ld   l,a       
+0CB0: C9          ret            
 
 carry_returning_0cb1:
 0CB1: C5          push bc
@@ -3246,7 +3247,7 @@ player_killed_by_car_16d3:
 16E8: 3A 21 80    ld   a,($8021)
 16EB: A7          and  a
 16EC: CA 8E 06    jp   z,$068E
-16EF: 2A 88 89    ld   hl,($8988)
+16EF: 2A 88 89    ld   hl,(pointer_on_player_lives_8988)
 16F2: 35          dec  (hl)
 16F3: CA B9 19    jp   z,game_over_19b9
 16F6: 21 AA 81    ld   hl,$81AA
@@ -3256,25 +3257,25 @@ player_killed_by_car_16d3:
 16FC: A6          and  (hl)
 16FD: CA 2A 17    jp   z,$172A
 1700: 78          ld   a,b    ; [uncovered] 
-1701: FE 02       cp   $02    ; [uncovered] 
-1703: 28 0B       jr   z,$1710    ; [uncovered] 
-1705: CD 41 17    call $1741    ; [uncovered] 
-1708: 3E 01       ld   a,$01    ; [uncovered] 
-170A: 32 B7 81    ld   ($81B7),a    ; [uncovered] 
-170D: C3 2A 17    jp   $172A    ; [uncovered] 
+1701: FE 02       cp   $02    
+1703: 28 0B       jr   z,$1710    
+1705: CD 41 17    call $1741    
+1708: 3E 01       ld   a,$01    
+170A: 32 B7 81    ld   ($81B7),a   
+170D: C3 2A 17    jp   $172A    
 
 1710: CD 54 17 call $1754           ; [uncovered]
-1713: 3E 01    ld   a,$01           ; [uncovered]
-1715: 32 B7 81 ld   ($81B7),a       ; [uncovered]
-1718: 21 0E 80 ld   hl,$800E        ; [uncovered]
-171B: 3A B2 81 ld   a,($81B2)       ; [uncovered]
-171E: CB 47    bit  0,a             ; [uncovered]
-1720: C2 2A 17 jp   nz,$172A        ; [uncovered]
-1723: 7E       ld   a,(hl)          ; [uncovered]
-1724: 23       inc  hl              ; [uncovered]
-1725: 23       inc  hl              ; [uncovered]
-1726: BE       cp   (hl)            ; [uncovered]
-1727: CA BD 07 jp   z,$07BD         ; [uncovered]
+1713: 3E 01    ld   a,$01         
+1715: 32 B7 81 ld   ($81B7),a     
+1718: 21 0E 80 ld   hl,$800E      
+171B: 3A B2 81 ld   a,($81B2)     
+171E: CB 47    bit  0,a           
+1720: C2 2A 17 jp   nz,$172A      
+1723: 7E       ld   a,(hl)        
+1724: 23       inc  hl            
+1725: 23       inc  hl            
+1726: BE       cp   (hl)          
+1727: CA BD 07 jp   z,$07BD       
 172A: 2A 8A 89    ld   hl,($898A)
 172D: 7E          ld   a,(hl)
 172E: E6 03       and  $03
@@ -3293,7 +3294,7 @@ player_killed_by_car_16d3:
 1746: 2B          dec  hl
 1747: 77          ld   (hl),a
 1748: 21 00 1F    ld   hl,$1F00
-174B: 11 88 89    ld   de,$8988
+174B: 11 88 89    ld   de,pointer_on_player_lives_8988
 174E: 01 18 00    ld   bc,$0018
 1751: ED B0       ldir
 1753: C9          ret
@@ -3306,7 +3307,7 @@ player_killed_by_car_16d3:
 175A: AF          xor  a
 175B: 77          ld   (hl),a
 175C: 21 18 1F    ld   hl,$1F18
-175F: 11 88 89    ld   de,$8988
+175F: 11 88 89    ld   de,pointer_on_player_lives_8988
 1762: 78          ld   a,b
 1763: 01 16 00    ld   bc,$0016
 1766: A7          and  a
@@ -3447,7 +3448,7 @@ erase_chars_17a3:
 1842: 32 50 82    ld   (nb_picked_flags_8250),a
 1845: FE 0A       cp   $0A
 1847: 20 02       jr   nz,$184B
-1849: 3E 01       ld   a,$01    ; [uncovered] 
+1849: 3E 01       ld   a,$01
 184B: C6 9F       add  a,$9F
 184D: 77          ld   (hl),a		; [video_address]
 184E: CD 8D 18    call $188D
@@ -3457,9 +3458,9 @@ erase_chars_17a3:
 1859: 3A 50 82    ld   a,(nb_picked_flags_8250)
 185C: FE 0A       cp   $0A
 185E: 20 08       jr   nz,$1868
-1860: CD 88 19    call move_wrap_pointer_1988    ; [uncovered] 
+1860: CD 88 19    call move_wrap_pointer_1988
 1863: 36 AB       ld   (hl),$AB    		; [video_address]
-1865: CD 8D 18    call $188D    ; [uncovered] 
+1865: CD 8D 18    call $188D
 1868: 3A 23 80    ld   a,(double_score_8023)
 186B: A7          and  a
 186C: 28 28       jr   z,flag_picked_up_1896
@@ -3473,15 +3474,16 @@ erase_chars_17a3:
 187C: E1          pop  hl
 187D: 18 17       jr   flag_picked_up_1896
 
-187F: E1       pop  hl           ; [uncovered]
-1880: 11 20 00 ld   de,$0020     ; [uncovered]
-1883: 19       add  hl,de        ; [uncovered]
-1884: 7C       ld   a,h          ; [uncovered]
-1885: E6 07    and  $07          ; [uncovered]
-1887: F6 84    or   $84          ; [uncovered]
-1889: 67       ld   h,a          ; [uncovered]
-188A: E5       push hl           ; [uncovered]
-188B: 18 E5    jr   $1872        ; [uncovered]
+187F: E1          pop  hl           ; [uncovered]
+1880: 11 20 00    ld   de,$0020
+1883: 19          add  hl,de   
+1884: 7C          ld   a,h     
+1885: E6 07       and  $07     
+1887: F6 84       or   $84     
+1889: 67          ld   h,a     
+188A: E5          push hl      
+188B: 18 E5       jr   $1872   
+
 188D: CB DC       set  3,h
 188F: CB F6       set  6,(hl)		; [video_address]
 1891: CB BE       res  7,(hl)		; [video_address]
@@ -3570,7 +3572,7 @@ flag_picked_up_1896:
 1933: BA          cp   d
 1934: 38 04       jr   c,setup_new_level_193a
 1936: D6 04       sub  $04    ; [uncovered] 
-1938: 18 F9       jr   $1933    ; [uncovered] 
+1938: 18 F9       jr   $1933
 
 setup_new_level_193a:
 193A: D6 02       sub  $02
@@ -3646,7 +3648,7 @@ player_killed_by_rock_1996:
 19AB: 3A 21 80    ld   a,($8021)
 19AE: A7          and  a
 19AF: CA 8E 06    jp   z,$068E
-19B2: 2A 88 89    ld   hl,($8988)
+19B2: 2A 88 89    ld   hl,(pointer_on_player_lives_8988)
 19B5: 35          dec  (hl)
 19B6: C2 F6 16    jp   nz,$16F6
 game_over_19b9:
@@ -4134,8 +4136,8 @@ update_score_to_screen_1d6f:
 1D91: 13          inc  de
 1D92: 0D          dec  c
 1D93: 20 F3       jr   nz,$1D88
-1D95: 3E 01       ld   a,$01    ; [uncovered] 
-1D97: 32 D0 82    ld   (high_score_beaten_82d0),a    ; [uncovered] 
+1D95: 3E 01       ld   a,$01 
+1D97: 32 D0 82    ld   (high_score_beaten_82d0),a
 1D9A: 3A B2 81    ld   a,($81B2)
 1D9D: 4F          ld   c,a
 1D9E: 3A AA 81    ld   a,($81AA)
@@ -4150,17 +4152,17 @@ update_score_to_screen_1d6f:
 1DAF: 23          inc  hl
 1DB0: 13          inc  de
 1DB1: 10 F9       djnz $1DAC
-1DB3: 3A AA 81    ld   a,($81AA)    ; [uncovered] 
-1DB6: B1          or   c    ; [uncovered] 
-1DB7: 32 B2 81    ld   ($81B2),a    ; [uncovered] 
-1DBA: 2A 88 89    ld   hl,($8988)    ; [uncovered] 
-1DBD: 34          inc  (hl)    ; [uncovered] 
-1DBE: DD E5       push ix    ; [uncovered] 
-1DC0: CD 7D 09    call $097D    ; [uncovered] 
-1DC3: DD E1       pop  ix    ; [uncovered] 
-1DC5: 21 F4 89    ld   hl,sound_control_89f4    ; [uncovered] 
+1DB3: 3A AA 81    ld   a,($81AA)
+1DB6: B1          or   c
+1DB7: 32 B2 81    ld   ($81B2),a
+1DBA: 2A 88 89    ld   hl,(pointer_on_player_lives_8988) 
+1DBD: 34          inc  (hl)
+1DBE: DD E5       push ix
+1DC0: CD 7D 09    call $097D
+1DC3: DD E1       pop  ix
+1DC5: 21 F4 89    ld   hl,sound_control_89f4
 1DC8: CB C6       set  0,(hl)    ; extra life sound
-1DCA: C9          ret    ; [uncovered] 
+1DCA: C9          ret
 
 clear_screen_and_reset_scroll_1dcb:
 1DCB: 21 00 84    ld   hl,$8400
