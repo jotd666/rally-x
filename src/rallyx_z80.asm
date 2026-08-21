@@ -1489,11 +1489,13 @@ init_player_car_0aba:
 0B0C: C0          ret  nz
 0B0D: D5          push de
 0B0E: 13          inc  de
-0B0F: 1A          ld   a,(de)	; [video_address]
+0B0F: 1A          ld   a,(de)	; [unchecked_address]
 0B10: A7          and  a
 0B11: D1          pop  de
 0B12: C8          ret  z
-0B13: C5          push bc    ; [uncovered]
+; the code below is very fishy, it's activated once a game
+; has run + game over, let the intro/instructions run
+0B13: C5          push bc
 0B14: 01 08 00    ld   bc,$0008
 0B17: 09          add  hl,bc    
 0B18: EB          ex   de,hl    
@@ -1502,6 +1504,9 @@ init_player_car_0aba:
 0B1C: EB          ex   de,hl    
 0B1D: C1          pop  bc 
 0B1E: E3          ex   (sp),hl  
+; basically skip 3 next instruction bytes
+; this call is always followed by "copy_status_row_1c4e"
+; so this will skip the call to "copy_status_row_1c4e"
 0B1F: 23          inc  hl    
 0B20: 23          inc  hl    
 0B21: 23          inc  hl   

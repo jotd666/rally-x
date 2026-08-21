@@ -401,6 +401,15 @@ with open(source_dir / "conv.s") as f:
 ##\tjbsr\tosd_sound_start
 ##0:
 ##"""
+        elif address == 0x0b1e:
+            # adapt original dirty code that skips next call
+            line = change_instruction("st.b\tskip_1c4e",lines,i)+"\trts\n"
+        elif address == 0x1c4e:
+            line = """\ttst.b\tskip_1c4e
+\tjeq\t0f
+\tclr.b\tskip_1c4e
+0:
+"""+line
         elif address == 0x1DC8:
             line += generate_play_code("EXTRA_LIFE_07")
         elif address in {0x19A8,0x16E3}:

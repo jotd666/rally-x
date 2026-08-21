@@ -11,6 +11,7 @@
 	.global	fprime
 	.global	iyl
 	.global	iyh
+	.global skip_1c4e
 
 	.global highscore_needs_saving_flag
 	.global	regscopy
@@ -69,7 +70,8 @@ i:
 	.byte	0
 skip_intro_flag:
 	.byte	0
-
+skip_1c4e:
+	.byte	0
 invincible_flag:
 	.byte	0
 infinite_lives_flag:
