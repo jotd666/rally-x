@@ -41,7 +41,7 @@ if build_dist:
         shutil.rmtree(outdir)
     outdir.mkdir(exist_ok=True,parents=True)
 
-    for file in ["readme.md",f"{gamename}.slave"]:
+    for file in ["readme.md",f"{gamename}.slave",f"{gamename}_AGA.slave"]:
         shutil.copy(progdir / file,outdir)
 
     shutil.copy(assets/f"RallyX.info",outdir)

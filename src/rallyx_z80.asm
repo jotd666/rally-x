@@ -141,6 +141,9 @@ double_score_8023 = $8023
 pointer_on_player_score_8990 = $8990
 high_score_beaten_82d0 = $82d0
 pointer_on_player_lives_8988 = $8988
+enemy_car_visible_structs_8004 = $8004
+deltay_car_vs_current_enemy_8051 = $8051
+deltax_car_vs_current_enemy_8050 = $8050
 
 ; music control: set a bit (or several!) to start a tune. Bit 0 clears
 ; when playing and resets to 1 once music has completed
@@ -203,7 +206,7 @@ animate_all_0069:
 0069: 32 80 A0    ld   (watchdog_a080),a
 006C: FD 26 01    ld   iyh,$01
 006F: 2A 69 80    ld   hl,($8069)
-0072: ED 4B 50 80 ld   bc,($8050)
+0072: ED 4B 50 80 ld   bc,(deltax_car_vs_current_enemy_8050)
 0076: 3A 6B 80    ld   a,(car_orientation_806b)
 0079: A7          and  a
 007A: 28 27       jr   z,$00A3
@@ -218,7 +221,7 @@ animate_all_0069:
 008E: 21 73 80    ld   hl,$8073
 0091: CD 8C 0D    call $0D8C
 0094: 81          add  a,c
-0095: 32 50 80    ld   ($8050),a
+0095: 32 50 80    ld   (deltax_car_vs_current_enemy_8050),a
 0098: FD 7C       ld   a,iyh
 009A: A7          and  a
 009B: 28 31       jr   z,$00CE
@@ -236,7 +239,7 @@ animate_all_0069:
 00B8: CD 8C 0D    call $0D8C
 00BB: ED 44       neg
 00BD: 80          add  a,b
-00BE: 32 51 80    ld   ($8051),a
+00BE: 32 51 80    ld   (deltay_car_vs_current_enemy_8051),a
 00C1: FD 7C       ld   a,iyh
 00C3: A7          and  a
 00C4: 28 08       jr   z,$00CE
@@ -353,11 +356,11 @@ animate_all_0069:
 01A5: DD 46 0C    ld   b,(ix+$0c)
 01A8: DD 4E 0E    ld   c,(ix+$0e)
 01AB: C5          push bc
-01AC: CD 7F 0E    call compute_hl_0e7f
+01AC: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 01AF: C1          pop  bc
 01B0: 7E          ld   a,(hl)		; [unchecked_address]
 01B1: D6 BD       sub  $BD
-01B3: 28 14       jr   z,$01C9
+01B3: 28 14       jr   z,clear_smoke_tiles_01c9		; found a smoke tile: reset 4 squares
 01B5: FE 09       cp   $09
 01B7: 30 33       jr   nc,$01EC
 01B9: FE 03       cp   $03
@@ -372,6 +375,7 @@ animate_all_0069:
 01C6: 47          ld   b,a
 01C7: 18 E2       jr   $01AB
 
+clear_smoke_tiles_01c9:
 01C9: 06 03       ld   b,$03
 01CB: 54          ld   d,h
 01CC: 5D          ld   e,l
@@ -379,11 +383,11 @@ animate_all_0069:
 01CF: 0E 03       ld   c,$03
 01D1: E5          push hl
 01D2: D5          push de
-01D3: 1A          ld   a,(de)		; [unchecked_address]
-01D4: D6 BD       sub  $BD
+01D3: 1A          ld   a,(de)		; [unchecked_address] read road chars
+01D4: D6 BD       sub  $BD			; before cloud tiles
 01D6: FE 09       cp   $09
 01D8: 30 05       jr   nc,$01DF
-01DA: 3E 81       ld   a,$81
+01DA: 3E 81       ld   a,$81		; reset to road tile
 01DC: 12          ld   (de),a		; [video_address]
 01DD: 36 15       ld   (hl),$15		; [video_address]
 01DF: CD 5D 0E    call advance_hl_and_de_0e5d
@@ -412,7 +416,7 @@ irq_01f0:		; [global]
 0208: A7          and  a
 0209: 28 05       jr   z,$0210
 020B: FE 02       cp   $02
-020D: C2 BD 03    jp   nz,$03BD
+020D: C2 BD 03    jp   nz,collision_test_end_03bd
 ; update scrolling
 0210: 3A 4D 80    ld   a,(scrollx_shadow_804d)
 0213: 32 30 A1    ld   (scrollx_a130),a
@@ -495,6 +499,7 @@ irq_01f0:		; [global]
 02B5: 18 34       jr   $02EB
 
 02B7: FD E1       pop  iy
+; clear visible enemy address slot
 02B9: AF          xor  a
 02BA: FD 77 00    ld   (iy+$00),a
 02BD: FD 77 01    ld   (iy+$01),a
@@ -573,7 +578,7 @@ irq_01f0:		; [global]
 0345: 11 04 A0    ld   de,$A004
 0348: 01 09 00    ld   bc,$0009
 034B: ED B0       ldir
-034D: C3 6D 03    jp   $036D
+034D: C3 6D 03    jp   car_vs_cars_collision_check_036d
 0350: DD 7E 08    ld   a,(ix+$08)
 0353: 87          add  a,a
 0354: ED 44       neg
@@ -589,49 +594,66 @@ irq_01f0:		; [global]
 0367: CB DA       set  3,d
 0369: 12          ld   (de),a
 036A: C3 35 03    jp   $0335
-036D: 06 05       ld   b,$05
+
+; collision test from player structure against car sprites (not car structures as
+; only 5 enemy cars can be displayed. The others move outside the visible area and
+; there's probably some distance check to prevent too many cars from entering the visible
+; area but remain in ambush in the non-visible zone
+; note that sprites can be displayed outside the 0-255 X/Y zone but the game doesn't use that
+; so it can use byte-size for coordinates
+
+car_vs_cars_collision_check_036d:
+036D: 06 05       ld   b,$05		; against max 5 visible cars (not all the 8 cars)
 036F: DD 21 68 80 ld   ix,player_car_structure_8068
-0373: FD 21 04 80 ld   iy,$8004
+0373: FD 21 04 80 ld   iy,enemy_car_visible_structs_8004
+; skip collision test at the very start: it is possible to go across the motionless cars
+; during 1 second approximatively
 0377: 21 4C 82    ld   hl,kill_flag_824c
 037A: 7E          ld   a,(hl)
 037B: 35          dec  (hl)
 037C: FE 32       cp   $32
-037E: 30 3D       jr   nc,$03BD
+037E: 30 3D       jr   nc,collision_test_end_03bd
 0380: A7          and  a
-0381: 20 3A       jr   nz,$03BD
+0381: 20 3A       jr   nz,collision_test_end_03bd
 0383: 77          ld   (hl),a
-0384: FD 66 01    ld   h,(iy+$01)
-0387: FD 6E 00    ld   l,(iy+$00)
+loop_0384:
+0384: FD 66 01    ld   h,(iy+$01)	; get enemy X
+0387: FD 6E 00    ld   l,(iy+$00)	; get enemy Y
 038A: 7D          ld   a,l
 038B: B4          or   h
-038C: 28 29       jr   z,$03B7
-038E: 7E          ld   a,(hl)
+038C: 28 29       jr   z,next_enemy_slot_03b7		; 0,0: not active: next slot
+038E: 7E          ld   a,(hl)		; on edge status?
 038F: CB 47       bit  0,a
-0391: 20 24       jr   nz,$03B7
-0393: DD 7E 0C    ld   a,(ix+$0c)
+; active but somehow not interesting (because on edges and car is centered?)
+0391: 20 24       jr   nz,next_enemy_slot_03b7
+; interesting for coords check, can possibly collide with player car
+0393: DD 7E 0C    ld   a,(ix+$0c)	; check X distance
 0396: 23          inc  hl
 0397: 96          sub  (hl)
 0398: 30 02       jr   nc,$039C
-039A: ED 44       neg
+039A: ED 44       neg		; absolute value
 039C: FE 0B       cp   $0B
-039E: 30 17       jr   nc,$03B7
+039E: 30 17       jr   nc,next_enemy_slot_03b7
+; X is aligned, check delta y now
 03A0: DD 7E 0E    ld   a,(ix+$0e)
 03A3: 23          inc  hl
 03A4: 23          inc  hl
 03A5: 96          sub  (hl)
 03A6: 30 02       jr   nc,$03AA
-03A8: ED 44       neg
+03A8: ED 44       neg		; absolute value
 03AA: FE 0B       cp   $0B
-03AC: 30 09       jr   nc,$03B7
+03AC: 30 09       jr   nc,next_enemy_slot_03b7
+; both X & Y distances are short: collision
 killed_03ae:
 03AE: FB          ei
 03AF: 3E 01       ld   a,$01
 03B1: 32 81 A1    ld   ($A181),a
 03B4: C3 D3 16    jp   player_killed_by_car_16d3
-
-03B7: FD 23       inc  iy
+next_enemy_slot_03b7:
+03B7: FD 23       inc  iy		; next enemy car sprite coords
 03B9: FD 23       inc  iy
-03BB: 10 C7       djnz $0384
+03BB: 10 C7       djnz loop_0384
+collision_test_end_03bd:
 03BD: 3A 4B 82    ld   a,(counter_824b)
 03C0: 3C          inc  a
 03C1: 32 4B 82    ld   (counter_824b),a
@@ -1428,11 +1450,11 @@ clear_sprites_074c:
 0A78: 18 39       jr   $0AB3
 
 0A7A: 31 00 84    ld   sp,$8400
-0A7D: 3A 50 80    ld   a,($8050)
+0A7D: 3A 50 80    ld   a,(deltax_car_vs_current_enemy_8050)
 0A80: C6 07       add  a,$07
 0A82: FE 0F       cp   $0F
 0A84: D4 0D 10    call nc,$100D
-0A87: 3A 51 80    ld   a,($8051)
+0A87: 3A 51 80    ld   a,(deltay_car_vs_current_enemy_8051)
 0A8A: C6 07       add  a,$07
 0A8C: FE 0F       cp   $0F
 0A8E: D4 55 10    call nc,$1055
@@ -1553,7 +1575,7 @@ init_player_car_0aba:
 0B73: D9          exx
 0B74: DD 46 0C    ld   b,(ix+$0c)
 0B77: DD 4E 0E    ld   c,(ix+$0e)
-0B7A: CD 7F 0E    call compute_hl_0e7f
+0B7A: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 0B7D: 7E          ld   a,(hl)		; [unchecked_address]
 0B7E: D9          exx
 0B7F: FE BD       cp   $BD
@@ -1959,7 +1981,7 @@ smoke_release_end_0df4:
 0E20: DD 7E 0E    ld   a,(ix+$0e)
 0E23: 81          add  a,c
 0E24: 4F          ld   c,a
-0E25: CD 7F 0E    call compute_hl_0e7f
+0E25: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 0E28: 54          ld   d,h
 0E29: 5D          ld   e,l
 0E2A: CB DC       set  3,h
@@ -2023,7 +2045,12 @@ advance_hl_and_de_0e6c:
 0E7D: C1          pop  bc
 0E7E: C9          ret
 
-compute_hl_0e7f:
+; given scrollx/y and B/C (coordinates)
+; provide screen address for tiles
+;
+; this is used extensively. One usage is: drop smoke
+; where the car is
+compute_screen_address_from_coords_0e7f:
 0E7F: 3A 4D 80    ld   a,(scrollx_shadow_804d)
 0E82: 80          add  a,b
 0E83: C6 03       add  a,$03
@@ -2232,9 +2259,9 @@ carry_returning_0fd8:
 100D: F3          di
 100E: CB 7F       bit  7,a
 1010: 28 22       jr   z,$1034
-1012: 3A 50 80    ld   a,($8050)
+1012: 3A 50 80    ld   a,(deltax_car_vs_current_enemy_8050)
 1015: C6 08       add  a,$08
-1017: 32 50 80    ld   ($8050),a
+1017: 32 50 80    ld   (deltax_car_vs_current_enemy_8050),a
 101A: 3A 54 80    ld   a,($8054)
 101D: 3C          inc  a
 101E: 32 54 80    ld   ($8054),a
@@ -2247,9 +2274,9 @@ carry_returning_0fd8:
 102E: 32 52 80    ld   ($8052),a
 1031: C3 CC 10    jp   $10CC
 
-1034: 3A 50 80    ld   a,($8050)
+1034: 3A 50 80    ld   a,(deltax_car_vs_current_enemy_8050)
 1037: D6 08       sub  $08
-1039: 32 50 80    ld   ($8050),a
+1039: 32 50 80    ld   (deltax_car_vs_current_enemy_8050),a
 103C: 3A 54 80    ld   a,($8054)
 103F: 3D          dec  a
 1040: 32 54 80    ld   ($8054),a
@@ -2264,9 +2291,9 @@ carry_returning_0fd8:
 1055: F3          di
 1056: CB 7F       bit  7,a
 1058: 28 22       jr   z,$107C
-105A: 3A 51 80    ld   a,($8051)
+105A: 3A 51 80    ld   a,(deltay_car_vs_current_enemy_8051)
 105D: C6 08       add  a,$08
-105F: 32 51 80    ld   ($8051),a
+105F: 32 51 80    ld   (deltay_car_vs_current_enemy_8051),a
 1062: 3A 55 80    ld   a,($8055)
 1065: 3C          inc  a
 1066: 32 55 80    ld   ($8055),a
@@ -2279,9 +2306,9 @@ carry_returning_0fd8:
 1076: 32 53 80    ld   ($8053),a
 1079: C3 9D 10    jp   $109D
 
-107C: 3A 51 80    ld   a,($8051)
+107C: 3A 51 80    ld   a,(deltay_car_vs_current_enemy_8051)
 107F: D6 08       sub  $08
-1081: 32 51 80    ld   ($8051),a
+1081: 32 51 80    ld   (deltay_car_vs_current_enemy_8051),a
 1084: 3A 55 80    ld   a,($8055)
 1087: 3D          dec  a
 1088: 32 55 80    ld   ($8055),a
@@ -2816,7 +2843,7 @@ write_maze_row_131e:
 13D4: 21 F8 01    ld   hl,$01F8
 13D7: F3          di
 13D8: ED 5B 54 80 ld   de,($8054)
-13DC: 3A 50 80    ld   a,($8050)
+13DC: 3A 50 80    ld   a,(deltax_car_vs_current_enemy_8050)
 13DF: 06 00       ld   b,$00
 13E1: 4F          ld   c,a
 13E2: CB 7F       bit  7,a
@@ -2831,7 +2858,7 @@ write_maze_row_131e:
 13F0: 18 FA       jr   $13EC
 
 13F2: 22 48 82    ld   ($8248),hl
-13F5: 3A 51 80    ld   a,($8051)
+13F5: 3A 51 80    ld   a,(deltay_car_vs_current_enemy_8051)
 13F8: C6 14       add  a,$14
 13FA: ED 44       neg
 13FC: 14          inc  d
@@ -2889,6 +2916,7 @@ write_maze_row_131e:
 1461: 11 2B 00    ld   de,$002B    ; [uncovered] 
 1464: 18 C0       jr   $1426    ; [uncovered] 
 
+; set visible enemy address in slot (8004...)
 1466: FD 75 00    ld   (iy+$00),l
 1469: FD 74 01    ld   (iy+$01),h
 146C: 7A          ld   a,d
@@ -2925,7 +2953,7 @@ write_maze_row_131e:
 149D: 3A 4F 80    ld   a,(scrolly_shadow_804f)
 14A0: ED 44       neg
 14A2: 67          ld   h,a
-14A3: 3A 50 80    ld   a,($8050)
+14A3: 3A 50 80    ld   a,(deltax_car_vs_current_enemy_8050)
 14A6: 85          add  a,l
 14A7: E6 F8       and  $F8
 14A9: D6 10       sub  $10
@@ -2933,7 +2961,7 @@ write_maze_row_131e:
 14AC: 0F          rrca
 14AD: 0F          rrca
 14AE: 6F          ld   l,a
-14AF: 3A 51 80    ld   a,($8051)
+14AF: 3A 51 80    ld   a,(deltay_car_vs_current_enemy_8051)
 14B2: 84          add  a,h
 14B3: 26 21       ld   h,$21
 14B5: 07          rlca
@@ -3335,7 +3363,7 @@ player_killed_by_car_16d3:
 177D: DD 7E 0E    ld   a,(ix+$0e)
 1780: C6 08       add  a,$08
 1782: 4F          ld   c,a
-1783: CD 7F 0E    call compute_hl_0e7f
+1783: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 1786: 54          ld   d,h
 1787: 5D          ld   e,l
 1788: CB DC       set  3,h			; color
@@ -3417,7 +3445,7 @@ erase_chars_17a3:
 1808: DD 86 0E    add  a,(ix+$0e)
 180B: 4F          ld   c,a
 180C: C5          push bc
-180D: CD 7F 0E    call compute_hl_0e7f
+180D: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 1810: 36 81       ld   (hl),$81			; [video_address]
 1812: C1          pop  bc
 1813: E5          push hl
@@ -3426,20 +3454,20 @@ erase_chars_17a3:
 1816: D6 08       sub  $08
 1818: 47          ld   b,a
 1819: C5          push bc
-181A: CD 7F 0E    call compute_hl_0e7f
+181A: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 181D: 36 81       ld   (hl),$81			; [video_address]
 181F: C1          pop  bc
 1820: 79          ld   a,c
 1821: D6 08       sub  $08
 1823: 4F          ld   c,a
 1824: C5          push bc
-1825: CD 7F 0E    call compute_hl_0e7f
+1825: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 1828: 36 81       ld   (hl),$81			; [video_address]
 182A: C1          pop  bc
 182B: 79          ld   a,c
 182C: C1          pop  bc
 182D: 4F          ld   c,a
-182E: CD 7F 0E    call compute_hl_0e7f
+182E: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 1831: 36 81       ld   (hl),$81			; [video_address]
 1833: E1          pop  hl
 1834: 7D          ld   a,l
@@ -3670,7 +3698,7 @@ game_over_19b9:
 19CE: DD 7E 0E    ld   a,(ix+$0e)
 19D1: C6 08       add  a,$08
 19D3: 4F          ld   c,a
-19D4: CD 7F 0E    call compute_hl_0e7f
+19D4: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 19D7: 54          ld   d,h
 19D8: 5D          ld   e,l
 19D9: 06 03       ld   b,$03
@@ -4277,7 +4305,7 @@ write_instructions_text_1e1b:
 1E7E: C5          push bc
 1E7F: DD 46 0C    ld   b,(ix+$0c)
 1E82: DD 4E 0E    ld   c,(ix+$0e)
-1E85: CD 7F 0E    call compute_hl_0e7f
+1E85: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 1E88: C1          pop  bc
 1E89: 7D          ld   a,l
 1E8A: B9          cp   c

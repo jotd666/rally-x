@@ -731,14 +731,9 @@ _nmi:
 	rts
 	
 do_irq:
-	* at least on amiga, we need keyboard interrupt enabled.
-	* this is done by disabling vblank, but setting SR at 2000
-	* it allows to intercept the "push start" button when a coin is inserted
-	* else the code loops in the irq which is wrong...
 	GET_MEMORY_START_IN_A6
 	jbsr	cpu_init
 	jbsr	osd_disable_interrupts
-	move.w	#0x2000,sr		| allow keyboard interrupt
 	jbsr	irq_01f0
 	jbsr	osd_enable_interrupts
 	rts
@@ -800,13 +795,11 @@ _vblank:
 	* is the source of the interrupt
 	btst	#2,d0
 	beq.b	2f
-	* mid-screen copper interrupt, must occur once every 7 times
-	* to simulate ~57 Hz on 50 Hz display
-	* clocking main character going up the stairs with MAME: 6.7 seconds
-	* roughly the same with the amiga version now, good!!
+	* mid-screen copper interrupt, must occur once every 5 times to simulate
+	* 60Hz
 	move.b	mid_screen_interrupt_count,d0
 	addq.b	#1,d0
-	cmp.b	#7,d0
+	cmp.b	#5,d0
 	bne.b	1f
 	* simulate an extra vblank
 	jbsr	do_irq
