@@ -1573,18 +1573,20 @@ init_player_car_0aba:
 0B6F: B3          or   e
 0B70: CC 98 0C    call z,$0C98
 0B73: D9          exx
-0B74: DD 46 0C    ld   b,(ix+$0c)
-0B77: DD 4E 0E    ld   c,(ix+$0e)
+0B74: DD 46 0C    ld   b,(ix+$0c)	; enemy car X
+0B77: DD 4E 0E    ld   c,(ix+$0e)	; enemy car Y
 0B7A: CD 7F 0E    call compute_screen_address_from_coords_0e7f
 0B7D: 7E          ld   a,(hl)		; [unchecked_address]
 0B7E: D9          exx
 0B7F: FE BD       cp   $BD
-0B81: 38 10       jr   c,$0B93
+0B81: 38 10       jr   c,skip_smoke_tile_0b93
 0B83: FE C6       cp   $C6
-0B85: 30 0C       jr   nc,$0B93
-0B87: DD 36 00 88 ld   (ix+$00),$88
+0B85: 30 0C       jr   nc,skip_smoke_tile_0b93
+; hitting a smoke tile: block car for a given period
+0B87: DD 36 00 88 ld   (ix+$00),$88	; block car during 88 ticks (MAME trainer uses that value without thinking :)
 0B8B: DD 36 15 01 ld   (ix+$15),$01
 0B8F: DD 36 13 82 ld   (ix+$13),$82
+skip_smoke_tile_0b93:
 0B93: 0E 01       ld   c,$01
 0B95: 78          ld   a,b
 0B96: E6 03       and  $03
