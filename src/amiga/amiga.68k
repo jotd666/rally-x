@@ -205,6 +205,7 @@ w\@:
 	.global	osd_wait_music_end
 	
 	.global	is_game_playing
+	.global osd_get_sync_period
 	.global osd_read_high_scores
 	.global osd_write_high_scores
 	.global	load_highscores
@@ -621,6 +622,12 @@ osd_wait_music_end:
 	jne		0b
 	rts
 	
+* speed regulation for game mainloop, the bigger, the faster
+
+osd_get_sync_period:
+	move.w	#20,d0
+	rts
+
 osd_get_random:
 * > D0: pseudo random value (8 bits, all other bits zeroed)
 	movem.l	a0,-(a7)
@@ -731,9 +738,15 @@ _nmi:
 	rts
 	
 do_irq:
+* at least on amiga, we need keyboard interrupt enabled.
+	* this is done by disabling vblank, but setting SR at 2000
+	* it allows to intercept the "push start" button when a coin is inserted
+	* else the code loops in the irq which is wrong...
 	GET_MEMORY_START_IN_A6
 	jbsr	cpu_init
+	clr.b	vbl_sync_flag
 	jbsr	osd_disable_interrupts
+	move.w	#0x2000,sr		| allow keyboard interrupt
 	jbsr	irq_01f0
 	jbsr	osd_enable_interrupts
 	rts
@@ -1104,10 +1117,10 @@ lose_all_lives:
 freeze_enemies:
 	movem.l	d0/a0/a5/a6,-(a7)
 	GET_MEMORY_BLOCKS_IN_A5_A6
-	lea		(0x88,a5),a0
-	moveq	#7,d0
+	lea		(0x88,a5),a0		| enemy struct
+	moveq	#7,d0				| all 8 possible enemies
 0:
-	move.b	#0x88,(a0)
+	move.b	#0x88,(a0)			| 0x88 ticks, all the time
 	add.w	#0x20,a0
 	dbf		d0,0b
 	movem.l	(a7)+,d0/a0/a5/a6

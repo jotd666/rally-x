@@ -1,5 +1,4 @@
-- cars have a tendency to lock themselves: smoke screen wrongly detected
-  probably. Disable smoke screen action to check!
+- export stack symbol to reset it at A7A
   
 - after game over no credits, explanation screen is buggy
   8FE7... attributes for instructions is completely shifted

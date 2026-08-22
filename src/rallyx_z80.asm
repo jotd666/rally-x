@@ -1449,7 +1449,18 @@ clear_sprites_074c:
 0A75: CD 69 00    call animate_all_0069
 0A78: 18 39       jr   $0AB3
 
-0A7A: 31 00 84    ld   sp,$8400
+; mainloop is outside irq. It's not regulated or synchronized
+; on irq, which means that the code basically depends on the cpu
+; speed, like for instance in Pengo.
+;
+; this is not really a problem except for instance for the strange
+; "enemy cars infinite lockup" bug that happens because the
+; "non lockup" timer depends on the speed of this loop (other timers
+; may depend from this loop but are somehow regulated by a variable
+; or a timer in the irq)
+
+mainloop_0a7a:
+0A7A: 31 00 84    ld   sp,$8400		; reset stack, it's a brand new day
 0A7D: 3A 50 80    ld   a,(deltax_car_vs_current_enemy_8050)
 0A80: C6 07       add  a,$07
 0A82: FE 0F       cp   $0F
@@ -1475,7 +1486,7 @@ clear_sprites_074c:
 0AB0: CD CF 13    call $13CF
 0AB3: AF          xor  a
 0AB4: 32 22 80    ld   ($8022),a
-0AB7: C3 7A 0A    jp   $0A7A
+0AB7: C3 7A 0A    jp   mainloop_0a7a
 
 init_player_car_0aba:
 0ABA: DD 21 68 80 ld   ix,player_car_structure_8068
@@ -1584,7 +1595,7 @@ init_player_car_0aba:
 0B85: 30 0C       jr   nc,skip_smoke_tile_0b93
 ; hitting a smoke tile: block car for a given period
 0B87: DD 36 00 88 ld   (ix+$00),$88	; block car during 88 ticks (MAME trainer uses that value without thinking :)
-0B8B: DD 36 15 01 ld   (ix+$15),$01
+0B8B: DD 36 15 01 ld   (ix+$15),$01	; hack direction
 0B8F: DD 36 13 82 ld   (ix+$13),$82
 skip_smoke_tile_0b93:
 0B93: 0E 01       ld   c,$01
@@ -1720,7 +1731,7 @@ skip_smoke_tile_0b93:
 0C8E: C2 34 0B    jp   nz,$0B34
 0C91: 21 22 80    ld   hl,$8022
 0C94: 34          inc  (hl)
-0C95: C3 7A 0A    jp   $0A7A
+0C95: C3 7A 0A    jp   mainloop_0a7a
 
 0C98: FD 7E 0C    ld   a,(iy+$0c)      ; [uncovered]
 0C9B: DD 96 0C    sub  (ix+$0c)        ; [uncovered]
@@ -2081,7 +2092,7 @@ compute_screen_address_from_coords_0e7f:
 0EAA: DD 35 13    dec  (ix+$13)
 0EAD: A7          and  a
 0EAE: C2 A6 0F    jp   nz,$0FA6
-0EB1: DD 77 13    ld   (ix+$13),a
+0EB1: DD 77 13    ld   (ix+$13),a		; set to 0
 0EB4: 21 F4 89    ld   hl,sound_control_89f4
 0EB7: CB F6       set  6,(hl)			; add engine sound
 0EB9: 2A 27 80    ld   hl,(car_speed_8027)
@@ -2201,7 +2212,7 @@ compute_screen_address_from_coords_0e7f:
 0FA6: 3A 22 80    ld   a,($8022)
 0FA9: 3C          inc  a
 0FAA: 32 22 80    ld   ($8022),a
-0FAD: C3 7A 0A    jp   $0A7A
+0FAD: C3 7A 0A    jp   mainloop_0a7a
 
 up_command_0fb0:
 0FB0: 3A 6F 80    ld   a,($806F)
@@ -3151,34 +3162,40 @@ play_credit_sounds_154d:
 15D1: 1A          ld   a,(de)
 15D2: FE 03       cp   $03
 15D4: CA 96 19    jp   z,player_killed_by_rock_1996
+; loop through consecutive car structures, if they're close to each
+; other it's possible that one of them is slowed down (pseudo-random)
 15D7: DD 21 88 80 ld   ix,enemy_car_structs_8088
-15DB: FD 21 A8 80 ld   iy,$80A8
+15DB: FD 21 A8 80 ld   iy,$80a8		; enemy_car_structs_8088+$20 next struct
 15DF: 06 07       ld   b,$07
 15E1: C5          push bc
 15E2: FD E5       push iy
 15E4: DD 7E 13    ld   a,(ix+$13)
 15E7: A7          and  a
 15E8: 28 05       jr   z,$15EF
-15EA: DD 35 13    dec  (ix+$13)
-15ED: 18 2C       jr   $161B
+15EA: DD 35 13    dec  (ix+$13)		; inhibition counter prevents from too many collisions
+15ED: 18 2C       jr   next_car_structure_161b
 
 15EF: DD 7E 08    ld   a,(ix+$08)
 15F2: FD 96 08    sub  (iy+$08)
 15F5: 6F          ld   l,a
 15F6: DD 7E 05    ld   a,(ix+$05)
 15F9: FD 96 05    sub  (iy+$05)
-15FC: CD C3 16    call $16C3
+15FC: CD C3 16    call pseudo_random_16c3
 15FF: 20 13       jr   nz,$1614
 1601: DD 7E 0A    ld   a,(ix+$0a)
 1604: FD 96 0A    sub  (iy+$0a)
 1607: 6F          ld   l,a
 1608: FD 7E 07    ld   a,(iy+$07)
 160B: DD 96 07    sub  (ix+$07)
-160E: CD C3 16    call $16C3
-1611: CC 7A 16    call z,$167A
+160E: CD C3 16    call pseudo_random_16c3
+; we can stumble in an infinite lock up with routine
+; above returning Z all the time for 2 consecutive enemies
+; it happens in the 68000 amiga transcode
+1611: CC 7A 16    call z,enemy_to_enemy_collision_167a
 1614: 11 20 00    ld   de,$0020
 1617: FD 19       add  iy,de
 1619: 10 C9       djnz $15E4
+next_car_structure_161b:
 161B: 11 20 00    ld   de,$0020
 161E: FD E1       pop  iy
 1620: C1          pop  bc
@@ -3223,11 +3240,16 @@ play_credit_sounds_154d:
 1670: C2 2D 16    jp   nz,$162D
 1673: 21 22 80    ld   hl,$8022
 1676: 34          inc  (hl)
-1677: C3 7A 0A    jp   $0A7A
+1677: C3 7A 0A    jp   mainloop_0a7a
 
+; simulate a collision between 2 enemies
+; it changes their coordinates and stops them for a
+; small while
+enemy_to_enemy_collision_167a:
 167A: DD E5       push ix
 167C: FD E5       push iy
 167E: DD E1       pop  ix
+; apply to both IX and IY enemies
 1680: CD 97 16    call $1697
 1683: DD E1       pop  ix
 1685: FD 7E 02    ld   a,(iy+$02)
@@ -3235,11 +3257,12 @@ play_credit_sounds_154d:
 168B: CB 7F       bit  7,a
 168D: DD 7E 02    ld   a,(ix+$02)
 1690: 28 02       jr   z,$1694
-1692: ED 44       neg
+1692: ED 44       neg			; absolute value
 1694: DD 77 02    ld   (ix+$02),a
 1697: E5          push hl
-1698: DD 36 00 E0 ld   (ix+$00),$E0
-169C: DD 36 13 32 ld   (ix+$13),$32
+; delay some enemy cars a bit sometimes
+1698: DD 36 00 E0 ld   (ix+$00),$E0		
+169C: DD 36 13 32 ld   (ix+$13),$32		; no collision possible for a while (blocking timer)
 16A0: 21 00 01    ld   hl,$0100
 16A3: DD CB 02 7E bit  7,(ix+$02)
 16A7: 20 02       jr   nz,$16AB
@@ -3256,6 +3279,9 @@ play_credit_sounds_154d:
 16C1: E1          pop  hl
 16C2: C9          ret
 
+; < A, L
+; > Z flag
+pseudo_random_16c3:
 16C3: 2D          dec  l
 16C4: 2D          dec  l
 16C5: C6 23       add  a,$23
@@ -3264,7 +3290,6 @@ play_credit_sounds_154d:
 16CB: 2C          inc  l
 16CC: D6 18       sub  $18
 16CE: 18 F7       jr   $16C7
-
 16D0: 7D          ld   a,l
 16D1: A7          and  a
 16D2: C9          ret

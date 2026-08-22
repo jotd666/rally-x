@@ -19,7 +19,6 @@
 	.global	regscopy
 	.global vbl_sync_counter
 	.global vbl_sync_flag
-	.global no_sync_flag
 	.ifne	OPT_ALIGNED_MEMORY
 	.global rom_start_0000
 	.endif
@@ -50,10 +49,11 @@ rom_start_0000:
 	.long	0
 	.endif
 
-
 	
 
 high_score_beaten:
+	.word	0
+vbl_sync_counter:
 	.word	0
 stack_top:
 	.long	0
@@ -72,6 +72,9 @@ iyh:
 	.byte	0
 i:
 	.byte	0
+
+
+
 skip_intro_flag:
 	.byte	0
 skip_1c4e:
@@ -96,8 +99,6 @@ vb_ticks_count:
 current_ticks_count:
 	.byte	0
 vbl_sync_flag:
-	.byte	0
-vbl_sync_counter:
 	.byte	0
 
 

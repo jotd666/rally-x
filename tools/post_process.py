@@ -273,7 +273,9 @@ with open(source_dir / "conv.s") as f:
             line = change_instruction("jbsr\tosd_get_random",lines,i)
         elif address == 0x790:
             line = swap_lines(lines,i,i-2)
-        elif address in {0x3800,0x06ab,0x0a7a,0x389e}:  # stack shit
+        elif address == 0xA7A:
+            line = change_instruction("jbsr\tregulate_speed",lines,i)
+        elif address in {0x3800,0x06ab,0x389e}:  # stack shit
             line = remove_instruction(lines,i)
         elif address in {0x39ce,0x39cf,0x39d0,0x39d1,0x39ef,0x39f0,0x39f1,0x39f2}:  # stack shit
             line = change_instruction("ILLEGAL",lines,i)
@@ -509,4 +511,23 @@ with open(source_dir / f"{gamename}.68k","w") as fw:
 \tclr.l\t(a0)+
 \tclr.l\t(a0)+
 \trts
+
+
+regulate_speed:
+    st.b    vbl_sync_flag
+    * added to regulate speed, else it's really too fast
+    * each nth loop, we sync on vertical blank
+    jbsr    osd_get_sync_period
+    move.w    vbl_sync_counter,d1
+    addq.w    #1,d1
+    cmp.w    d1,d0
+    bne.b    1f
+0:
+    tst.b    vbl_sync_flag
+    bne.b    0b
+    moveq    #0,d1
+1:
+    move.w    d1,vbl_sync_counter
+    rts
+
 """)
