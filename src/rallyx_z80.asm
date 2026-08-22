@@ -1051,7 +1051,7 @@ collision_test_end_03bd:
 070B: C4 D2 1E    call nz,display_credits_1ed2
 070E: 11 28 87    ld   de,$8728
 0711: 21 6E 1F    ld   hl,$1F6E
-0714: CD 15 1B    call rle_unpack_to_screen_1b15
+0714: CD 15 1B    call write_to_screen_1b15
 start_game_test_loop_0717:
 0717: 3A 4B 82    ld   a,(counter_824b)
 071A: E6 1F       and  $1F
@@ -3596,7 +3596,7 @@ flag_picked_up_1896:
 18EC: 32 4B 82    ld   (counter_824b),a
 18EF: 3A 4B 82    ld   a,(counter_824b)
 18F2: E6 3F       and  $3F
-18F4: 20 F9       jr   nz,$18EF   ; [cpu_dependent_loop]
+18F4: 20 F9       jr   nz,$18EF
 18F6: CB 46       bit  0,(hl)
 18F8: 28 FC       jr   z,$18F6
 18FA: CD 2D 1D    call $1D2D
@@ -3604,7 +3604,7 @@ flag_picked_up_1896:
 18FF: 32 4B 82    ld   (counter_824b),a
 1902: 3A 4B 82    ld   a,(counter_824b)
 1905: A7          and  a
-1906: 20 FA       jr   nz,$1902   ; [cpu_dependent_loop]
+1906: 20 FA       jr   nz,$1902
 1908: C3 BD 07    jp   $07BD
 
 190B: 3A 92 82    ld   a,($8292)
@@ -3775,17 +3775,17 @@ game_over_19b9:
 ; high score beaten: display congratulations screen
 1A52: 3E 75       ld   a,$75
 1A54: CD CB 1D    call clear_screen_and_reset_scroll_1dcb
-1A57: 21 29 1B    ld   hl,$1B29
-1A5A: 11 07 85    ld   de,$8507
-1A5D: CD 15 1B    call rle_unpack_to_screen_1b15
+1A57: 21 29 1B    ld   hl,$1B29			; text with length & attribute info
+1A5A: 11 07 85    ld   de,$8507			; "YOU DID IT"
+1A5D: CD 15 1B    call write_to_screen_1b15
 1A60: 11 86 85    ld   de,$8586
-1A63: CD 15 1B    call rle_unpack_to_screen_1b15
+1A63: CD 15 1B    call write_to_screen_1b15
 1A66: 11 C9 85    ld   de,$85C9
-1A69: CD 15 1B    call rle_unpack_to_screen_1b15
+1A69: CD 15 1B    call write_to_screen_1b15
 1A6C: 11 86 86    ld   de,$8686
-1A6F: CD 15 1B    call rle_unpack_to_screen_1b15
+1A6F: CD 15 1B    call write_to_screen_1b15
 1A72: 11 C8 86    ld   de,$86C8
-1A75: CD 15 1B    call rle_unpack_to_screen_1b15
+1A75: CD 15 1B    call write_to_screen_1b15
 1A78: 3E 83       ld   a,$83
 1A7A: 32 2F 86    ld   ($862F),a
 1A7D: 21 F5 89    ld   hl,music_control_89f5
@@ -3859,6 +3859,7 @@ game_really_over_1ad8:
 1B02: 23          inc  hl
 1B03: 10 FC       djnz $1B01
 1B05: C9          ret
+
 1B06: 2A 98 89    ld   hl,($8998)
 1B09: 01 1C 00    ld   bc,$001C
 1B0C: 09          add  hl,bc
@@ -3868,7 +3869,7 @@ game_really_over_1ad8:
 1B12: 10 FB       djnz $1B0F
 1B14: C9          ret
 
-rle_unpack_to_screen_1b15:
+write_to_screen_1b15:
 1B15: F5          push af
 1B16: C5          push bc
 1B17: D5          push de
@@ -4160,7 +4161,7 @@ copy_status_row_1c4e:
 1D4A: 32 69 82    ld   ($8269),a
 1D4D: 3A 69 82    ld   a,($8269)
 1D50: 3D          dec  a
-1D51: 20 FA       jr   nz,$1D4D		; [cpu_dependent_loop]
+1D51: 20 FA       jr   nz,$1D4D
 1D53: DD 7E 00    ld   a,(ix+$00)
 1D56: DD B6 01    or   (ix+$01)
 1D59: C8          ret  z

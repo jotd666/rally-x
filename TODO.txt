@@ -1,28 +1,26 @@
+- move tile refresh code in IRQ to speed main code (flag refresh instead of redrawing)
+- highscore load/save
+- GAME OVER is in black should be white
 - export stack symbol to reset it at A7A
+- mainloop is called roughly 10 times as much as irq
+  * on fast machines, some timers have issues (car lockup)
+  * on slow machines, game doesn't run, as irq triggers too often
+  regulate / call irq less often?
   
 - after game over no credits, explanation screen is buggy
   8FE7... attributes for instructions is completely shifted
   bonus flag list is also printed too low/too high
-- GAME OVER is in black should be white
 - cycle exact adf not working / completely broken is this the same
   issue as digdug2?
 - engine sfx: make frequency vary depending on orientation
-
-  in real game see what it does / where is that random used on cars lock up?
-  also check car kill collision test?
-  lockup with smoke or even without smoke?
+- freeze code / manually profile & optimize
 - sprite color issue when cars are on the bottom
-- ECS highscore screen wrong colors (black should be cyan
-  but we removed cyan, maybe replace cyan by green and
-  dynamically change it on highscore)  
 
 - cheat add to score: > 20000 doesn't work
   we should call the "addtoscore" routine
 - add unused tune to "game over" screen: doesn't work, music stop called?
-- highscore load/save
 - sometimes starts with 99 credits (ex: from floppy, starts immediately with 99 credits)
   
-- cpu dependent loop 18FD look for more
 - kind of level skip flag picked always complete level trainer
 - sometimes cars are all red: snap sprites at this moment for mockup
 

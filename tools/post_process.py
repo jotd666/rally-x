@@ -412,6 +412,18 @@ with open(source_dir / "conv.s") as f:
 \tclr.b\tskip_1c4e
 0:
 """+line
+        elif address == 0x1AD8:
+            line += """\t.ifdef\t__amiga__
+\tmoveq\t#0,d0
+\tjbsr\tosd_set_first_color   | orange
+\t.endif
+"""
+        elif address == 0x1A54:
+            line += """\t.ifdef\t__amiga__
+\tmoveq\t#1,d0
+\tjbsr\tosd_set_first_color   | cyan
+\t.endif
+"""
         elif address == 0x1DC8:
             line += generate_play_code("EXTRA_LIFE_07")
         elif address in {0x19A8,0x16E3}:

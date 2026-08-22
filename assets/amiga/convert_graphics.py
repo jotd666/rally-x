@@ -62,7 +62,7 @@ def doit(aga,dump_it):
 (151, 151, 151) : (222, 222, 222),  # gray => whiter
 (104, 0, 0) : (184, 71, 0),  # merge browns
 (0, 104, 0) : (71, 104, 71),  # merge greens
-(33, 222, 222) : black  # remove cyan
+(33, 222, 222) : orange  # cyan => orange, needed on highscore screen
 }
         main_tile_palette = apply_color_replacement(main_tile_set_list,color_replacement_dict)
 

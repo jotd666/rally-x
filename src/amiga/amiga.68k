@@ -207,6 +207,7 @@ w\@:
 	.global	is_game_playing
 	.global osd_get_sync_period
 	.global osd_read_high_scores
+	.global osd_set_first_color
 	.global osd_write_high_scores
 	.global	load_highscores
 	.global	save_highscores
@@ -616,6 +617,18 @@ call_bcpl:
 	movem.l (sp)+,d2-d7/a2-a6
 	rts
 
+osd_set_first_color:
+	.ifndef	AGA_VERSION
+	* only ECS needs this
+	move.w	#0x0D94,d7	| orange
+	tst.b	d0
+	jeq		0f
+	move.w	#0x02EE,d7  | cyan
+0:
+	move.w	d7,main_colors+2
+	.endif
+	rts
+	
 osd_wait_music_end:
 0:
 	tst.b	music_playing
