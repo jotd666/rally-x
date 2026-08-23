@@ -88,7 +88,7 @@ NB_PLAYFIELD_PLANES = 4
 	.else
 NB_PLAYFIELD_PLANES = 3	
 	.endif
-	
+
 TOTAL_NB_COLORS = 1<<NB_PLAYFIELD_PLANES
 NB_BYTES_PER_MAIN_ROW = 64
 
@@ -2674,26 +2674,26 @@ main_standard_tile:
 	jeq		5f
 	move.l	d0,a0
 
-	.set	offset,NB_BYTES_PER_MAIN_ROW*4
-
+	.set	block_offset,NB_BYTES_PER_MAIN_ROW*4
+	
+	* optimized copy: 2 long reads 4 shifts 2 swaps
+	.rept	2
+	.set	offset,block_offset
+	* first 4 bytes
 	move.l	(a0)+,d0		| read 4 bytes instead of 4 times 1 byte
-	.rept	3
 	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
 	COPY_MAIN_TILE_PLANE_ROW
-	lsr.l	#8,d0			| shift to get next data byte
-	.endr
+	lsr.w	#8,d0			| shift to get next data byte
 	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
 	COPY_MAIN_TILE_PLANE_ROW	| last time without shifting
-
-	.set	offset,NB_BYTES_PER_MAIN_ROW*8
-	move.l	(a0)+,d0		| read 4 bytes instead of 4 times 1 byte
-	.rept	3
+	swap	d0		| avoids shifting too much
 	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
 	COPY_MAIN_TILE_PLANE_ROW
-	lsr.l	#8,d0			| shift to get next data byte
-	.endr
+	lsr.w	#8,d0			| shift to get next data byte
 	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
 	COPY_MAIN_TILE_PLANE_ROW	| last time without shifting
+	.set	block_offset,block_offset*2
+	.endr
 
 41:
 	MAIN_TILE_NEXT_PLANE
