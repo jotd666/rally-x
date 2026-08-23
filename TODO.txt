@@ -1,17 +1,17 @@
+- still too fast (enemy lockup) or change anti-lock system
 - move tile refresh code in IRQ to speed main code (flag refresh instead of redrawing)
 - highscore load/save
-- GAME OVER is in black should be white
+- GAME OVER is in black/some other color (random) should be white missing some palette change?
 - export stack symbol to reset it at A7A
 - mainloop is called roughly 10 times as much as irq
   * on fast machines, some timers have issues (car lockup)
   * on slow machines, game doesn't run, as irq triggers too often
-  regulate / call irq less often?
+
   
 - after game over no credits, explanation screen is buggy
-  8FE7... attributes for instructions is completely shifted
-  bonus flag list is also printed too low/too high
-- cycle exact adf not working / completely broken is this the same
-  issue as digdug2?
+  8FE7... attributes for instructions is completely shifted (sometimes on challenging stage)
+  bonus flag list is also printed too low/too high, some letters are out of line
+- cycle exact adf not working / completely broken
 - engine sfx: make frequency vary depending on orientation
 - freeze code / manually profile & optimize
 - sprite color issue when cars are on the bottom

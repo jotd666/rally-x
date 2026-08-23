@@ -2673,12 +2673,28 @@ main_standard_tile:
 	move.l	(a2)+,d0		| next plane
 	jeq		5f
 	move.l	d0,a0
-	.set	offset,0
-	.rept	8
-	move.b	(a0)+,d0
+
+	.set	offset,NB_BYTES_PER_MAIN_ROW*4
+
+	move.l	(a0)+,d0		| read 4 bytes instead of 4 times 1 byte
+	.rept	3
+	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
 	COPY_MAIN_TILE_PLANE_ROW
-	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
+	lsr.l	#8,d0			| shift to get next data byte
 	.endr
+	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
+	COPY_MAIN_TILE_PLANE_ROW	| last time without shifting
+
+	.set	offset,NB_BYTES_PER_MAIN_ROW*8
+	move.l	(a0)+,d0		| read 4 bytes instead of 4 times 1 byte
+	.rept	3
+	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
+	COPY_MAIN_TILE_PLANE_ROW
+	lsr.l	#8,d0			| shift to get next data byte
+	.endr
+	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
+	COPY_MAIN_TILE_PLANE_ROW	| last time without shifting
+
 41:
 	MAIN_TILE_NEXT_PLANE
 	dbf		d4,4b
@@ -2693,12 +2709,24 @@ main_flipped_tile:
 	move.l	(a2)+,d0		| next plane
 	jeq		5f
 	move.l	d0,a0
-	.set	offset,8*NB_BYTES_PER_MAIN_ROW
-	.rept	8
-	.set	offset,offset-NB_BYTES_PER_MAIN_ROW
-	move.b	(a0)+,d0
+	.set	offset,NB_BYTES_PER_MAIN_ROW*4
+	move.l	(a0)+,d0
+	.rept	3
 	COPY_MAIN_TILE_PLANE_ROW
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
+	lsr.l	#8,d0
 	.endr
+	COPY_MAIN_TILE_PLANE_ROW
+	
+	.set	offset,0
+	move.l	(a0)+,d0
+	.rept	3
+	COPY_MAIN_TILE_PLANE_ROW
+	lsr.l	#8,d0
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
+	.endr
+	COPY_MAIN_TILE_PLANE_ROW
+	
 41:
 	MAIN_TILE_NEXT_PLANE
 	dbf		d4,4b
@@ -2720,7 +2748,6 @@ main_mirror_tile:
 	move.b	(a0)+,d1
 	move.b	(a4,d1.w),d0	| mirror
 	COPY_MAIN_TILE_PLANE_ROW
-
 	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
 	.endr
 41:
