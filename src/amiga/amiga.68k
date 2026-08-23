@@ -871,6 +871,19 @@ _vblank:
 	
 *TEST_RADAR_ERASE = 1
 
+refresh_status_tile:
+	move.b	(a0),d0
+	move.b	(0x800,a0),d1
+	move.l	a0,d7
+	sub.l	a6,d7
+	bclr	#15,d7
+	
+	movem.l	d0-d7/a0-a2,-(a7)
+	jbsr	update_status_tile
+	movem.l	(a7)+,d0-d7/a0-a2
+	
+	rts
+	
 erase_radar_dots:
 	* first erase previous dots
 	lea		previous_radar_addresses,a1
@@ -883,7 +896,7 @@ erase_radar_dots:
 	move.b	#0x48,(a0)
 	move.b	#0x66,(0x800,a0)
 	.endif
-	jbsr	osd_video_byte_dirty		| repaint original radar char
+	jbsr	refresh_status_tile		| repaint original radar char now
 	move.w	(a1)+,d0
 	jeq		0b
 	* either horiz or vertical extra erase
@@ -897,7 +910,7 @@ erase_radar_dots:
 	move.b	#0x66,(0x800,a0)	
 	.endif
 	
-	jbsr	osd_video_byte_dirty
+	jbsr	refresh_status_tile
 2:
 	btst	#1,d0
 	jeq		0b
@@ -906,7 +919,7 @@ erase_radar_dots:
 	move.b	#0x48,(a0)
 	move.b	#0x66,(0x800,a0)	
 	.endif
-	jbsr	osd_video_byte_dirty
+	jbsr	refresh_status_tile
 	jra		0b
 10:
 	* reset
@@ -2602,9 +2615,7 @@ update_main_tile:
 	.else
 	move.l	(a4,d1.w*4),a4
 	.endif
-0:
-	BTST	#6,(_custom+dmaconr)
-	BNE.S	0b
+	* blitter is not used here, no need to wait for it
 	jmp		(a4)
 	
 	* do it 4 times because of wrapping scrolling
@@ -2833,14 +2844,9 @@ update_status_tile:
 	add.w	d1,d1
 	add.w	d1,d1
 	move.l	(a4,d1.w),a4
-0:
-	BTST	#6,(_custom+dmaconr)
-	BNE.S	0b
+	* no need to wait for blitter, it's not used
 	jmp		(a4)
 	.else
-0:
-	BTST	#6,(_custom+dmaconr)
-	BNE.S	0b
 	jmp		([a4,d1.w*4])
 	.endif
 	
