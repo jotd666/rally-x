@@ -4365,7 +4365,7 @@ write_instructions_text_1e1b:
 1EB1: 71          ld   (hl),c
 1EB2: C1          pop  bc    ; [uncovered] 
 1EB3: 2B          dec  hl
-1EB4: 77          ld   (hl),a	; [video_address]
+1EB4: 77          ld   (hl),a	; [video_address] writes instructions text with car as the pen
 1EB5: 13          inc  de
 1EB6: 10 C6       djnz $1E7E
 1EB8: AF          xor  a

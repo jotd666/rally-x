@@ -2665,6 +2665,30 @@ update_main_tile:
 	add.w	d5,a1
 	.endm
 	
+	
+main_standard_tile_old:
+	
+	* just copy
+
+4:
+	move.l	(a2)+,d0		| next plane
+	jeq		5f
+	move.l	d0,a0
+	.set	offset,0
+	.rept	8
+	move.b	(a0)+,d0
+	COPY_MAIN_TILE_PLANE_ROW
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
+	.endr
+41:
+	MAIN_TILE_NEXT_PLANE
+	dbf		d4,4b
+0:
+	rts
+5:
+	CLEAR_MAIN_TILE_PLANE
+	jra		41b
+	
 main_standard_tile:
 
 	* just copy
@@ -2709,23 +2733,26 @@ main_flipped_tile:
 	move.l	(a2)+,d0		| next plane
 	jeq		5f
 	move.l	d0,a0
-	.set	offset,NB_BYTES_PER_MAIN_ROW*4
-	move.l	(a0)+,d0
-	.rept	3
-	COPY_MAIN_TILE_PLANE_ROW
-	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
-	lsr.l	#8,d0
-	.endr
-	COPY_MAIN_TILE_PLANE_ROW
 	
-	.set	offset,0
+	.set	block_offset,NB_BYTES_PER_MAIN_ROW*4
+	
+	.rept	2
+	.set	offset,block_offset
 	move.l	(a0)+,d0
-	.rept	3
+
 	COPY_MAIN_TILE_PLANE_ROW
-	lsr.l	#8,d0
 	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
-	.endr
+	lsr.w	#8,d0
 	COPY_MAIN_TILE_PLANE_ROW
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
+	swap	d0
+	COPY_MAIN_TILE_PLANE_ROW
+	.set	offset,offset+NB_BYTES_PER_MAIN_ROW
+	lsr.w	#8,d0
+	COPY_MAIN_TILE_PLANE_ROW	
+	.set	block_offset,0
+	.endr
+
 	
 41:
 	MAIN_TILE_NEXT_PLANE
