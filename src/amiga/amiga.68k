@@ -204,13 +204,13 @@ w\@:
 	.global	osd_set_scroll_y
 	.global	osd_wait_music_end
 	
+	.global	osd_wait_a_while
+
 	.global	is_game_playing
 	.global osd_get_sync_period
-	.global osd_read_high_scores
+	.global osd_read_high_score
 	.global osd_set_first_color
-	.global osd_write_high_scores
-	.global	load_highscores
-	.global	save_highscores
+	.global osd_write_high_score
 	.global osd_sound_start
 	.global osd_stop_engine_sound
 	.global osd_music_stop
@@ -636,9 +636,9 @@ osd_wait_music_end:
 	rts
 	
 * speed regulation for game mainloop, the bigger, the faster
-
+* the smaller, the lesser the risk for stuck enemy cars
 osd_get_sync_period:
-	move.w	#20,d0
+	move.w	#10,d0
 	rts
 
 osd_get_random:
@@ -722,6 +722,7 @@ demo_game:
 	jsr     (resload_ProtectWrite,a2)
 	.endif
 	
+
 	jbsr	cpu_init		| zero all registers
 	move.l	a6,a3
 	move.l	a6,a2
@@ -730,6 +731,7 @@ demo_game:
 	move.l	a6,a0
 	add.l	#p1_a000,a0
 	st.b	(p2_a080-p1_a000,a0)
+	move.b	#0xCB,(dsw_a100-p1_a000,a0)  | default dip switches, no free play, 3 lives easy
 	st.b	(a0)
 	jbsr	reset_3911
 	jra		start_0003					| pass control to the mpatrol core
@@ -1087,38 +1089,16 @@ osd_break:
 
 	.endif
 
-* < D0: number of 1/60Hz ticks
 * can work with interrupts enabled or disabled
-osd_wait:
-	move.w	d0,delay_timer
-	**jbsr	osd_is_vblank_interrupt_enabled
-	tst.w	d0
-	jne		2f
-	* interrupts are disabled: timer isn't going to change
-	* wait using vertical blank interrupt request (we don't need it!)
-	clr.w	one_out_of_five
+osd_wait_a_while:
+	move.w	#0x25,d7
 0:
-	move.w	#0x20,_custom+intreq
-	move.w	#0x20,_custom+intreq
-1:
-	move.w	_custom+intreqr,d0
-	btst	#5,d0
-	beq.b	1b
-	addq.w	#1,one_out_of_five
-	cmp.w	#5,one_out_of_five
-	bne.b	5f
-	subq.w	#1,delay_timer	
-	clr.w	one_out_of_five
-5:
-	subq.w	#1,delay_timer
-	beq.b	4f
-	bpl.b	0b
-4:
+	move.w	#0x100,d0
+	jbsr	beamdelay
+	dbf		d7,0b
 	rts
 	
-2:
-	tst.w	delay_timer
-	bne.b	2b
+
 	rts
 
 * Z: set if playing
@@ -3285,12 +3265,7 @@ handle_keyboard:
     seq (a0,d0.w)       | updates keyboard table
     jne   2f     | we don't care about key release
 	
-	cmp.b	#55,d0		| "M" key
-	jne		0f
-	eor.b	#1,no_main_tune
-	jeq		0f
-	jbsr	osd_music_stop
-0:
+
     cmp.b   #0x19,d0	| "P" key
     bne.b   0f
 
@@ -3368,7 +3343,7 @@ handle_keyboard:
 	move.w	#0x0FF,_custom+color
 	* last life, if killed, direct game over
 	bsr		lose_all_lives
-	jbsr	force_sound_stop
+	*jbsr	force_sound_stop
 0:
 	cmp.b	#0x58,d0	| F9 key crashes game (restarts whdload)
 	bne.b	0f
@@ -3418,26 +3393,28 @@ beamdelay:
 	rts
 
 
-SCORE_FILE_SIZE = 0x23
+SCORE_FILE_SIZE = 8
 
 
 
 	
 * < A0: buffer
-osd_read_high_scores:
+osd_read_high_score:
 	movem.l	d0-d7/a0-a6,-(a7)
 	GET_MEMORY_BLOCKS_IN_A5_A6
-	*lea		(high_score_table_0294,a6),a1
+	lea		(high_score_screen_address_8060-0x8000,a5),a1
+	move.l	a1,a4		| save
+	
 	move.l	_resload,d0
 	beq.b	0f
 	move.l	d0,a2
-	bsr		get_hiscore_name
+	jbsr		get_hiscore_name
 	move.l	a1,-(a7)
  	jsr		resload_GetFileSize(a2)		
 	move.l	(a7)+,a1
 	tst.l	d0
 	beq.b	1f
-	bsr		get_hiscore_name
+	jbsr		get_hiscore_name
 	jsr		resload_LoadFile(a2)	
 	bra.b	1f
 0:
@@ -3451,17 +3428,25 @@ osd_read_high_scores:
 	move.b	(a1)+,(a0)+
 	dbf		d0,0b
 1:
+	* display it
+	move.l	a4,a0
+	moveq	#SCORE_FILE_SIZE-1,d0
+0:
+	jbsr	osd_video_byte_dirty
+	addq	#1,a0
+	dbf		d0,0b
+	
 	movem.l	(a7)+,d0-d7/a0-a6
 	rts
 	
-osd_write_high_scores:
+osd_write_high_score:
 	movem.l	d0-d7/a0-a6,-(a7)
 	.ifdef	RELEASE
 	tst.b	cheat_used		| don't save score if cheat on
 	bne.b	2f
 	.endif
 	GET_MEMORY_BLOCKS_IN_A5_A6
-	*lea		(high_score_table_0294,a6),a0
+	lea		(high_score_screen_address_8060-0x8000,a5),a0
 
 	move.l	_resload,d0
 	bne.b	1f
@@ -3544,6 +3529,7 @@ osd_music_stop:
 	rts
 
 force_sound_stop:
+
 	movem.l	d0-d1/a0/a6,-(a7)
 	lea		_custom,a6
 	move.b	#-1,music_track_start_number
@@ -3635,7 +3621,7 @@ osd_sound_start:
 	beq.b	10b		| same track, skip
 
     movem.l d0-a6,-(a7)
-	bsr		force_sound_stop
+	*bsr		force_sound_stop
     lea _custom,a6
  	movem.l	d0/a0,-(a7)
 	lea	rallyx_tunes,a0

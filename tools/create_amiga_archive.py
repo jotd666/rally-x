@@ -45,6 +45,7 @@ if build_dist:
         shutil.copy(progdir / file,outdir)
 
     shutil.copy(assets/f"RallyX.info",outdir)
+    shutil.copy(assets/f"RallyX-AGA.info",outdir)
 
     for ext in suffixes:
         exename = f"{gamename}{ext}"

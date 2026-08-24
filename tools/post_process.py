@@ -393,7 +393,15 @@ with open(source_dir / "conv.s") as f:
         elif address == 0x18E0:
             line += generate_play_code("LEVEL_COMPLETED_TUNE")
         elif address == 0x19B9:
-            line = generate_play_code("GAME_OVER_TUNE")+line
+            line = "\tjbsr\tosd_wait_a_while\n"+generate_play_code("GAME_OVER_TUNE")+line
+        elif address == 0x0546:
+            line = "\tjbsr\tosd_enable_interrupts   | enable interrupts AFTER the dip switches are read, not before\n"+line
+        elif address == 0x003C:
+            line = remove_instruction(lines,i)  # no interrupt enable yet
+        elif address == 0x3959:
+            # remove clearing A000-A1FF
+            line = change_instruction("rts",lines,i)
+
 ##        elif address == 0x0A65:
 ##            line += generate_play_code("ENGINE_06")
 ##        elif address == 0x0EB7:
@@ -417,6 +425,7 @@ with open(source_dir / "conv.s") as f:
 \tmoveq\t#0,d0
 \tjbsr\tosd_set_first_color   | orange
 \t.endif
+\tjbsr\tosd_write_high_score
 """
         elif address == 0x1A54:
             line += """\t.ifdef\t__amiga__
@@ -424,6 +433,8 @@ with open(source_dir / "conv.s") as f:
 \tjbsr\tosd_set_first_color   | cyan
 \t.endif
 """
+        elif address == 0x1C64:
+            line += "\tjbsr\tosd_read_high_score\n"
         elif address == 0x1DC8:
             line += generate_play_code("EXTRA_LIFE_07")
         elif address in {0x19A8,0x16E3}:

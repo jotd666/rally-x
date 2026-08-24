@@ -144,7 +144,8 @@ pointer_on_player_lives_8988 = $8988
 enemy_car_visible_structs_8004 = $8004
 deltay_car_vs_current_enemy_8051 = $8051
 deltax_car_vs_current_enemy_8050 = $8050
-
+high_score_screen_address_8060 = $8060
+dsw_copy_82aa = $82aa
 ; music control: set a bit (or several!) to start a tune. Bit 0 clears
 ; when playing and resets to 1 once music has completed
 ; bit 7: game start music
@@ -180,7 +181,10 @@ irq_0030:
 0030: C3 F0 01    jp   irq_01f0
 
 003A: ED 46       im   0
-003C: FB          ei
+; enable interrupts, now there's a race condition
+; because if the dipswitch read code isn't reached before the first irq
+; then game sets itself in free play
+003C: FB          ei			
 003D: 3E F7       ld   a,$F7
 003F: D3 00       out  ($00),a
 0041: 21 00 80    ld   hl,$8000
@@ -388,7 +392,7 @@ clear_smoke_tiles_01c9:
 01D6: FE 09       cp   $09
 01D8: 30 05       jr   nc,$01DF
 01DA: 3E 81       ld   a,$81		; reset to road tile
-01DC: 12          ld   (de),a		; [video_address]
+01DC: 12          ld   (de),a		; [unchecked_address]
 01DD: 36 15       ld   (hl),$15		; [video_address]
 01DF: CD 5D 0E    call advance_hl_and_de_0e5d
 01E2: 0D          dec  c
@@ -801,29 +805,33 @@ collision_test_end_03bd:
 04DC: 23          inc  hl
 04DD: 10 FC       djnz $04DB
 04DF: C9          ret
+
 04E0: 06 04       ld   b,$04
 04E2: 2A 98 89    ld   hl,($8998)
 04E5: 18 EB       jr   $04D2
+
 04E7: 21 8B 1F    ld   hl,$1F8B
 04EA: 11 40 80    ld   de,$8040
 04ED: 0E 66       ld   c,$66
 04EF: CD 4E 1C    call copy_status_row_1c4e
 04F2: CD 76 1B    call $1B76
 04F5: 3A 00 A1    ld   a,(dsw_a100)
+; coinage stuff
 04F8: 47          ld   b,a
-04F9: 21 AA 82    ld   hl,$82AA
+04F9: 21 AA 82    ld   hl,dsw_copy_82aa
 04FC: E6 C0       and  $C0
-04FE: 28 0E       jr   z,$050E
+04FE: 28 0E       jr   z,$050E		 ; free play
+; compute coinage
 0500: 34          inc  (hl)
 0501: CB 7F       bit  7,a
 0503: 28 09       jr   z,$050E
-0505: 23          inc  hl
+0505: 23          inc  hl		; 82BB
 0506: 34          inc  (hl)
 0507: CB 77       bit  6,a
 0509: 20 03       jr   nz,$050E
-050B: 34          inc  (hl)    ; [uncovered] 
-050C: 2B          dec  hl    ; [uncovered] 
-050D: 34          inc  (hl)    ; [uncovered] 
+050B: 34          inc  (hl)
+050C: 2B          dec  hl
+050D: 34          inc  (hl)
 050E: 78          ld   a,b
 050F: 0F          rrca
 0510: 0F          rrca
@@ -1046,7 +1054,7 @@ collision_test_end_03bd:
 06FE: 21 5A 1F    ld   hl,$1F5A
 0701: 11 6A 86    ld   de,$866A
 0704: CD 29 1C    call write_to_screen_1c29
-0707: 3A AA 82    ld   a,($82AA)
+0707: 3A AA 82    ld   a,(dsw_copy_82aa)
 070A: A7          and  a
 070B: C4 D2 1E    call nz,display_credits_1ed2
 070E: 11 28 87    ld   de,$8728
@@ -1064,13 +1072,14 @@ start_game_test_loop_0717:
 072B: 3A 80 A0    ld   a,(p2_a080)
 072E: E6 40       and  $40
 0730: 20 E5       jr   nz,start_game_test_loop_0717
-0732: 3A 24 80    ld   a,(nb_credits_8024)    ; [uncovered] 
-0735: D6 02       sub  $02    ; [uncovered] 
-0737: 38 DE       jr   c,start_game_test_loop_0717    ; [uncovered] 
-0739: 32 24 80    ld   (nb_credits_8024),a    ; [uncovered] 
-073C: 21 AB 81    ld   hl,var_81ab    ; [uncovered] 
-073F: 36 03       ld   (hl),$03    ; [uncovered] 
-0741: 18 09       jr   clear_sprites_074c    ; [uncovered] 
+; 2-player game start
+0732: 3A 24 80    ld   a,(nb_credits_8024)
+0735: D6 02       sub  $02
+0737: 38 DE       jr   c,start_game_test_loop_0717
+0739: 32 24 80    ld   (nb_credits_8024),a
+073C: 21 AB 81    ld   hl,var_81ab
+073F: 36 03       ld   (hl),$03
+0741: 18 09       jr   clear_sprites_074c
 
 start_game_1_player_0743:
 0743: 21 24 80    ld   hl,nb_credits_8024
@@ -2622,7 +2631,7 @@ write_flag_dot_127f:
 1296: 30 01       jr   nc,$1299
 1298: 24          inc  h
 1299: 6F          ld   l,a
-129A: 71          ld   (hl),c		; [video_address]
+129A: 71          ld   (hl),c		; [unchecked_address]
 129B: CB DC       set  3,h
 129D: 7E          ld   a,(hl)		; [video_address]
 129E: E6 3F       and  $3F
@@ -2789,7 +2798,7 @@ write_maze_row_131e:
 1375: 6F          ld   l,a
 1376: 4E          ld   c,(hl)
 1377: 2A 56 80    ld   hl,($8056)
-137A: 71          ld   (hl),c		; [video_address]
+137A: 71          ld   (hl),c		; [unchecked_address] code
 137B: CB DC       set  3,h
 137D: 3A B1 82    ld   a,($82B1)
 1380: B0          or   b
@@ -2826,10 +2835,10 @@ write_maze_row_131e:
 13A7: 04          inc  b
 13A8: E6 1F       and  $1F
 13AA: CB FF       set  7,a
-13AC: 12          ld   (de),a	; [video_address]
+13AC: 12          ld   (de),a	; [unchecked_address] code
 13AD: EB          ex   de,hl
 13AE: CB DC       set  3,h
-13B0: 70          ld   (hl),b	; [video_address]
+13B0: 70          ld   (hl),b	; [video_address] attribute
 13B1: E1          pop  hl
 13B2: D1          pop  de
 13B3: C1          pop  bc
@@ -2995,12 +3004,13 @@ check_insert_coin_14c5:
 14C7: D5          push de
 14C8: C5          push bc
 14C9: F5          push af
-14CA: 3A AA 82    ld   a,($82AA)
+14CA: 3A AA 82    ld   a,(dsw_copy_82aa)
 14CD: A7          and  a
 14CE: 20 07       jr   nz,$14D7
-14D0: 21 24 80    ld   hl,nb_credits_8024    ; [uncovered] 
-14D3: 36 FF       ld   (hl),$FF    ; [uncovered] 
-14D5: 18 3C       jr   $1513    ; [uncovered] 
+; free play!
+14D0: 21 24 80    ld   hl,nb_credits_8024		; [breakpoint]
+14D3: 36 FF       ld   (hl),$FF
+14D5: 18 3C       jr   $1513
 
 ; read controls
 14D7: 21 AC 82    ld   hl,$82AC		; seems stuck at $FF
@@ -3510,27 +3520,27 @@ erase_chars_17a3:
 1847: 20 02       jr   nz,$184B
 1849: 3E 01       ld   a,$01
 184B: C6 9F       add  a,$9F
-184D: 77          ld   (hl),a		; [video_address]
-184E: CD 8D 18    call $188D
+184D: 77          ld   (hl),a		; [unchecked_address]
+184E: CD 8D 18    call change_attribute_188d
 1851: CD 88 19    call move_wrap_pointer_1988
-1854: 36 AA       ld   (hl),$AA		; [video_address]
-1856: CD 8D 18    call $188D
+1854: 36 AA       ld   (hl),$AA		; [unchecked_address]
+1856: CD 8D 18    call change_attribute_188d
 1859: 3A 50 82    ld   a,(nb_picked_flags_8250)
 185C: FE 0A       cp   $0A
 185E: 20 08       jr   nz,$1868
 1860: CD 88 19    call move_wrap_pointer_1988
-1863: 36 AB       ld   (hl),$AB    		; [video_address]
-1865: CD 8D 18    call $188D
+1863: 36 AB       ld   (hl),$AB    		; [unchecked_address]
+1865: CD 8D 18    call change_attribute_188d
 1868: 3A 23 80    ld   a,(double_score_8023)
 186B: A7          and  a
 186C: 28 28       jr   z,flag_picked_up_1896
 186E: E5          push hl
 186F: CD 88 19    call move_wrap_pointer_1988
-1872: 7E          ld   a,(hl)		; [video_address]
+1872: 7E          ld   a,(hl)		; [unchecked_address]
 1873: FE 81       cp   $81
 1875: 20 08       jr   nz,$187F
-1877: 36 AC       ld   (hl),$AC		; [video_address]
-1879: CD 8D 18    call $188D
+1877: 36 AC       ld   (hl),$AC		; [unchecked_address]
+1879: CD 8D 18    call change_attribute_188d
 187C: E1          pop  hl
 187D: 18 17       jr   flag_picked_up_1896
 
@@ -3544,8 +3554,9 @@ erase_chars_17a3:
 188A: E5          push hl      
 188B: 18 E5       jr   $1872   
 
+change_attribute_188d:
 188D: CB DC       set  3,h
-188F: CB F6       set  6,(hl)		; [video_address]
+188F: CB F6       set  6,(hl)		; [unchecked_address]
 1891: CB BE       res  7,(hl)		; [video_address]
 1893: CB 9C       res  3,h
 1895: C9          ret
@@ -5159,7 +5170,7 @@ boot_sequence_384C:
 3904: 3A 00 A1    ld   a,(dsw_a100)
 3907: CB 47       bit  0,a
 3909: 28 F6       jr   z,$3901
-390B: CD 59 39    call $3959
+390B: CD 59 39    call zero_write_registers_3959
 390E: C3 03 00    jp   $0003
 
 ; after setting the stack to a value to hide entrypoint/boot sequence
@@ -5207,6 +5218,7 @@ keep_clearing_screen_391e:
 3954: 20 FB       jr   nz,$3951
 3956: 19          add  hl,de
 3957: 10 F7       djnz $3950
+zero_write_registers_3959:
 3959: 21 00 A0    ld   hl,p1_a000
 395C: 01 00 02    ld   bc,$0200
 395F: 71          ld   (hl),c
@@ -5214,7 +5226,7 @@ keep_clearing_screen_391e:
 3961: 20 FC       jr   nz,$395F
 3963: 24          inc  h
 3964: 10 F9       djnz $395F
-3966: C9          ret		; [disabled] continues to 3967
+3966: C9          ret		; continues to 3967
 
 ; another memory copy sequence
 resume_boot_3967:
