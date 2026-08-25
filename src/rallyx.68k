@@ -3233,17 +3233,11 @@ l_0f55:
 
 l_0f5c:
 	EXG_AF_AF_PRIME                        	| [$0f5c: ex   af,af'] [freq=low, count=0%]
-	MAKE_BC_NO_AR                          	| [$0f5d: push bc] [freq=low, count=0%]
-	move.w	d2,-(a7)                        	| [...]
-	move.b	(0x03,a2),d1                    	| [$0f5e: ld   b,(ix+$03)] [freq=low, count=0%]
-	cmp.b	d1,d0                            	| [$0f61: cp   b] [freq=low, count=0%]
-	movem.w	(a7)+,d2                        	| [$0f62: pop  bc] [freq=low, count=0%]
-	PUSH_SR
-	swap	d2
-	clr.w	d2
-	swap	d2
-	MAKE_B                                 	| [...]
-	POP_SR
+	                          	| [$0f5d: push bc] [freq=low, count=0%]
+	                        	| [...]
+	cmp.b	(0x03,a2),d0                    	| [$0f5e: ld   b,(ix+$03)] [freq=low, count=0%]
+	                            	| [$0f61: cp   b] [freq=low, count=0%]
+	                        	| [$0f62: pop  bc] [freq=low, count=0%]
 	jeq	l_0f16                             	| [$0f63: jp   z,$0f16] [freq=low, count=0%]
 	EXG_AF_AF_PRIME                        	| [$0f66: ex   af,af'] [freq=low, count=0%]
 	move.b	#0x01,d0                        	| [$0f67: ld   a,$01] [freq=low, count=0%]
@@ -3381,7 +3375,7 @@ l_100d:
 	move.b	d0,(a0)                         	| [...]
 	cmp.b	#0x03,d0                         	| [$1021: cp   $03] [freq=low, count=0%]
 	jne	l_10cc                             	| [$1023: jp   nz,$10cc] [freq=low, count=0%]
-	CLR_XC_FLAGS                           	| [$1026: xor  a] [freq=low, count=0%]
+	                           	| [$1026: xor  a] [freq=low, count=0%]
 	clr.b	d0                               	| [...]
 	GET_UNCHECKED_ADDRESS	0x8054,a0                  	| [$1027: ld   ($8054),a] [video_address] [freq=low, count=0%]
 	move.b	d0,(a0)                         	| [...]
@@ -6678,11 +6672,11 @@ add_10_points_1df5:
 0:
 * not demo mode: update score 10 points per 10 points
 	MAKE_HL_NO_AR                          	| [$1dfd: inc  hl] [freq=low, count=0%]
-	addq.w	#1,d6                           	| [...]
+	addq.w	#2,d6                           	| [...]
 	MAKE_H                                 	| [...]
-	MAKE_HL_NO_AR                          	| [$1dfe: inc  hl] [freq=low, count=0%]
-	addq.w	#1,d6                           	| [...]
-	MAKE_H                                 	| [...]
+	                        	| [$1dfe: inc  hl] [freq=low, count=0%]
+	                         	| [...]
+	                        	| [...]
 l_1dff:
 	MAKE_HL_UNCHECKED	a0                             	| [$1dff: ld   a,(hl)] [unchecked_address] digit [freq=low, count=0%]
 	move.b	(a0),d0                         	| [...] [unchecked_address] digit
@@ -6711,14 +6705,16 @@ l_1dff:
 negate_hl_1e11:
 	PUSH_SR                                	| [$1e11: push af] [freq=low, count=12%]
 	movem.w	d0,-(a7)                       	| [...]
-	move.b	d5,d0                           	| [$1e12: ld   a,h] [freq=low, count=12%]
-	not.b	d0                               	| [$1e13: cpl] [freq=low, count=12%]
-	move.b	d0,d5                           	| [$1e14: ld   h,a] [freq=low, count=12%]
-	move.b	d6,d0                           	| [$1e15: ld   a,l] [freq=low, count=12%]
-	not.b	d0                               	| [$1e16: cpl] [freq=low, count=12%]
-	move.b	d0,d6                           	| [$1e17: ld   l,a] [freq=low, count=12%]
-	MAKE_HL_NO_AR                          	| [$1e18: inc  hl] [freq=low, count=12%]
-	addq.w	#1,d6                           	| [...]
+	MAKE_HL_NO_AR
+	neg.w	d6
+	                       	| [$1e12: ld   a,h] [freq=low, count=12%]
+	                        	| [$1e13: cpl] [freq=low, count=12%]
+	                       	| [$1e14: ld   h,a] [freq=low, count=12%]
+	          	| [$1e15: ld   a,l] [freq=low, count=12%]
+	                        	| [$1e16: cpl] [freq=low, count=12%]
+	          	| [$1e17: ld   l,a] [freq=low, count=12%]
+	         	| [$1e18: inc  hl] [freq=low, count=12%]
+	                       	| [...]
 	MAKE_H                                 	| [...]
 	move.w	(a7)+,d0                        	| [$1e19: pop  af] [freq=low, count=12%]
 	POP_SR                                 	| [...]
