@@ -1,3 +1,4 @@
+- manually profile & optimize
 - still too fast (enemy lockup) or change anti-lock system
 - GAME OVER is in black/some other color (random) should be white missing some palette change?
 - export stack symbol to reset it at A7A
@@ -5,6 +6,7 @@
 - mainloop is called roughly 10 times as much as irq
   * on fast machines, some timers have issues (car lockup)
   * on slow machines, game doesn't run, as irq triggers too often
+- check anti-lock countdown see the freq on MAME
 
 - sometimes cars are all red: snap sprites at this moment for mockup
 
@@ -14,7 +16,6 @@
   bonus flag list is also printed too low/too high, some letters are out of line
 - cycle exact adf not working / locks up
 - engine sfx: make frequency vary depending on orientation
-- freeze code / manually profile & optimize
 - sprite color issue when cars are on the bottom
 
 - cheat add to score: > 20000 doesn't work

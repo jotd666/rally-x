@@ -4043,10 +4043,9 @@ l_12ee:
 * < E
 * returns C set if way is set
 check_blocked_ways_12f2:
-	MAKE_DE_NO_AR                          	| [$12f2: push de] [freq=high, count=81%]
-	move.w	d4,-(a7)                        	| [...]
-	MAKE_BC_NO_AR                          	| [$12f3: push bc] [freq=high, count=81%]
-	move.w	d2,-(a7)                        	| [...]
+	movem.l	d1-d4,-(a7)                         	| [$12f2: push de] [freq=high, count=81%]
+	                          	| [$12f3: push bc] [freq=high, count=81%]
+	                        	| [...]
 	move.b	d0,d2                           	| [$12f4: ld   c,a] [freq=high, count=81%]
 	move.b	d3,d0                           	| [$12f5: ld   a,d] [freq=high, count=81%]
 	cmp.b	#0x20,d0                         	| [$12f6: cp   $20] [freq=high, count=81%]
@@ -4058,39 +4057,31 @@ check_blocked_ways_12f2:
 	cmp.b	#0x38,d0                         	| [$12ff: cp   $38] [freq=high, count=81%]
 	jcc	l_1319                             	| [$1301: jr   nc,$1319] [freq=high, count=81%]
 	move.b	d3,d0                           	| [$1303: ld   a,d] [freq=high, count=81%]
-	add.b	d0,d0                            	| [$1304: add  a,a] [freq=high, count=81%]
-	add.b	d0,d0                            	| [$1305: add  a,a] [freq=high, count=81%]
-	add.b	d0,d0                            	| [$1306: add  a,a] [freq=high, count=81%]
-	add.b	d0,d0                            	| [$1307: add  a,a] times 16 [freq=high, count=81%]
-	SET_X_FROM_C                           	| [$1308: rl   e] [freq=high, count=81%]
+	lsl.b	#4,d0                            	| [$1304: add  a,a] [freq=high, count=81%]
+	                            	| [$1305: add  a,a] [freq=high, count=81%]
+	                            	| [$1306: add  a,a] [freq=high, count=81%]
+	                            	| [$1307: add  a,a] times 16 [freq=high, count=81%]
+	                           	| [$1308: rl   e] [freq=high, count=81%]
 	roxl.b	#1,d4                           	| [...]
 	add.b	d0,d0                            	| [$130a: add  a,a] [freq=high, count=81%]
-	SET_X_FROM_C                           	| [$130b: rl   e] [freq=high, count=81%]
+	                           	| [$130b: rl   e] [freq=high, count=81%]
 	roxl.b	#1,d4                           	| [...]
 	GET_UNCHECKED_ADDRESS	0x828f,a0                  	| [$130d: ld   a,($828f)] [video_address] [freq=high, count=81%]
 	move.b	(a0),d0                         	| [...]
 	move.b	d0,d3                           	| [$1310: ld   d,a] [freq=high, count=81%]
 	MAKE_DE	a0                             	| [$1311: ld   a,(de)] [freq=high, count=81%]
-	and.w	#0xFF,d1
-	subq.w	#1,d1
 	move.b	(a0),d0                         	| [...]
-l_1312:
-	add.b	d0,d0                            	| [$1312: add  a,a] [freq=high, count=100%]
-	dbf	d1,l_1312 |  [$1313: djnz $1312] [freq=high, count=99%]
+
+	lsl.b	d1,d0                            	| [$1312: add  a,a] [freq=high, count=100%]
+												|  [$1313: djnz $1312] [freq=high, count=99%]
 	move.b	d2,d0                           	| [$1315: ld   a,c] [freq=high, count=81%]
-	move.w	(a7)+,d2                        	| [$1316: pop  bc] [freq=high, count=81%]
-	MAKE_B                                 	| [...]
-	move.w	(a7)+,d4                        	| [$1317: pop  de] [freq=high, count=81%]
-	MAKE_D                                 	| [...]
+	movem.l	(a7)+,d1-d4                        	| [$1317: pop  de] [freq=low, count=0%]
 	SET_C_FROM_X
 	rts                                    	| [$1318: ret] return C set or not [freq=high, count=81%]
 
 l_1319:
 	move.b	d2,d0                           	| [$1319: ld   a,c] [freq=low, count=0%]
-	move.w	(a7)+,d2                        	| [$131a: pop  bc] [freq=low, count=0%]
-	MAKE_B                                 	| [...]
-	move.w	(a7)+,d4                        	| [$131b: pop  de] [freq=low, count=0%]
-	MAKE_D                                 	| [...]
+	movem.l	(a7)+,d1-d4                        	| [$131b: pop  de] [freq=low, count=0%]
 	SET_XC_FLAGS                           	| [$131c: scf] [freq=low, count=0%]
 	rts                                    	| [$131d: ret] return with C set [freq=low, count=0%]
 
@@ -4107,9 +4098,9 @@ write_maze_row_131e:
 	move.b	d6,d0                           	| [$1327: ld   a,l] [freq=medium, count=52%]
 	cmp.b	#0x20,d0                         	| [$1328: cp   $20] [freq=medium, count=52%]
 	jcc	l_13b5                             	| [$132a: jp   nc,$13b5] [freq=medium, count=52%]
-	add.b	d0,d0                            	| [$132d: add  a,a] [freq=medium, count=45%]
-	add.b	d0,d0                            	| [$132e: add  a,a] [freq=medium, count=45%]
-	add.b	d0,d0                            	| [$132f: add  a,a] [freq=medium, count=45%]
+	lsl.b	#3,d0                            	| [$132d: add  a,a] [freq=medium, count=45%]
+	                            	| [$132e: add  a,a] [freq=medium, count=45%]
+	                            	| [$132f: add  a,a] [freq=medium, count=45%]
 	lsr.b	#1,d5                            	| [$1330: srl  h] [freq=medium, count=45%]
 	roxr.b	#1,d0                           	| [$1332: rra] [freq=medium, count=45%]
 	lsr.b	#1,d5                            	| [$1333: srl  h] [freq=medium, count=45%]
@@ -4141,7 +4132,7 @@ l_1354:
 	move.b	#0x00,d4                        	| [$1355: ld   e,$00] [freq=low, count=21%]
 	MAKE_HL	a0                             	| [$1357: ld   b,(hl)] [freq=low, count=21%]
 	move.b	(a0),d1                         	| [...]
-	MAKE_HL_NO_AR                          	| [$1358: inc  hl] [freq=low, count=21%]
+	                          	| [$1358: inc  hl] [freq=low, count=21%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
 	MAKE_HL	a0                             	| [$1359: ld   a,(hl)] [freq=low, count=21%]
@@ -4472,12 +4463,10 @@ l_1466:
 	MAKE_DE_NO_AR                          	| [$1486: add  hl,de] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d5,(0x00,a2)                    	| [$1487: ld   (ix+$00),h] [freq=low, count=0%]
 	move.b	d6,(0x01,a2)                    	| [$148a: ld   (ix+$01),l] [freq=low, count=0%]
-	CLR_XC_FLAGS                           	| [$148d: xor  a] [freq=low, count=0%]
+	                           	| [$148d: xor  a] [freq=low, count=0%]
 	clr.b	d0                               	| [...]
 	move.b	d0,(-0x04,a2)                   	| [$148e: ld   (ix-$04),a] [freq=low, count=0%]
 	move.b	d0,(-0x06,a2)                   	| [$1491: ld   (ix-$06),a] [freq=low, count=0%]
@@ -4540,8 +4529,7 @@ check_insert_coin_14c5:
 	move.b	(a0),d0                         	| [...]
                                          | [$14cd: and  a]
 	jne	l_14d7                             	| [$14ce: jr   nz,$14d7] [freq=low, count=6%]
-* free play!
-	BREAKPOINT "14d0"
+* free play! (not reached)
 	LOAD_HL	nb_credits_8024                	| [$14d0: ld   hl,nb_credits_8024] [breakpoint]
 	MAKE_HL	a0                             	| [$14d3: ld   (hl),$ff]
 	move.b	#0xff,(a0)                      	| [...]
