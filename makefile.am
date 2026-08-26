@@ -74,7 +74,7 @@ rom.o: rom.68k
 $(PROGNAME)_000.o: $(PROGNAME).68k $(PROGNAME).inc data.inc sounds.inc
 	$(ASM) $(PROGNAME).68k -o $(PROGNAME)_000.o
 $(PROGNAME)_020.o: $(PROGNAME).68k $(PROGNAME).inc data.inc sounds.inc
-	$(ASM) $(PROGNAME).68k -o $(PROGNAME)_020.o
+	$(ASM_020) $(PROGNAME).68k -o $(PROGNAME)_020.o
 amiga_aga.o: $(AMIGASRC)/amiga.68k options.inc $(PROGNAME).inc $(AMIGASRC)/scroll_table_16.68k $(AMIGASRC)/ReadJoyPad.i $(AMIGASRC)/palette_aga.68k
 	$(ASM_020) -Iamiga $(AMIGASRC)/amiga.68k -o amiga_aga.o
 amiga_ecs.o: $(AMIGASRC)/amiga.68k options.inc $(PROGNAME).inc $(AMIGASRC)/scroll_table_16.68k $(AMIGASRC)/ReadJoyPad.i $(AMIGASRC)/palette_ecs.68k

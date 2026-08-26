@@ -3272,7 +3272,7 @@ enemy_to_enemy_collision_167a:
 1697: E5          push hl
 ; delay some enemy cars a bit sometimes
 1698: DD 36 00 E0 ld   (ix+$00),$E0		
-169C: DD 36 13 32 ld   (ix+$13),$32		; no collision possible for a while (blocking timer)
+169C: DD 36 13 32 ld   (ix+$13),$32		; no collision possible for a while (blocking timer worth around 0.6s)
 16A0: 21 00 01    ld   hl,$0100
 16A3: DD CB 02 7E bit  7,(ix+$02)
 16A7: 20 02       jr   nz,$16AB

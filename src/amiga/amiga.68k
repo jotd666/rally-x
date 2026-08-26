@@ -762,6 +762,11 @@ do_irq:
 	clr.b	vbl_sync_flag
 	jbsr	osd_disable_interrupts
 	move.w	#0x2000,sr		| allow keyboard interrupt
+
+	* anti-collision timer decrease put in irq to respect timing
+	* (else enemy cars lock up indefinitely)
+	jbsr	decrease_anti_collision_timer
+
 	jbsr	irq_01f0
 	jbsr	osd_enable_interrupts
 	rts

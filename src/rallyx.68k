@@ -3,6 +3,7 @@
 	.global	start_0003
 	.global	irq_01f0
 	.global	reset_3911
+	.global	decrease_anti_collision_timer
 	.include "rallyx.inc"
 
 *	map(0x0000, 0x3fff).rom();
@@ -135,6 +136,8 @@ start_0003:                             	| [global]
 * (stack is probably not positioned properly)
 l_0003:
 	 |  [$0003: ld   sp,$8400]
+	move.b	infinite_fuel_flag,saved_infinite_fuel_flag
+
 	jra	l_003a                             	| [$0006: jr   $003a]
 
 irq_0030:
@@ -278,7 +281,7 @@ l_00fc:
 	move.l	a2,-(a7)                        	| [$00fc: push ix] [freq=low, count=25%]
 	addq.w	#1,a2                           	| [$00fe: inc  ix] [freq=low, count=25%]
 	move.b	d0,d2                           	| [$0100: ld   c,a] [freq=low, count=25%]
-	tst.b	d0                               	| [$0101: and  a] [freq=low, count=25%]
+	                               	| [$0101: and  a] [freq=low, count=25%]
 	jne	l_0108                             	| [$0102: jr   nz,$0108] [freq=low, count=25%]
                                          | [$0104: inc  ix]
 	addq.w	#2,a2                           	| [$0106: inc  ix] [freq=low, count=13%]
@@ -288,9 +291,7 @@ l_0108:
 	MAKE_DE_NO_AR                          	| [$010e: add  hl,de] [freq=low, count=25%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d6,(0x03,a2)                    	| [$010f: ld   (ix+$03),l] [freq=low, count=25%]
 	move.b	d5,(0x04,a2)                    	| [$0112: ld   (ix+$04),h] [freq=low, count=25%]
 	move.b	d5,d0                           	| [$0115: ld   a,h] [freq=low, count=25%]
@@ -341,9 +342,9 @@ l_0154:
 
 l_015a:
 	move.b	(0x08,a2),d0                    	| [$015a: ld   a,(ix+$08)] [freq=low, count=22%]
-	add.b	d0,d0                            	| [$015d: add  a,a] [freq=low, count=22%]
-	add.b	d0,d0                            	| [$015e: add  a,a] [freq=low, count=22%]
-	add.b	d0,d0                            	| [$015f: add  a,a] [freq=low, count=22%]
+	lsl.b	#3,d0                            	| [$015d: add  a,a] [freq=low, count=22%]
+	                            	| [$015e: add  a,a] [freq=low, count=22%]
+	                            	| [$015f: add  a,a] [freq=low, count=22%]
 	move.b	(0x0a,a2),d3                    	| [$0160: ld   d,(ix+$0a)] [freq=low, count=22%]
 	lsr.b	#1,d3                            	| [$0163: srl  d] [freq=low, count=22%]
 	roxr.b	#1,d0                           	| [$0165: rra] [freq=low, count=22%]
@@ -360,12 +361,7 @@ l_015a:
 
 l_0178:
 	LOAD_DE	0x0020                         	| [$0178: ld   de,$0020] [freq=low, count=22%]
-	MAKE_DE_NO_AR                          	| [$017b: add  ix,de] [freq=low, count=22%]
-	move.l	a2,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d4,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a2                           	| [...]
+	add.w	d4,a2                          	| [$017b: add  ix,de] [freq=low, count=22%]
 	move.b	#0x00,iyl                       	| [$017d: ld   iyl,$00] [freq=low, count=22%]
 	subq.b	#1,d1                           	| [$0180: dec  b] [freq=low, count=22%]
 	jne	l_00da                             	| [$0181: jp   nz,$00da] [freq=low, count=22%]
@@ -709,12 +705,7 @@ l_0335:
 	addq.w	#1,d4                           	| [...]
 	MAKE_D                                 	| [...]
 	LOAD_BC	0x0020                         	| [$033a: ld   bc,$0020] [freq=low, count=11%]
-	MAKE_BC_NO_AR                          	| [$033d: add  ix,bc] [freq=low, count=11%]
-	move.l	a2,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d2,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a2                           	| [...]
+	add.w	d2,a2                          	| [$033d: add  ix,bc] [freq=low, count=11%]
 	move.b	d0,d1                           	| [$033f: ld   b,a] [freq=low, count=11%]
 	subq.b	#1,d1                           	| [$0340: djnz $0311] [freq=low, count=11%]
 	jne	l_0311                             	| [...]
@@ -1561,6 +1552,8 @@ clear_sprites_074c:
 * play intro music
 	move.b	#0x80,d0                        	| [$0767: ld   a,$80]
 	GET_ADDRESS	music_control_89f5,a0      	| [$0769: ld   (music_control_89f5),a]
+	move.b	saved_infinite_fuel_flag,infinite_fuel_flag
+
 	move.w	#START_TUNE_SND,d0
 	jbsr	osd_sound_start
 	move.b	d0,(a0)                         	| [...]
@@ -2171,7 +2164,7 @@ l_0a52:
 * or a timer in the irq)
 
 mainloop_0a7a:
-	jbsr	regulate_speed |  [$0a7a: ld   sp,$8400] reset stack, it's a brand new day [freq=low, count=31%]
+	*jbsr	regulate_speed |  [$0a7a: ld   sp,$8400] reset stack, it's a brand new day [freq=low, count=31%]
 	GET_ADDRESS	deltax_car_vs_current_enemy_8050,a0	| [$0a7d: ld   a,(deltax_car_vs_current_enemy_8050)] [freq=low, count=31%]
 	move.b	(a0),d0                         	| [...]
 	add.b	#0x07,d0                         	| [$0a80: add  a,$07] [freq=low, count=31%]
@@ -2206,7 +2199,7 @@ mainloop_0a7a:
 	jeq	l_0ea0                             	| [$0aad: jp   z,$0ea0] [freq=low, count=10%]
 	jbsr	l_13cf                            	| [$0ab0: call $13cf] [freq=low, count=5%]
 l_0ab3:
-	CLR_XC_FLAGS                           	| [$0ab3: xor  a] [freq=low, count=5%]
+	                           	| [$0ab3: xor  a] [freq=low, count=5%]
 	clr.b	d0                               	| [...]
 	GET_UNCHECKED_ADDRESS	0x8022,a0                  	| [$0ab4: ld   ($8022),a] [video_address] [freq=low, count=5%]
 	move.b	d0,(a0)                         	| [...]
@@ -2215,7 +2208,7 @@ l_0ab3:
 
 init_player_car_0aba:
 	GET_ADDRESS	player_car_structure_8068,a2	| [$0aba: ld   ix,player_car_structure_8068]
-	CLR_XC_FLAGS                           	| [$0abe: xor  a]
+	                           	| [$0abe: xor  a]
 	clr.b	d0                               	| [...]
 	GET_ADDRESS	double_score_8023,a0       	| [$0abf: ld   (double_score_8023),a]
 	move.b	d0,(a0)                         	| [...]
@@ -2562,12 +2555,7 @@ l_0c7f:
 	move.b	d6,(0x01,a2)                    	| [$0c85: ld   (ix+$01),l] [freq=low, count=11%]
 l_0c88:
 	LOAD_DE	0x0020                         	| [$0c88: ld   de,$0020] [freq=low, count=14%]
-	MAKE_DE_NO_AR                          	| [$0c8b: add  ix,de] [freq=low, count=14%]
-	move.l	a2,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d4,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a2                           	| [...]
+	add.w	d4,a2                          	| [$0c8b: add  ix,de] [freq=low, count=14%]
 	subq.b	#1,d1                           	| [$0c8d: dec  b] [freq=low, count=14%]
 	jne	l_0b34                             	| [$0c8e: jp   nz,$0b34] [freq=low, count=14%]
 l_0c91:
@@ -4086,12 +4074,12 @@ l_1319:
 	rts                                    	| [$131d: ret] return with C set [freq=low, count=0%]
 
 write_maze_row_131e:
-	MAKE_BC_NO_AR                          	| [$131e: push bc] [freq=medium, count=52%]
-	move.w	d2,-(a7)                        	| [...]
-	MAKE_DE_NO_AR                          	| [$131f: push de] [freq=medium, count=52%]
-	move.w	d4,-(a7)                        	| [...]
-	MAKE_HL_NO_AR                          	| [$1320: push hl] [freq=medium, count=52%]
-	move.w	d6,-(a7)                        	| [...]
+	movem.l	d1-d6,-(a7)                          	| [$131e: push bc] [freq=medium, count=52%]
+	                     	| [...]
+	                    	| [$131f: push de] [freq=medium, count=52%]
+	                     	| [...]
+	                    	| [$1320: push hl] [freq=medium, count=52%]
+	                     	| [...]
 	move.b	d5,d0                           	| [$1321: ld   a,h] [freq=medium, count=52%]
 	cmp.b	#0x38,d0                         	| [$1322: cp   $38] [freq=medium, count=52%]
 	jcc	l_13b5                             	| [$1324: jp   nc,$13b5] [freq=medium, count=52%]
@@ -4131,12 +4119,12 @@ l_1354:
 	move.b	d0,d6                           	| [$1354: ld   l,a] [freq=low, count=21%]
 	move.b	#0x00,d4                        	| [$1355: ld   e,$00] [freq=low, count=21%]
 	MAKE_HL	a0                             	| [$1357: ld   b,(hl)] [freq=low, count=21%]
-	move.b	(a0),d1                         	| [...]
+	move.b	(a0)+,d1                         	| [...]
 	                          	| [$1358: inc  hl] [freq=low, count=21%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
-	MAKE_HL	a0                             	| [$1359: ld   a,(hl)] [freq=low, count=21%]
-	move.b	(a0),d0                         	| [...]
+	                             	| [$1359: ld   a,(hl)] [freq=low, count=21%]
+	move.b	(a0)+,d0                         	| [...]
 	and.b	d2,d0                            	| [$135a: and  c] [freq=low, count=21%]
 	jeq	l_135f                             	| [$135b: jr   z,$135f] [freq=low, count=21%]
 	bset.b	#2,d4                           	| [$135d: set  2,e] [freq=low, count=15%]
@@ -4144,8 +4132,8 @@ l_135f:
 	MAKE_HL_NO_AR                          	| [$135f: inc  hl] [freq=low, count=21%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
-	MAKE_HL	a0                             	| [$1360: ld   a,(hl)] [freq=low, count=21%]
-	move.b	(a0),d0                         	| [...]
+	                             	| [$1360: ld   a,(hl)] [freq=low, count=21%]
+	move.b	(a0)+,d0                         	| [...]
 	and.b	d2,d0                            	| [$1361: and  c] [freq=low, count=21%]
 	jeq	l_1366                             	| [$1362: jr   z,$1366] [freq=low, count=21%]
 	bset.b	#1,d4                           	| [$1364: set  1,e] [freq=low, count=16%]
@@ -4153,7 +4141,7 @@ l_1366:
 	MAKE_HL_NO_AR                          	| [$1366: inc  hl] [freq=low, count=21%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
-	MAKE_HL	a0                             	| [$1367: ld   a,(hl)] [freq=low, count=21%]
+	                             	| [$1367: ld   a,(hl)] [freq=low, count=21%]
 	move.b	(a0),d0                         	| [...]
 	and.b	d2,d0                            	| [$1368: and  c] [freq=low, count=21%]
 	jeq	l_136d                             	| [$1369: jr   z,$136d] [freq=low, count=21%]
@@ -4180,74 +4168,46 @@ l_1375:
 	MAKE_HL_UNCHECKED	a0                             	| [$1381: ld   (hl),a] [video_address] [freq=low, count=21%]
 	move.b	d0,(a0)                         	| [...] [video_address]
 	VIDEO_BYTE_DIRTY | [...]
-	move.w	(a7)+,d6                        	| [$1382: pop  hl] [freq=low, count=21%]
-	MAKE_H                                 	| [...]
-	move.w	(a7)+,d4                        	| [$1383: pop  de] [freq=low, count=21%]
-	MAKE_D                                 	| [...]
-	move.w	(a7)+,d2                        	| [$1384: pop  bc] [freq=low, count=21%]
-	MAKE_B                                 	| [...]
+	movem.l	(a7)+,d1-d6                        	| [$1382: pop  hl] [freq=low, count=21%]
+	                  	| [...]
+	                   	| [$1383: pop  de] [freq=low, count=21%]
+	                  	| [...]
+	                   	| [$1384: pop  bc] [freq=low, count=21%]
+	                  	| [...]
 	rts                                    	| [$1385: ret] [freq=low, count=21%]
 
 l_1386:
-	CLR_XC_FLAGS                           	| [$1386: xor  a] [freq=low, count=23%]
+	                           	| [$1386: xor  a] [freq=low, count=23%]
 	clr.b	d0                               	| [...]
 	move.b	d0,d1                           	| [$1387: ld   b,a] [freq=low, count=23%]
 	move.b	d0,d5                           	| [$1388: ld   h,a] [freq=low, count=23%]
 	move.b	d2,d6                           	| [$1389: ld   l,c] [freq=low, count=23%]
 	MAKE_HL_NO_AR                          	| [$138a: add  hl,hl] [freq=low, count=23%]
-	add.w	d6,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
-	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
-	MAKE_HL_NO_AR                          	| [$138b: add  hl,hl] [freq=low, count=23%]
-	add.w	d6,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
-	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
-	MAKE_HL_NO_AR                          	| [$138c: add  hl,hl] [freq=low, count=23%]
-	add.w	d6,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
-	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
+	lsl.w	#3,d6                            	| [...]
+	                            	| [...]
+	               	| [...] save CC
+	               	| [...] update MSB reg
+	               	| [...] restore CC
+	               	| [$138c: add  hl,hl] [freq=low, count=23%]
+	                            	| [...]
+	                                 	| [...] update MSB reg
 	MAKE_BC_NO_AR                          	| [$138d: add  hl,bc] [freq=low, count=23%]
-	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
-	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d3,d2                           	| [$138e: ld   c,d] [freq=low, count=23%]
-	MAKE_BC_NO_AR                          	| [$138f: add  hl,bc] [freq=low, count=23%]
-	MAKE_HL_NO_AR                          	| [...]
+	                          	| [$138f: add  hl,bc] [freq=low, count=23%]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
-	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
-	MAKE_BC_NO_AR                          	| [$1390: add  hl,bc] [freq=low, count=23%]
-	MAKE_HL_NO_AR                          	| [...]
+	                          	| [$1390: add  hl,bc] [freq=low, count=23%]
+	                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
-	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
-	MAKE_BC_NO_AR                          	| [$1391: add  hl,bc] [freq=low, count=23%]
-	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
-	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d4,d2                           	| [$1392: ld   c,e] [freq=low, count=23%]
-	MAKE_BC_NO_AR                          	| [$1393: add  hl,bc] [freq=low, count=23%]
-	MAKE_HL_NO_AR                          	| [...]
+	                          	| [$1393: add  hl,bc] [freq=low, count=23%]
+	                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
-	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	LOAD_BC	0x2288                         	| [$1394: ld   bc,$2288] [freq=low, count=23%]
-	MAKE_BC_NO_AR                          	| [$1397: add  hl,bc] [freq=low, count=23%]
-	MAKE_HL_NO_AR                          	| [...]
+	                          	| [$1397: add  hl,bc] [freq=low, count=23%]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	GET_UNCHECKED_ADDRESS	0x8056,a0                  	| [$1398: ld   de,($8056)] [video_address] [freq=low, count=23%]
 	MOVE_W_TO_REG	a0,d4                         	| [...]
 	MAKE_D                                 	| [...]
@@ -4273,12 +4233,12 @@ l_13ad:
 	MAKE_HL_UNCHECKED	a0                             	| [$13b0: ld   (hl),b] [video_address] attribute [freq=low, count=30%]
 	move.b	d1,(a0)                         	| [...] [video_address] attribute
 	VIDEO_BYTE_DIRTY | [...]
-	move.w	(a7)+,d6                        	| [$13b1: pop  hl] [freq=low, count=30%]
-	MAKE_H                                 	| [...]
-	move.w	(a7)+,d4                        	| [$13b2: pop  de] [freq=low, count=30%]
-	MAKE_D                                 	| [...]
-	move.w	(a7)+,d2                        	| [$13b3: pop  bc] [freq=low, count=30%]
-	MAKE_B                                 	| [...]
+	movem.l	(a7)+,d1-d6                        	| [$13b1: pop  hl] [freq=low, count=30%]
+	                      	| [...]
+	                       	| [$13b2: pop  de] [freq=low, count=30%]
+	                      	| [...]
+	                       	| [$13b3: pop  bc] [freq=low, count=30%]
+	                      	| [...]
 	rts                                    	| [$13b4: ret] [freq=low, count=30%]
 
 l_13b5:
@@ -4327,9 +4287,7 @@ l_13e7:
 	MAKE_BC_NO_AR                          	| [$13e7: add  hl,bc] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	LOAD_BC	0xfff8                         	| [$13e8: ld   bc,$fff8] [freq=low, count=5%]
 	addq.b	#1,d4                           	| [$13eb: inc  e] [freq=low, count=5%]
 l_13ec:
@@ -4338,9 +4296,7 @@ l_13ec:
 	MAKE_BC_NO_AR                          	| [$13ef: add  hl,bc] [freq=low, count=2%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	jra	l_13ec                             	| [$13f0: jr   $13ec] [freq=low, count=2%]
 
 l_13f2:
@@ -4386,11 +4342,7 @@ l_1423:
 	LOAD_DE	0x0020                         	| [$1423: ld   de,$0020] [freq=low, count=10%]
 l_1426:
 	MAKE_DE_NO_AR                          	| [$1426: add  ix,de] [freq=low, count=10%]
-	move.l	a2,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d4,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a2                           	| [...]
+	add.w	d4,a2                          	| [...] 
 	subq.b	#1,d1                           	| [$1428: djnz $140e] [freq=low, count=10%]
 	jne	l_140e                             	| [...]
 	CLR_I_FLAG                             	| [$142a: ei] [freq=low, count=5%]
@@ -4792,19 +4744,15 @@ l_15a1:
 	MAKE_DE_NO_AR                          	| [$15b1: add  hl,de] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	jra	l_15b7                             	| [$15b2: jr   $15b7] [freq=low, count=0%]
 
 l_15b4:
-	CLR_XC_FLAGS |  [$15b4: and  a] [freq=low, count=0%]
+	 |  [$15b4: and  a] [freq=low, count=0%]
 	MAKE_DE_NO_AR                          	| [$15b5: sbc  hl,de] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
-	subx.w	d4,d6                           	| [...]
-	PUSH_SR                                	| [...] save CC
+	sub.w	d4,d6                           	| [...]
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 l_15b7:
 	exg	d3,d5                              	| [$15b7: ex   de,hl] [freq=low, count=5%]
 	exg	d4,d6                              	| [...]
@@ -4815,12 +4763,10 @@ l_15b7:
 l_15bd:
 	move.b	d4,d0                           	| [$15bd: ld   a,e] [freq=low, count=10%]
 	MAKE_HL	a0                             	| [$15be: cp   (hl)] [freq=low, count=10%]
-	cmp.b	(a0),d0                          	| [...]
-	PUSH_SR
-	MAKE_HL_NO_AR                          	| [$15bf: inc  hl] [freq=low, count=10%]
+	                          	| [$15bf: inc  hl] [freq=low, count=10%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
-	POP_SR
+	cmp.b	(a0),d0                          	| [$15be: cp   (hl)] [freq=low, count=10%]
 	jne	l_15c4                             	| [$15c0: jr   nz,$15c4] [freq=low, count=10%]
 	move.b	d3,d0                           	| [$15c2: ld   a,d] [freq=low, count=0%]
 	MAKE_HL	a0                             	| [$15c3: cp   (hl)] [freq=low, count=0%]
@@ -4856,7 +4802,7 @@ l_15e4:
 	move.b	(0x13,a2),d0                    	| [$15e4: ld   a,(ix+$13)] [freq=low, count=21%]
                                          | [$15e7: and  a]
 	jeq	l_15ef                             	| [$15e8: jr   z,$15ef] [freq=low, count=21%]
-	subq.b	#1,(0x13,a2)                    	| [$15ea: dec  (ix+$13)] inhibition counter prevents from too many collisions [freq=low, count=2%]
+	*subq.b	#1,(0x13,a2)                    	| [$15ea: dec  (ix+$13)] inhibition counter prevents from too many collisions [freq=low, count=2%]
 	jra	next_car_structure_161b            	| [$15ed: jr   next_car_structure_161b] [freq=low, count=2%]
 
 l_15ef:
@@ -4875,18 +4821,14 @@ l_15ef:
 	jbsr	pseudo_random_16c3                	| [$160e: call pseudo_random_16c3] [freq=low, count=5%]
 * we can stumble in an infinite lock up with routine
 * above returning Z all the time for 2 consecutive enemies
-* it happens in the 68000 amiga transcode
+* it happens in the 68000 amiga transcode because the speed is not in sync
+* but when we move the timer decrease in irq it works better
 	jne	0f                                 	| [$1611: call z,enemy_to_enemy_collision_167a] [freq=low, count=5%]
 	jbsr	enemy_to_enemy_collision_167a     	| [...]
 0:
 l_1614:
-	LOAD_DE	0x0020                         	| [$1614: ld   de,$0020] [freq=low, count=18%]
-	MAKE_DE_NO_AR                          	| [$1617: add  iy,de] [freq=low, count=18%]
-	move.l	a3,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d4,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a3                           	| [...]
+	LOAD_DE	0x0020                         	| [$1614: ld   de,$0020] [freq=low, count=18%]											
+	add.w	d4,a3                           | [$1617: add  iy,de] [freq=low, count=18%]
 	subq.b	#1,d1                           	| [$1619: djnz $15e4] [freq=low, count=18%]
 	jne	l_15e4                             	| [...]
 next_car_structure_161b:
@@ -4894,18 +4836,8 @@ next_car_structure_161b:
 	move.l	(a7)+,a3                        	| [$161e: pop  iy] [freq=low, count=16%]
 	move.w	(a7)+,d2                        	| [$1620: pop  bc] [freq=low, count=16%]
 	MAKE_B                                 	| [...]
-	MAKE_DE_NO_AR                          	| [$1621: add  ix,de] [freq=low, count=16%]
-	move.l	a2,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d4,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a2                           	| [...]
-	MAKE_DE_NO_AR                          	| [$1623: add  iy,de] [freq=low, count=16%]
-	move.l	a3,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d4,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a3                           	| [...]
+	add.w	d4,a2                          	| [$1621: add  ix,de] [freq=low, count=16%]
+	add.w	d4,a3                          	| [$1623: add  iy,de] [freq=low, count=16%]
 	subq.b	#1,d1                           	| [$1625: djnz $15e1] [freq=low, count=16%]
 	jne	l_15e1                             	| [...]
 	move.b	#0x08,d2                        	| [$1627: ld   c,$08] [freq=low, count=4%]
@@ -4938,19 +4870,15 @@ l_164e:
 	MAKE_DE_NO_AR                          	| [$165e: add  hl,de] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	jra	l_1664                             	| [$165f: jr   $1664] [freq=low, count=0%]
 
 l_1661:
-	CLR_XC_FLAGS |  [$1661: and  a] [freq=low, count=1%]
+	 |  [$1661: and  a] [freq=low, count=1%]
 	MAKE_DE_NO_AR                          	| [$1662: sbc  hl,de] [freq=low, count=1%]
 	MAKE_HL_NO_AR                          	| [...]
-	subx.w	d4,d6                           	| [...]
-	PUSH_SR                                	| [...] save CC
+	sub.w	d4,d6                           	| [...]
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 l_1664:
 	MAKE_HL	a0                             	| [$1664: ld   a,(hl)] [freq=low, count=10%]
 	move.b	(a0),d0                         	| [...]
@@ -4960,12 +4888,7 @@ l_1664:
 0:
 l_166a:
 	LOAD_DE	0x0020                         	| [$166a: ld   de,$0020] [freq=low, count=10%]
-	MAKE_DE_NO_AR                          	| [$166d: add  ix,de] [freq=low, count=10%]
-	move.l	a2,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d4,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a2                           	| [...]
+	add.w	d4,a2                          	| [$166d: add  ix,de] [freq=low, count=10%]
 	subq.b	#1,d2                           	| [$166f: dec  c] [freq=low, count=10%]
 	jne	l_162d                             	| [$1670: jp   nz,$162d] [freq=low, count=10%]
 l_1673:
@@ -5000,7 +4923,8 @@ l_1697:
 	move.w	d6,-(a7)                        	| [...]
 * delay some enemy cars a bit sometimes
 	move.b	#0xe0,(0x00,a2)                 	| [$1698: ld   (ix+$00),$e0] [freq=low, count=0%]
-	move.b	#0x32,(0x13,a2)                 	| [$169c: ld   (ix+$13),$32] no collision possible for a while (blocking timer) [freq=low, count=0%]
+	* change to 36 to sub 1 each 1/60th to emulate the 0.6s the game takes to sub from that counter from non-irq code
+	move.b	#36,(0x13,a2)                 	| [$169c: ld   (ix+$13),$32] no collision possible for a while (blocking timer) [freq=low, count=0%]
 	LOAD_HL	0x0100                         	| [$16a0: ld   hl,$0100] [freq=low, count=0%]
 	btst.b	#7,(0x02,a2)                    	| [$16a3: bit  7,(ix+$02)] [freq=low, count=0%]
 	jne	l_16ab                             	| [$16a7: jr   nz,$16ab] [freq=low, count=0%]
@@ -5104,10 +5028,7 @@ l_1710:
 	MAKE_HL	a0                             	| [$1723: ld   a,(hl)]
 	move.b	(a0),d0                         	| [...]
 	MAKE_HL_NO_AR                          	| [$1724: inc  hl]
-	addq.w	#1,d6                           	| [...]
-	MAKE_H                                 	| [...]
-	MAKE_HL_NO_AR                          	| [$1725: inc  hl]
-	addq.w	#1,d6                           	| [...]
+	addq.w	#2,d6              | [$1725: inc  hl]
 	MAKE_H                                 	| [...]
 	MAKE_HL	a0                             	| [$1726: cp   (hl)]
 	cmp.b	(a0),d0                          	| [...]
@@ -5530,6 +5451,8 @@ l_18b2:
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
 	MAKE_HL	a0                             	| [$18e0: ld   (hl),$28] plays end of level music music_control_89f5
+	move.b	infinite_fuel_flag,saved_infinite_fuel_flag
+	clr.b	infinite_fuel_flag
 	move.w	#LEVEL_COMPLETED_TUNE_SND,d0
 	jbsr	osd_sound_start
 	move.b	#0x28,(a0)                      	| [...] plays end of level music music_control_89f5
@@ -5858,6 +5781,7 @@ l_1a44:
 	VIDEO_BYTE_DIRTY | [...]
 	LOAD_HL	music_control_89f5             	| [$1a7d: ld   hl,music_control_89f5]
 	MAKE_HL	a0                             	| [$1a80: set  2,(hl)] highscore music
+	jbsr	osd_write_high_score
 	move.w	#HIGH_SCORE_TUNE_SND,d0
 	jbsr	osd_sound_start
 	bset.b	#2,(a0)                         	| [...] highscore music
@@ -5940,7 +5864,6 @@ game_really_over_1ad8:
 	moveq	#0,d0
 	jbsr	osd_set_first_color   | orange
 	.endif
-	jbsr	osd_write_high_score
 	jbsr	l_1b06                            	| [$1adb: call $1b06]
 	LOAD_HL	0x8860                         	| [$1ade: ld   hl,$8860]
 	move.b	#0x08,d1                        	| [$1ae1: ld   b,$08]
@@ -6211,15 +6134,10 @@ l_1c19:
 	move.b	d0,(0x0f,a2)                    	| [$1c1a: ld   (ix+$0f),a] [freq=low, count=1%]
 l_1c1d:
 	LOAD_DE	0x0020                         	| [$1c1d: ld   de,$0020] [freq=low, count=3%]
-	MAKE_DE_NO_AR                          	| [$1c20: add  ix,de] [freq=low, count=3%]
-	move.l	a2,d7                           	| [...]  [inspect_for_manual_optimization]
-	sub.l	a6,d7                            	| [...]
-	add.w	d4,d7                            	| [...]
-	add.l	a6,d7                            	| [...]
-	move.l	d7,a2                           	| [...]
+	add.w	d4,a2                          	| [$1c20: add  ix,de] [freq=low, count=3%]
 	subq.b	#1,d1                           	| [$1c22: djnz $1bd1] [freq=low, count=3%]
 	jne	l_1bd1                             	| [...]
-	CLR_XC_FLAGS                           	| [$1c24: xor  a] [freq=low, count=1%]
+	                           	| [$1c24: xor  a] [freq=low, count=1%]
 	clr.b	d0                               	| [...]
 	GET_ADDRESS	counter_824b,a0            	| [$1c25: ld   (counter_824b),a] [freq=low, count=1%]
 	move.b	d0,(a0)                         	| [...]
@@ -6493,7 +6411,7 @@ l_1d2d:
 	jbsr	osd_sound_start
 	move.b	d0,(a0)                         	| [...] play fuel countdown
 l_1d49:
-	CLR_XC_FLAGS                           	| [$1d49: xor  a]
+	                           	| [$1d49: xor  a]
 	clr.b	d0                               	| [...]
 	GET_UNCHECKED_ADDRESS	0x8269,a0                  	| [$1d4a: ld   ($8269),a] [video_address]
 	move.b	d0,(a0)                         	| [...]
@@ -8608,4 +8526,21 @@ regulate_speed:
 1:
     move.w    d1,vbl_sync_counter
     rts
+
+decrease_anti_collision_timer:
+	GET_ADDRESS	enemy_car_structs_8088,a2  	| [$15d7: ld   ix,enemy_car_structs_8088] [freq=low, count=4%]
+	move.b	#0x07,d1                        	| [$15df: ld   b,$07] [freq=low, count=4%]
+0:
+	move.b	(0x13,a2),d0                    	| [$15e4: ld   a,(ix+$13)] [freq=low, count=21%]
+                                         | [$15e7: and  a]
+	jeq	next_car_structure                             	| [$15e8: jr   z,$15ef] [freq=low, count=21%]
+	subq.b	#1,(0x13,a2)                    	| [$15ea: dec  (ix+$13)] inhibition counter prevents from too many collisions [freq=low, count=2%]
+
+next_car_structure:
+	                         	| [$161b: ld   de,$0020] [freq=low, count=16%]
+	add.w	#0x20,a2                          	| [$1621: add  ix,de] [freq=low, count=16%]
+	subq.b	#1,d1                           	| [$1625: djnz $15e1] [freq=low, count=16%]
+	jne	0b                             	| [...]
+	rts
+	
 

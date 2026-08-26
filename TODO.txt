@@ -1,16 +1,10 @@
-- manually profile & optimize
-- still too fast (enemy lockup) or change anti-lock system
 - GAME OVER is in black/some other color (random) should be white missing some palette change?
 - export stack symbol to reset it at A7A
-- save higscore is done even if score isn't beaten
-- mainloop is called roughly 10 times as much as irq
-  * on fast machines, some timers have issues (car lockup)
-  * on slow machines, game doesn't run, as irq triggers too often
-- check anti-lock countdown see the freq on MAME
+- needs fastmem: mainloop is called roughly 10 times as much as irq
+  => on slow machines, game doesn't run, as irq triggers too often
 
 - sometimes cars are all red: snap sprites at this moment for mockup
 
-- infinite fuel: not when level ends / skip fuel bonus
 - after game over no credits, explanation screen is buggy
   8FE7... attributes for instructions is completely shifted (sometimes on challenging stage)
   bonus flag list is also printed too low/too high, some letters are out of line

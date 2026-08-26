@@ -1,6 +1,7 @@
 	.include	"options.inc"
 
 	.global infinite_fuel_flag
+	.global saved_infinite_fuel_flag
 	.global infinite_lives_flag
 	.global invincible_flag
 	.global kill_flag
@@ -84,6 +85,8 @@ invincible_flag:
 infinite_lives_flag:
 	.byte	0
 infinite_fuel_flag:
+	.byte	0
+saved_infinite_fuel_flag:
 	.byte	0
 
 
