@@ -1,7 +1,8 @@
 - GAME OVER is in black/some other color (random) should be white missing some palette change?
 - export stack symbol to reset it at A7A
+- enemy car lockup: check where timer is decreased, doesn't seem to be enough to put decrease in irq
 - needs fastmem: mainloop is called roughly 10 times as much as irq
-  => on slow machines, game doesn't run, as irq triggers too often
+  => on slow machines, game runs wrong, as irq triggers too often
 
 - sometimes cars are all red: snap sprites at this moment for mockup
 
