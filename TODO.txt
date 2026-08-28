@@ -3,9 +3,12 @@
 - enemy car lockup: check where timer is decreased, doesn't seem to be enough to put decrease in irq
 - needs fastmem: mainloop is called roughly 10 times as much as irq
   => on slow machines, game runs wrong, as irq triggers too often
-
+- experiment copper split to avoid copying tiles 4 times => 2 times: A1200/nofast would run,
+  now make ECS version runnable on A1200/floppy and save even more bandwidth
+- write scrolling / read scrolling make atomic?
 - sometimes cars are all red: snap sprites at this moment for mockup
 
+- patch SET_C_FROM_X, SET_X_FROM_C, EXG_AF_AF_PRIME, PUSH_SR if 68020 on ECS, then shell runs ECS version if no fastmem on 68020
 - after game over no credits, explanation screen is buggy
   8FE7... attributes for instructions is completely shifted (sometimes on challenging stage)
   bonus flag list is also printed too low/too high, some letters are out of line

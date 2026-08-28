@@ -220,17 +220,6 @@
 	POP_SR
 	.endm
 
-	.macro	SET_X_FROM_CLEARED_C
-	PUSH_SR
-	move.w	(sp),d7
-	bset	#4,d7   | set X
-	btst	#0,d7
-	jeq	0f
-	bclr	#4,d7   | C is set: clear X
-0:
-	move.w	d7,(sp)
-	POP_SR
-	.endm
 
 
 	.macro SET_I_FLAG

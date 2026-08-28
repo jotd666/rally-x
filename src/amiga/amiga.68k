@@ -3081,17 +3081,23 @@ set_main_bitplanes:
 	moveq	#0,d0
 	moveq	#0,d2
 	move.b	scroll_y,d0
-	add.w	d0,d0
-	lea		mulNB_BYTES_PER_MAIN_ROW_table,a2
-	move.w	(a2,d0.w),d0		| compute Y offset
 	move.b	scroll_x,d2
-	*sub.b	#0x10,d2
-	*add.w	#TILE_PLANE_X_SHIFT,d2
+	lea		mulNB_BYTES_PER_MAIN_ROW_table,a2
+	.ifdef	NO68020
+	add.w	d0,d0
+	move.w	(a2,d0.w),d0		| compute Y offset
 	add.w	d2,d2
 	add.w	d2,d2
 	lea		scroll_table,a2
 	move.w	(a2,d2.w),fine_x_scroll_value
 	add.w	(2,a2,d2.w),d0
+	.else
+	move.w 	(a2,d0.w*2),d0
+	lea		scroll_table,a2
+	move.w	(a2,d2.w*4),fine_x_scroll_value
+	add.w	(2,a2,d2.w*4),d0
+	.endif
+	
 	
     moveq #NB_PLAYFIELD_PLANES-1,d1
  	move.l	#MAIN_SCREEN_PLANE_SIZE,d2

@@ -197,9 +197,7 @@ l_0084:
 	MAKE_DE_NO_AR                          	| [$0088: add  hl,de] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	GET_UNCHECKED_ADDRESS	0x804c,a0                  	| [$0089: ld   ($804c),hl] [video_address] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	MOVE_W_FROM_REG	d6,a0                         	| [...]
@@ -228,9 +226,7 @@ l_00a3:
 	MAKE_DE_NO_AR                          	| [$00af: add  hl,de] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	GET_UNCHECKED_ADDRESS	0x804e,a0                  	| [$00b0: ld   ($804e),hl] [video_address] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	MOVE_W_FROM_REG	d6,a0                         	| [...]
@@ -371,12 +367,10 @@ l_0185:
 	LOAD_HL	0x2270                         	| [$0188: ld   hl,$2270] [freq=low, count=1%]
 l_018b:
 	MAKE_HL	a0                             	| [$018b: cp   (hl)] [freq=low, count=2%]
-	cmp.b	(a0),d0                          	| [...]
-	PUSH_SR
-	MAKE_HL_NO_AR                          	| [$018c: inc  hl] [freq=low, count=2%]
+	                          	| [$018c: inc  hl] [freq=low, count=2%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
-	POP_SR
+	cmp.b	(a0),d0                          	| [$018b: cp   (hl)]
 	jne	l_018b                             	| [$018d: jr   nz,$018b] [freq=low, count=2%]
 	move.b	(0x00,a2),d0                    	| [$018f: ld   a,(ix+$00)] [freq=low, count=1%]
 	and.b	#0x03,d0                         	| [$0192: and  $03] [freq=low, count=1%]
@@ -1031,9 +1025,7 @@ l_0490:
 	MAKE_DE_NO_AR                          	| [$04a0: sbc  hl,de] [uncovered]
 	MAKE_HL_NO_AR                          	| [...] [uncovered]
 	subx.w	d4,d6                           	| [...] [uncovered]
-	PUSH_SR                                	| [...] [uncovered] save CC
 	MAKE_H                                 	| [...] [uncovered] update MSB reg
-	POP_SR                                 	| [...] [uncovered] restore CC
 	move.b	(0x03,a3),d0                    	| [$04a2: ld   a,(iy+$03)] [uncovered]
 	neg.b	d0                               	| [$04a5: neg] [uncovered]
 	sub.b	#0x10,d0                         	| [$04a7: sub  $10] [uncovered]
@@ -1468,9 +1460,7 @@ l_06ab:
 	MAKE_BC_NO_AR                          	| [$06ed: add  hl,bc]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	LOAD_DE	0x85f1                         	| [$06ee: ld   de,$85f1]
 	move.b	#0x01,d2                        	| [$06f1: ld   c,$01]
 	jbsr	ldir_video_1c2b                   	| [$06f3: call ldir_video_1c2b]
@@ -2272,18 +2262,14 @@ l_0b08:
 	MAKE_BC_NO_AR                          	| [$0b17: add  hl,bc]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	exg	d3,d5                              	| [$0b18: ex   de,hl]
 	exg	d4,d6                              	| [...]
 	move.b	#0x20,d2                        	| [$0b19: ld   c,$20]
 	MAKE_BC_NO_AR                          	| [$0b1b: add  hl,bc]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	exg	d3,d5                              	| [$0b1c: ex   de,hl]
 	exg	d4,d6                              	| [...]
 	move.w	(a7)+,d2                        	| [$0b1d: pop  bc]
@@ -2458,8 +2444,7 @@ l_0bf7:
 	CLR_XC_FLAGS                           	| [$0bf9: xor  a] [freq=low, count=1%]
 	clr.b	d0                               	| [...]
 l_0bfa:
-	PUSH_SR                                	| [$0bfa: push af] [freq=low, count=2%]
-	movem.w	d0,-(a7)                       	| [...]
+	move.w	d0,-(a7)                       	| [$0bfa: push af] [freq=low, count=2%]
 	GET_UNCHECKED_ADDRESS	0x81b5,a0                  	| [$0bfb: ld   a,($81b5)] [video_address] [freq=low, count=2%]
 	move.b	(a0),d0                         	| [...]
                                          | [$0bfe: and  a]
@@ -2474,7 +2459,6 @@ l_0bfa:
 	MAKE_H                                 	| [...]
 l_0c07:
 	move.w	(a7)+,d0                        	| [$0c07: pop  af] [freq=low, count=2%]
-	POP_SR                                 	| [...]
 	btst.b	#7,d3                           	| [$0c08: bit  7,d] [freq=low, count=2%]
 	jeq	0f                                 	| [$0c0a: call nz,negate_hl_1e11] [freq=low, count=2%]
 	jbsr	negate_hl_1e11                    	| [...]
@@ -2496,8 +2480,7 @@ l_0c24:
 	jcc	l_0c7f                             	| [$0c27: jr   nc,$0c7f] [freq=low, count=2%]
 l_0c29:
 	not.b	d0                               	| [$0c29: cpl] [freq=low, count=0%]
-	PUSH_SR                                	| [$0c2a: push af] [freq=low, count=0%]
-	movem.w	d0,-(a7)                       	| [...]
+	move.w	d0,-(a7)                       	| [$0c2a: push af] [freq=low, count=0%]
 	move.b	d2,d0                           	| [$0c2b: ld   a,c] [freq=low, count=0%]
 	eor.b	d5,d0                            	| [$0c2c: xor  h] [freq=low, count=0%]
 	btst.b	#7,d0                           	| [$0c2d: bit  7,a] [freq=low, count=0%]
@@ -2505,7 +2488,6 @@ l_0c29:
 	jbsr	negate_hl_1e11                    	| [...]
 0:
 	move.w	(a7)+,d0                        	| [$0c32: pop  af] [freq=low, count=0%]
-	POP_SR                                 	| [...]
 	move.b	#0x02,(0x14,a2)                 	| [$0c33: ld   (ix+$14),$02] [freq=low, count=0%]
 	cmp.b	(0x03,a2),d0                     	| [$0c37: cp   (ix+$03)] [freq=low, count=0%]
 	jne	l_0c4a                             	| [$0c3a: jr   nz,$0c4a] [freq=low, count=0%]
@@ -2753,12 +2735,11 @@ l_0d72:
 	move.w	d6,-(a7)                        	| [...]
 	MAKE_DE_NO_AR                          	| [$0d73: push de] [freq=low, count=6%]
 	move.w	d4,-(a7)                        	| [...]
-	PUSH_SR                                	| [$0d74: push af] [freq=low, count=6%]
-	movem.w	d0,-(a7)                       	| [...]
+	move.w	d0,-(a7)                       	| [$0d74: push af] [freq=low, count=6%]
 	GET_UNCHECKED_ADDRESS	0x8000,a0                  	| [$0d75: ld   hl,($8000)] [video_address] [freq=low, count=6%]
 	MOVE_W_TO_REG	a0,d6                         	| [...]
 	MAKE_H                                 	| [...]
-	MAKE_HL_NO_AR                          	| [$0d78: add  hl,hl] [freq=low, count=6%]
+									| [$0d78: add  hl,hl] [freq=low, count=6%]
 	add.w	d6,d6                            	| [...]
 	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
@@ -2770,18 +2751,15 @@ l_0d7c:
 	and.b	#0x49,d0                         	| [$0d7d: and  $49] [freq=low, count=6%]
 	jne	l_0d85                             	| [$0d7f: jr   nz,$0d85] [freq=low, count=6%]
 	LOAD_DE	0x4080                         	| [$0d81: ld   de,$4080] [freq=low, count=0%]
-	MAKE_DE_NO_AR                          	| [$0d84: add  hl,de] [freq=low, count=0%]
+	                          	| [$0d84: add  hl,de] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 l_0d85:
 	GET_UNCHECKED_ADDRESS	0x8000,a0                  	| [$0d85: ld   ($8000),hl] [video_address] [freq=low, count=6%]
 	MAKE_HL_NO_AR                          	| [...]
 	MOVE_W_FROM_REG	d6,a0                         	| [...]
 	move.w	(a7)+,d0                        	| [$0d88: pop  af] [freq=low, count=6%]
-	POP_SR                                 	| [...]
 	move.w	(a7)+,d4                        	| [$0d89: pop  de] [freq=low, count=6%]
 	MAKE_D                                 	| [...]
 	move.w	(a7)+,d6                        	| [$0d8a: pop  hl] [freq=low, count=6%]
@@ -2818,7 +2796,7 @@ l_0d97:
 	MAKE_H                                 	| [...]
 	MAKE_HL	a0                             	| [$0d9c: inc  (hl)] [freq=low, count=6%]
 	addq.b	#1,(a0)                         	| [...]
-	MAKE_HL_NO_AR                          	| [$0d9d: inc  hl] [freq=low, count=6%]
+	                          	| [$0d9d: inc  hl] [freq=low, count=6%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
 l_0d9e:
@@ -2864,9 +2842,7 @@ l_0db2:
 	MAKE_HL	a0                             	| [...] when fire is pressed, this turns to $FE
 	move.b	(a0),d7	| [...] when fire is pressed, this turns to $FE
 	roxl.b	#1,d7                         	| [...] when fire is pressed, this turns to $FE
-	PUSH_SR
 	move.b	d7,(a0)	| [...] when fire is pressed, this turns to $FE
-	POP_SR
 	MAKE_HL	a0                             	| [$0dc0: ld   a,(hl)] [freq=low, count=5%]
 	move.b	(a0),d0                         	| [...]
 	and.b	#0x0f,d0                         	| [$0dc1: and  $0f] [freq=low, count=5%]
@@ -2895,8 +2871,8 @@ l_0db2:
 	jeq	smoke_release_end_0df4             	| [$0dd9: jr   z,smoke_release_end_0df4] [freq=low, count=0%]
 	GET_UNCHECKED_ADDRESS	0x898e,a0                  	| [$0ddb: ld   de,($898e)] [video_address] [freq=low, count=0%]
 	MOVE_W_TO_REG	a0,d4                         	| [...]
-	MAKE_D                                 	| [...]
-	MAKE_DE_NO_AR                          	| [$0ddf: inc  de] [freq=low, count=0%]
+	                                 	| [...]
+	                          	| [$0ddf: inc  de] [freq=low, count=0%]
 	addq.w	#1,d4                           	| [...]
 	MAKE_D                                 	| [...]
 	MAKE_DE	a0                             	| [$0de0: ld   a,(de)] [freq=low, count=0%]
@@ -2917,11 +2893,11 @@ l_0de6:
 	move.b	d0,(a0)                         	| [...]
 * 3 more smoke clouds
 	MAKE_HL	a0                             	| [$0df1: inc  (hl)] [freq=low, count=0%]
-	addq.b	#1,(a0)                         	| [...]
-	MAKE_HL	a0                             	| [$0df2: inc  (hl)] [freq=low, count=0%]
-	addq.b	#1,(a0)                         	| [...]
-	MAKE_HL	a0                             	| [$0df3: inc  (hl)] [freq=low, count=0%]
-	addq.b	#1,(a0)                         	| [...]
+	addq.b	#3,(a0)                         	| [...]
+	                     	| [$0df2: inc  (hl)] [freq=low, count=0%]
+	                      	| [...]
+	                     	| [$0df3: inc  (hl)] [freq=low, count=0%]
+	                      	| [...]
 smoke_release_end_0df4:
 	MAKE_HL	a0                             	| [$0df4: ld   a,(hl)] [freq=low, count=5%]
 	move.b	(a0),d0                         	| [...]
@@ -3007,8 +2983,7 @@ l_0e59:
 	rts                                    	| [$0e5c: ret] [freq=low, count=5%]
 
 advance_hl_and_de_0e5d:
-	PUSH_SR                                	| [$0e5d: push af] [freq=low, count=0%]
-	movem.w	d0,-(a7)                       	| [...]
+	move.w	d0,-(a7)                       	| [$0e5d: push af] [freq=low, count=0%]
 	move.b	d4,d0                           	| [$0e5e: ld   a,e] [freq=low, count=0%]
 	or.b	#0xe0,d0                          	| [$0e5f: or   $e0] [freq=low, count=0%]
 	addq.b	#1,d0                           	| [$0e61: inc  a] [freq=low, count=0%]
@@ -3020,21 +2995,17 @@ l_0e68:
 	addq.b	#1,d4                           	| [$0e68: inc  e] [freq=low, count=0%]
 	move.b	d4,d6                           	| [$0e69: ld   l,e] [freq=low, count=0%]
 	move.w	(a7)+,d0                        	| [$0e6a: pop  af] [freq=low, count=0%]
-	POP_SR                                 	| [...]
 	rts                                    	| [$0e6b: ret] [freq=low, count=0%]
 
 advance_hl_and_de_0e6c:
 	MAKE_BC_NO_AR                          	| [$0e6c: push bc] [freq=low, count=0%]
-	move.w	d2,-(a7)                        	| [...]
-	PUSH_SR                                	| [$0e6d: push af] [freq=low, count=0%]
-	movem.w	d0,-(a7)                       	| [...]
+	move.w	d2,-(a7)                        	| [...]	
+	move.w	d0,-(a7)                       	| [$0e6d: push af] [freq=low, count=0%]
 	LOAD_BC	0x0020                         	| [$0e6e: ld   bc,$0020] [freq=low, count=0%]
 	MAKE_BC_NO_AR                          	| [$0e71: add  hl,bc] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d5,d0                           	| [$0e72: ld   a,h] [freq=low, count=0%]
 	and.b	#0x03,d0                         	| [$0e73: and  $03] [freq=low, count=0%]
 	or.b	#0x8c,d0                          	| [$0e75: or   $8c] [freq=low, count=0%]
@@ -3043,7 +3014,6 @@ advance_hl_and_de_0e6c:
 	move.b	d0,d3                           	| [$0e7a: ld   d,a] [freq=low, count=0%]
 	move.b	d6,d4                           	| [$0e7b: ld   e,l] [freq=low, count=0%]
 	move.w	(a7)+,d0                        	| [$0e7c: pop  af] [freq=low, count=0%]
-	POP_SR                                 	| [...]
 	move.w	(a7)+,d2                        	| [$0e7d: pop  bc] [freq=low, count=0%]
 	MAKE_B                                 	| [...]
 	rts                                    	| [$0e7e: ret] [freq=low, count=0%]
@@ -3179,8 +3149,7 @@ l_0f16:
 	GET_UNCHECKED_ADDRESS	0x802d,a0                  	| [$0f1d: ld   hl,($802d)] [video_address] [freq=low, count=15%]
 	MOVE_W_TO_REG	a0,d6                         	| [...]
 	MAKE_H                                 	| [...]
-	PUSH_SR                                	| [$0f20: push af] [freq=low, count=15%]
-	movem.w	d0,-(a7)                       	| [...]
+	move.w	d0,-(a7)                       	| [$0f20: push af] [freq=low, count=15%]
 	move.b	d3,d0                           	| [$0f21: ld   a,d] [freq=low, count=15%]
 	eor.b	d5,d0                            	| [$0f22: xor  h] [freq=low, count=15%]
 	btst.b	#7,d0                           	| [$0f23: bit  7,a] [freq=low, count=15%]
@@ -3188,7 +3157,6 @@ l_0f16:
 	jbsr	negate_hl_1e11                    	| [...]
 0:
 	move.w	(a7)+,d0                        	| [$0f28: pop  af] [freq=low, count=15%]
-	POP_SR                                 	| [...]
 	GET_UNCHECKED_ADDRESS	0x802d,a0                  	| [$0f29: ld   ($802d),hl] [video_address] [freq=low, count=15%]
 	MAKE_HL_NO_AR                          	| [...]
 	MOVE_W_FROM_REG	d6,a0                         	| [...]
@@ -3472,9 +3440,7 @@ l_10ad:
 	MAKE_BC_NO_AR                          	| [$10b9: add  hl,bc] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	bset.b	#2,d5                           	| [$10ba: set  2,h] [freq=low, count=0%]
 	GET_UNCHECKED_ADDRESS	0x8056,a0                  	| [$10bc: ld   ($8056),hl] [video_address] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
@@ -3557,9 +3523,7 @@ l_1104:
 	MAKE_BC_NO_AR                          	| [$1111: add  hl,bc] [freq=low, count=25%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d0,d1                           	| [$1112: ld   b,a] [freq=low, count=25%]
 	move.b	d5,d0                           	| [$1113: ld   a,h] [freq=low, count=25%]
 	and.b	#0x03,d0                         	| [$1114: and  $03] [freq=low, count=25%]
@@ -3604,9 +3568,7 @@ l_113a:
 	MAKE_BC_NO_AR                          	| [$1147: add  hl,bc]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d0,d1                           	| [$1148: ld   b,a]
 	bset.b	#2,d5                           	| [$1149: set  2,h]
 	bclr.b	#3,d5                           	| [$114b: res  3,h]
@@ -3688,9 +3650,7 @@ l_1191:
 	MAKE_DE_NO_AR                          	| [$1197: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	GET_UNCHECKED_ADDRESS	0x8994,a0                  	| [$1198: ld   de,($8994)] [video_address]
 	MOVE_W_TO_REG	a0,d4                         	| [...]
 	MAKE_D                                 	| [...]
@@ -3803,12 +3763,10 @@ l_11fc:
 	MOVE_W_TO_REG	a0,d6                         	| [...]
 	MAKE_H                                 	| [...]
 	LOAD_DE	0x0020                         	| [$1212: ld   de,$0020]
-	MAKE_DE_NO_AR                          	| [$1215: add  hl,de]
+	                          	| [$1215: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	exg	d3,d5                              	| [$1216: ex   de,hl]
 	exg	d4,d6                              	| [...]
 	move.w	(a7)+,d6                        	| [$1217: pop  hl]
@@ -4426,8 +4384,8 @@ l_1466:
 l_1497:
 	MAKE_HL_NO_AR                          	| [$1497: push hl] [freq=low, count=1%]
 	move.w	d6,-(a7)                        	| [...]
-	PUSH_SR                                	| [$1498: push af] [freq=low, count=1%]
-	movem.w	d0,-(a7)                       	| [...]
+	                                	
+	move.w	d0,-(a7)                       | [$1498: push af] [freq=low, count=1%]
 	GET_ADDRESS	scrollx_shadow_804d,a0     	| [$1499: ld   a,(scrollx_shadow_804d)] [freq=low, count=1%]
 	move.b	(a0),d0                         	| [...]
 	move.b	d0,d6                           	| [$149c: ld   l,a] [freq=low, count=1%]
@@ -4461,7 +4419,6 @@ l_1497:
 	MAKE_HL_NO_AR                          	| [...]
 	MOVE_W_FROM_REG	d6,a0                         	| [...]
 	move.w	(a7)+,d0                        	| [$14c2: pop  af] [freq=low, count=1%]
-	POP_SR                                 	| [...]
 	move.w	(a7)+,d6                        	| [$14c3: pop  hl] [freq=low, count=1%]
 	MAKE_H                                 	| [...]
 	rts                                    	| [$14c4: ret] [freq=low, count=1%]
@@ -4521,9 +4478,7 @@ l_14d7:
 	MAKE_HL	a0                             	| [...] coin 2
 	move.b	(a0),d7	| [...] coin 2
 	roxl.b	#1,d7                         	| [...] coin 2
-	PUSH_SR
 	move.b	d7,(a0)	| [...] coin 2
-	POP_SR
 	MAKE_HL	a0                             	| [$14ed: ld   a,(hl)] [freq=low, count=6%]
 	move.b	(a0),d0                         	| [...]
 	and.b	#0x0f,d0                         	| [$14ee: and  $0f] [freq=low, count=6%]
@@ -5211,23 +5166,21 @@ l_17c1:
 	MAKE_HL	a0                             	| [$17c9: ld   (hl),a] [freq=low, count=0%]
 	move.b	d0,(a0)                         	| [...]
 	LOAD_DE	0x0020                         	| [$17ca: ld   de,$0020] [freq=low, count=0%]
-	MAKE_DE_NO_AR                          	| [$17cd: add  hl,de] [freq=low, count=0%]
+	                          	| [$17cd: add  hl,de] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	subq.b	#1,d0                           	| [$17ce: dec  a] [freq=low, count=0%]
 	MAKE_HL	a0                             	| [$17cf: ld   e,(hl)] [freq=low, count=0%]
 	move.b	(a0),d4                         	| [...]
-	MAKE_HL	a0                             	| [$17d0: ld   (hl),a] [freq=low, count=0%]
+	                             	| [$17d0: ld   (hl),a] [freq=low, count=0%]
 	move.b	d0,(a0)                         	| [...]
-	MAKE_HL_NO_AR                          	| [$17d1: inc  hl] [freq=low, count=0%]
+	                          	| [$17d1: inc  hl] [freq=low, count=0%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
 	MAKE_HL	a0                             	| [$17d2: ld   d,(hl)] [freq=low, count=0%]
 	move.b	(a0),d3                         	| [...]
-	MAKE_HL	a0                             	| [$17d3: ld   (hl),a] [freq=low, count=0%]
+	                             	| [$17d3: ld   (hl),a] [freq=low, count=0%]
 	move.b	d0,(a0)                         	| [...]
 	jbsr	l_127d                            	| [$17d4: call $127d] [freq=low, count=0%]
 	jbsr	write_flag_dots_12af              	| [$17d7: call write_flag_dots_12af] [freq=low, count=0%]
@@ -5308,9 +5261,7 @@ l_1804:
 	MAKE_DE_NO_AR                          	| [$183c: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 l_183d:
 	MAKE_HL_NO_AR                          	| [$183d: dec  hl] [freq=low, count=0%]
 	subq.w	#1,d6                           	| [...]
@@ -5364,12 +5315,10 @@ l_187f:
 	move.w	(a7)+,d6                        	| [$187f: pop  hl] [uncovered]
 	MAKE_H                                 	| [...] [uncovered]
 	LOAD_DE	0x0020                         	| [$1880: ld   de,$0020]
-	MAKE_DE_NO_AR                          	| [$1883: add  hl,de]
+	                          	| [$1883: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d5,d0                           	| [$1884: ld   a,h]
 	and.b	#0x07,d0                         	| [$1885: and  $07]
 	or.b	#0x84,d0                          	| [$1887: or   $84]
@@ -5539,12 +5488,10 @@ setup_new_level_193a:
 	GET_UNCHECKED_ADDRESS	0x82d2,a0                  	| [$1942: ld   de,($82d2)] [video_address] [freq=low, count=0%]
 	MOVE_W_TO_REG	a0,d4                         	| [...]
 	MAKE_D                                 	| [...]
-	MAKE_DE_NO_AR                          	| [$1946: add  hl,de] [freq=low, count=0%]
+	                          	| [$1946: add  hl,de] [freq=low, count=0%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	MAKE_HL	a0                             	| [$1947: ld   a,(hl)] [freq=low, count=0%]
 	move.b	(a0),d0                         	| [...]
 	GET_ADDRESS	nb_enemy_cars_824e,a0      	| [$1948: ld   (nb_enemy_cars_824e),a] [freq=low, count=0%]
@@ -5608,11 +5555,9 @@ l_1978:
 	move.b	#0x00,d3                        	| [$1979: ld   d,$00] [freq=low, count=0%]
 	LOAD_HL	0x214b                         	| [$197b: ld   hl,$214b] [freq=low, count=0%]
 	MAKE_DE_NO_AR                          	| [$197e: add  hl,de] [freq=low, count=0%]
-	MAKE_HL_NO_AR                          	| [...]
+	                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	LOAD_DE	0x8025                         	| [$197f: ld   de,$8025] [freq=low, count=0%]
 	LOAD_BC	0x0008                         	| [$1982: ld   bc,$0008] [freq=low, count=0%]
 	jbsr	ldir                              	| [$1985: ldir] [freq=low, count=0%]
@@ -5894,12 +5839,10 @@ l_1af5:
 	MOVE_W_TO_REG	a0,d6                         	| [...]
 	MAKE_H                                 	| [...]
 	LOAD_BC	0x001c                         	| [$1af8: ld   bc,$001c]
-	MAKE_BC_NO_AR                          	| [$1afb: add  hl,bc]
+	                          	| [$1afb: add  hl,bc]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	#0x08,d1                        	| [$1afc: ld   b,$08]
 	MAKE_HL_UNCHECKED	a0                             	| [$1afe: ld   a,(hl)] [unchecked_address]
 	move.b	(a0),d0                         	| [...] [unchecked_address]
@@ -5920,12 +5863,10 @@ l_1b06:
 	MOVE_W_TO_REG	a0,d6                         	| [...]
 	MAKE_H                                 	| [...]
 	LOAD_BC	0x001c                         	| [$1b09: ld   bc,$001c]
-	MAKE_BC_NO_AR                          	| [$1b0c: add  hl,bc]
+	                          	| [$1b0c: add  hl,bc]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d2,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	#0x08,d1                        	| [$1b0d: ld   b,$08]
 l_1b0f:
 	MAKE_HL_UNCHECKED	a0                             	| [$1b0f: ld   (hl),$72] [video_address]
@@ -5939,8 +5880,7 @@ l_1b0f:
 	rts                                    	| [$1b14: ret]
 
 write_to_screen_1b15:
-	PUSH_SR                                	| [$1b15: push af]
-	movem.w	d0,-(a7)                       	| [...]
+ 	move.w	d0,-(a7)                       	| [$1b15: push af]
 	MAKE_BC_NO_AR                          	| [$1b16: push bc]
 	move.w	d2,-(a7)                        	| [...]
 	MAKE_DE_NO_AR                          	| [$1b17: push de]
@@ -5973,7 +5913,7 @@ l_1b1d:
 	move.w	(a7)+,d2                        	| [$1b26: pop  bc]
 	MAKE_B                                 	| [...]
 	move.w	(a7)+,d0                        	| [$1b27: pop  af]
-	POP_SR                                 	| [...]
+	                                 	| [...]
 	rts                                    	| [$1b28: ret]
 
 l_1b76:
@@ -6624,8 +6564,8 @@ negate_hl_1e11:
 write_instructions_text_1e1b:
 	GET_ADDRESS	nb_enemy_cars_824e,a0      	| [$1e1b: ld   a,(nb_enemy_cars_824e)]
 	move.b	(a0),d0                         	| [...]
-	PUSH_SR                                	| [$1e1e: push af]
-	movem.w	d0,-(a7)                       	| [...]
+             	
+	move.w	d0,-(a7)                       	| [$1e1e: push af]
 	move.b	#0x03,d0                        	| [$1e1f: ld   a,$03]
 	GET_UNCHECKED_ADDRESS	0x8048,a0                  	| [$1e21: ld   ($8048),a] [video_address]
 	move.b	d0,(a0)                         	| [...]
@@ -6784,7 +6724,6 @@ l_1eb9:
 	exg	d3,d5                              	| [$1ecc: ex   de,hl]
 	exg	d4,d6                              	| [...]
 	move.w	(a7)+,d0                        	| [$1ecd: pop  af]
-	POP_SR                                 	| [...]
 	GET_ADDRESS	nb_enemy_cars_824e,a0      	| [$1ece: ld   (nb_enemy_cars_824e),a]
 	move.b	d0,(a0)                         	| [...]
 	rts                                    	| [$1ed1: ret]
@@ -6970,13 +6909,13 @@ l_24c3:
 	MAKE_H                                 	| [...]
 	MAKE_HL	a0                             	| [$24c8: ld   b,(hl)] [freq=low, count=6%]
 	move.b	(a0),d1                         	| [...]
-	PUSH_SR                                	| [$24c9: push af] [freq=low, count=6%]
-	movem.w	d0,-(a7)                       	| [...]
+	                                	| [$24c9: push af] [freq=low, count=6%]
+	move.w	d0,-(a7)                       	| [...]
 	move.b	d1,d0                           	| [$24ca: ld   a,b] [freq=low, count=6%]
 	eor.b	#0x01,d0                         	| [$24cb: xor  $01] [freq=low, count=6%]
 	move.b	d0,d1                           	| [$24cd: ld   b,a] [freq=low, count=6%]
 	move.w	(a7)+,d0                        	| [$24ce: pop  af] [freq=low, count=6%]
-	POP_SR                                 	| [...]
+	                                 	| [...]
 	MAKE_HL_NO_AR                          	| [$24cf: inc  hl] [freq=low, count=6%]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
@@ -7518,9 +7457,7 @@ l_2803:
 	MAKE_DE_NO_AR                          	| [$2803: add  hl,de] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	move.b	d6,d0                           	| [$2804: ld   a,l] [freq=low, count=5%]
                                          | [$2805: srl  a]
                                          | [$2807: srl  a]
@@ -7876,9 +7813,7 @@ l_292d:
 	MAKE_DE_NO_AR                          	| [$2933: add  hl,de] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	MAKE_HL	a0                             	| [$2934: ld   a,(hl)] [freq=low, count=5%]
 	move.b	(a0),d0                         	| [...]
 	GET_UNCHECKED_ADDRESS	0x8a0f,a0                  	| [$2935: ld   ($8a0f),a] [video_address] [freq=low, count=5%]
@@ -7899,9 +7834,7 @@ l_292d:
 	MAKE_DE_NO_AR                          	| [$2943: add  hl,de] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	MAKE_HL	a0                             	| [$2944: ld   a,(hl)] [freq=low, count=5%]
 	move.b	(a0),d0                         	| [...]
 	GET_UNCHECKED_ADDRESS	0x8a0e,a0                  	| [$2945: ld   ($8a0e),a] [video_address] [freq=low, count=5%]
@@ -7914,9 +7847,7 @@ l_292d:
 	MAKE_DE_NO_AR                          	| [$294e: add  hl,de] [freq=low, count=5%]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	MAKE_HL	a0                             	| [$294f: ld   a,(hl)] [freq=low, count=5%]
 	move.b	(a0),d0                         	| [...]
 	GET_UNCHECKED_ADDRESS	0x8a11,a0                  	| [$2950: ld   ($8a11),a] [video_address] [freq=low, count=5%]
@@ -8109,9 +8040,7 @@ l_393a:
 	MAKE_DE_NO_AR                          	| [$393f: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	subq.b	#1,d1                           	| [$3940: djnz $3939]
 	jne	l_3939                             	| [...]
 	LOAD_HL	0x8840                         	| [$3942: ld   hl,$8840]
@@ -8136,9 +8065,7 @@ l_3951:
 	MAKE_DE_NO_AR                          	| [$3956: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	subq.b	#1,d1                           	| [$3957: djnz $3950]
 	jne	l_3950                             	| [...]
 zero_write_registers_3959:
@@ -8397,9 +8324,7 @@ l_3e05:
 	MAKE_DE_NO_AR                          	| [$3e0c: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	subq.b	#1,d1                           	| [$3e0d: djnz $3e04]
 	jne	l_3e04                             	| [...]
 	rts                                    	| [$3e0f: ret]
@@ -8445,9 +8370,7 @@ l_3e27:
 	MAKE_DE_NO_AR                          	| [$3e2c: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
-	PUSH_SR                                	| [...] save CC
 	MAKE_H                                 	| [...] update MSB reg
-	POP_SR                                 	| [...] restore CC
 	subq.b	#1,d1                           	| [$3e2d: djnz $3e26]
 	jne	l_3e26                             	| [...]
 	rts                                    	| [$3e2f: ret]
