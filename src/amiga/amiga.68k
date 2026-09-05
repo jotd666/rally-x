@@ -4,8 +4,6 @@
 * (c) JOTD 2025-2026
 *
 
-
-
 	.include "../src/options.inc"
 	.include "../src/data.inc"
  
@@ -54,6 +52,8 @@ BASE_BPLCON4_VALUE = 0x0022		| sprites take their palette on colors 32-48
 BASE_BPLCON3_VALUE = 0x0C00+(BORDERBLANK<<5)  | dpf second playfield palette starts at color 16!
 *BASE_BPLCON4_VALUE = 0x0000	| sprites take their palette on colors 32-48
 	.endif
+	
+
 * sprites above main playfield but below status.
 * Status above main
 * except sprites 0-1 that are above all (for radar in AGA mode that we finally
@@ -82,7 +82,7 @@ TARGET_SPRITE_ATTRIBUTES = 0
 TARGET_SPRITE_CODE = TARGET_SPRITE_ATTRIBUTES
 
 
-
+* game doesn't need double buffering. It doesn't even use the blitter
 
 OPT_ENABLE_DOUBLE_BUFFERING = 0
 
@@ -142,19 +142,6 @@ BIT_FIRE = 1
 	add.l	#0x8000,a5
 	.endm
 	
-.macro	WAIT_BLIT
-	.ifndef	RELEASE
-	cmp.l	#_custom,a5
-	jeq		0f
-	BREAKPOINT	"custom should be set in A5"
-0:
-	.endif
-	move.w	#0x8400,(dmacon,a5)		| blitter high priority
-wait\@:
-	BTST	#6,(dmaconr,a5)
-	BNE.S	wait\@
-	move.w	#0x0400,(dmacon,a5)		| blitter normal priority
-.endm
 
 .macro MUL_TABLE value,len
 mul\value\()_table:
@@ -1189,68 +1176,6 @@ high_score_beaten:
 
 
 	
-* what: blits data on bg plane, no horizontal shifting (erase)
-* args:
-* < A0: pristine background
-* < A1: dest buffer
-* < D0: X (rounded to smaller 8-multiple)
-* < D1: Y
-* < D2: width in bytes
-* < D4: height
-
-* trashes: D0-D1
-
-blit_background:
-	movem.l	d2-d6/a0-a5,-(a7)
-	lea		_custom,a5
-	* adjust offset X: X//8
-	lsr.w	#3,d0
-	lea		mulNB_BYTES_PER_MAIN_ROW_table(pc),a4
-	add.w	d1,d1
-	* add Y offset: Y*40
-	add.w	(a4,d1.w),d0
-	* same offset for source and destination
-	add.w	d0,a1
-	add.w	d0,a0
-	
-
-    move.l  #0x09f00000,d3    | A->D copy, ascending mode	
-	move.w	#NB_BYTES_PER_MAIN_ROW,d1		| blit modulo
-
-    sub.w   d2,d1       | blit modulo
-    lsl.w   #6,d4
-    lsr.w   #1,d2		| blit width
-    add.w   d2,d4       | blit height
-	
-    * always the same settings
-
-    * now just wait for blitter ready to write all registers
-	WAIT_BLIT
-    
-    * blitter registers set
-
-	move.l d3,bltcon0(a5)	| sets con0 and con1
-
-    move.w  d1,bltamod(a5)	|A modulo
-    move.w  d1,bltdmod(a5)	|D modulo
-							
-	move.l a0,bltapt(a5)	|source graphic top left corner
-	move.l a1,bltdpt(a5)	|destination top (bottom) left corner
-	move.w  d4,bltsize(a5)	|rectangle size, starts blit
-	
-	.rept	NB_PLAYFIELD_PLANES-1
-	add.l	#MAIN_SCREEN_PLANE_SIZE,a0
-	add.l	#MAIN_SCREEN_PLANE_SIZE,a1
-	WAIT_BLIT
-	* second bitplane
-	move.l a0,bltapt(a5)	|source graphic top left corner
-	move.l a1,bltdpt(a5)	|destination top (bottom) left corner
-	move.w  d4,bltsize(a5)	|rectangle size, starts blit
-	.endr
-	
-	movem.l	(a7)+,d2-d6/a0-a5
-	rts
-
 
 really_update_sprites:
 update_bobs_and_hw_sprites:
@@ -1698,150 +1623,6 @@ update_one_sprite:
 2:
 	rts
 	
-	.ifdef	USE_BOBS
-update_one_bob:
-	move.l	A0,-(a7)
-*		int const sx = m_spriteram[0][offs];
-*		int const sy = 240 - m_spriteram[1][offs + 1];
-*
-*		int const code = m_spriteram[0][offs + 1];
-*		int const color = m_spriteram[1][offs] & 0x0f;
-*		int const flipx = ~m_spriteram[1][offs] & 0x40;
-*		int const flipy = m_spriteram[1][offs] & 0x80;
-
-	* code = 0 and clut = 0 => disabled ?? to check
-	
-	move.b	(TARGET_SPRITE_ATTRIBUTES,a0),d3
-	btst	#0,d3
-	jeq	2f			| bit not set: not shown
-
-	jbsr	compute_sprite_xy_code_and_attributes
-	cmp.b	#2,(a2,d2.w)
-	jeq		2f					| already drawn as sprite
-	add.w	d2,d2
-	add.w	d2,d2
-	move.l	(a4,d2.w),d4		| get pointer from bob table
-	.ifndef	RELEASE
-	jne		100f
-	* in dev mode, break if we try to display a non-existing bob
-	* we have the table (0,1,2) but if we forgot to register a bob
-	* then we could miss out some sprite
-	moveq	#0,d2
-	move.b	(TARGET_SPRITE_CODE,a0),d2
-	BREAKPOINT	"unregistered sprite clut (D2=code)"
-	jra		2f
-100:
-	.endif
-	move.l	d4,a0
-	btst	#1,d3
-	jeq		101f
-	* mirror
-	add.w	#((NB_PLAYFIELD_PLANES+1)*4+6)*2,a0
-101:
-	move.w	(a0)+,d4		| height
-	move.w	(a0)+,d5		| width
-	add.w	(a0)+,d1		| add offset to Y
-	* A0 points on the first bitplane of the bob
-
-	move.l		playfield_drawn_screen_ptr(pc),a1
-	
-	* D0 and D1 are already set
-	move.l	(NB_PLAYFIELD_PLANES*4,a0),d2
-	beq.b	2f		| mask is zero: blank tile => skip
-	move.l	d2,a3
-	moveq	#0,d2	| no y-clip
-	*sub.w	#16,d0	| move each bob 16 bits to the left
-	* note down that this bob will have to be erased
-	move.w	d0,(a6)+			| store current sprite attributes to previous ones
-	move.w	d1,(a6)+			| store current sprite attributes to previous ones
-	move.w	d4,(a6)+			| store height
-	move.w	d5,(a6)+			| store width in bytes
-	move.w	d5,d2			| width in bytes, 4 for 16 pixels+shift
-	moveq	#0,d5			| Y-offset
-
-	btst	#2,d3
-	jeq		101f
-	* flip
-	neg.w	d4
-101:
-
-
-	moveq	#NB_PLAYFIELD_PLANES,d3		| 3 planes
-
-	jbsr		blit_planes_any_internal_cookie_cut
-2:
-	move.l	(a7)+,a0
-	rts
-
-* < D0,D1: x,y
-* < A1: foreground plane pointer (often first plane!)
-* < D2: width in bytes (inc. 2 extra for shifting)
-* < D3: nb planes to clear
-* < D4: blit height
-
-
-* trashes D0-D6/A2
-clear_planes_any_blitter_internal:
-    * pre-compute the maximum of shit here
-	move.w	d1,d6
-    beq.b   1f    | optim
-	* check if y start + height > Y_MAX
-	* (ignores case where y = 0, no risk)
-	add.w	d4,d6
-	sub.w	#Y_MAX,d6
-	bmi.b	0f
-	* y start + height > Y_MAX: clip height
-	sub.w	d6,d4
-	beq.b	10f
-	bpl.b	0f
-10:
-	* null or negative height after clipping: out
-	rts
-0:
-    lea mulNB_BYTES_PER_MAIN_ROW_table(pc),a2
-    add.w   d1,d1
-    move.w  (a2,d1.w),d1
-1:
-    and.w   #0x1F0,d0
-    beq.b   2f				| zero X optimization
-    lsr.w   #3,d0
-    add.w   d0,d1
-2:   
-    add.w   d1,a1       | plane position (always even)
-
-	* reuse d1 for bltcon0
-	moveq	#1,d1
-	ror.l	#8,d1     | AKA move.l  #0x01000000,d1   | minterm useD & rect clear (0xA) 
-
-	move.w #NB_BYTES_PER_MAIN_ROW,d0
-	bclr	#0,d2		| make sure D2 is even (else strange things occur!)
-    sub.w   d2,d0       | blit width
-
-	move.w	d4,d6		| save height
-    lsl.w   #6,d4
-    lsr.w   #1,d2
-    add.w   d2,d4       | blit height+width
-	moveq	#-1,d2
-    * now just wait for blitter ready to write all registers
-	WAIT_BLIT
-    
-	move.l	d2,bltafwm(a5)
-	move.l d1,bltcon0(a5)	
-    move.w  d0,bltdmod(a5)	|D modulo
-	
-	subq	#1,d3
-	jeq		4f
-3:
-	WAIT_BLIT
-	move.l a1,bltdpt(a5)	|destination top left corner
-	move.w  d4,bltsize(a5)	|rectangle size, starts blit
-32:
-	add.l	#MAIN_SCREEN_PLANE_SIZE,a1
-	dbf		d3,3b
-4:
-	rts
-	.endif
-
 
 * < D0: sprite X
 * < D1: sprite Y
@@ -1950,163 +1731,6 @@ alloc_sprite:
 	
 
 	
-* what: blits 16x? data on one plane, cookie cut
-* args:
-* < A0: pointers on 16x? data
-* < A1: plane  (40 rows)
-* < A3: source mask for cookie cut (16x16)
-* < D0: X
-* < D1: Y
-* < D2: source y-offset
-* < D3: height of data
-* trashes: D0-D1
-blit_planes_cookie_cut_16x:
-    lea _custom,A5
-	move.w	d2,d5
-	move.w	d3,d4
-	moveq	#NB_PLAYFIELD_PLANES,d3		| 4 planes
-    moveq  #4,d2       | 16 pixels + 2 shift bytes
-* < A5: custom
-* < D0.W,D1.W: x,y
-* < A0: source (pointer on array of planes)
-* < A1: destination fg plane, also background to mix with cookie cut fg plane
-* < A3: source mask for cookie cut
-* < D2: width in bytes (inc. 2 extra for shifting)
-* < D3: number of planes
-* < D4: height. If negative, source is copied with negative modulo (flip)
-* < D5: y offset for source planes
-* < D7: blit mask (not considered, optim, -1 all through the game)
-* blit mask set
-* returns: start of destination in A1 (computed from old A1+X,Y)
-* trashes: a1
-blit_planes_any_internal_cookie_cut:
-    movem.l d0-d7/a4,-(a7)
-    * pre-compute the maximum of shit here
-	tst.w	d4
-	bpl.b	1f
-	sub.w	d4,d1	| pre-add height to d1
-	subq.w	#1,d1	| minus one
-1:	
-	tst	d1
-    beq.b   2f    | optim
-    lea		mulNB_BYTES_PER_MAIN_ROW_table(pc),a4
-	.ifdef	NO68020
-	add.w	d1,d1
-    move.w  (a4,d1.w),d1	| y times NB_BYTES_PER_MAIN_ROW
-	.else
-    move.w  (a4,d1.w*2),d1	| y times NB_BYTES_PER_MAIN_ROW
-	.endif
-2:
-	lea		cookie_cut_blit_table(pc),a4
-	
-    move.w  d0,d6
-    lsr.w   #3,d0			| X displacement in bytes
-	*bclr	#0,d0			| no need, it will be even
-    and.w   #0xF,d6
-	.ifdef	NO68020
-	add.w	d6,d6
-	add.w	d6,d6
-	move.l	(a4,d6.w),d7
-	lea		cookie_cut_mask_blit_table(pc),a4
-	move.l	(a4,d6.w),d6
-	.else
-	move.l	(a4,d6.w*4),d7
-	lea		cookie_cut_mask_blit_table(pc),a4
-	move.l	(a4,d6.w*4),d6
-	.endif
-3:   
-    add.w   d0,d1
-4:
-    * make offset even. Blitter will ignore odd address
-    * but a 68000 CPU doesn't and since we RETURN A1...
-    *bclr    #0,d1
-    add.w   d1,a1       | plane position (D1 < 0x7FFF, 288*40=0x2D00)
-	move.w	#NB_BYTES_PER_MAIN_ROW,d0
-	tst.w	d4
-	bpl.b	5f
-	neg.w	d0
-	neg.w	d4    | make d4 positive again
-5:
-    sub.w   d2,d0       | blit width
-    lsl.w   #6,d4
-    lsr.w   #1,d2
-    add.w   d2,d4       | blit height
-    * always the same settings (ATM)
-	moveq	#0,d2
-	add.w	d5,a3			| apply y offset to mask too (y offset looks wrong)
-	
-    * now just wait for blitter ready to write all registers
-	WAIT_BLIT
-    
-    * blitter registers set
-
-	move.w d2,bltamod(a5)		|A modulo=bytes to skip between lines
-	move.w d2,bltbmod(a5)		|B modulo=bytes to skip between lines
-	
-    move.w  d0,bltcmod(a5)	|C modulo
-    move.w  d0,bltdmod(a5)	|D modulo
-					
-	subq	#1,d3
-	beq.b	7f
-	subq	#1,d3
-6:
-	move.l a3,bltapt(a5)	|source graphic top left corner (mask)
-	bsr.b	start_process_1_plane
-	
-	move.l	a1,bltcpt(a5)	|pristine background top (bottom) left corner
-	move.l	a1,bltdpt(a5)	|destination top (bottom) left corner
-	move.w  d4,bltsize(a5)	|rectangle size, starts blit
-	add.l	#MAIN_SCREEN_PLANE_SIZE,a1
-	WAIT_BLIT
-	dbf		d3,6b
-7:
-	move.l a3,bltapt(a5)	|source graphic top left corner (mask)
-	bsr.b	start_process_1_plane
-	move.l	a1,bltcpt(a5)	|pristine background top (bottom) left corner
-	move.l	a1,bltdpt(a5)	|destination top (bottom) left corner
-	move.w  d4,bltsize(a5)	|rectangle size, starts blit
-    
-    movem.l (a7)+,d0-d7/a4
-    rts
-	
-start_process_1_plane:
-	move.l (a0)+,d0
-	beq.b	60f
-	move.l	d0,a4
-	add.w	d5,a4		| add Y offset
-	bra.b	61f
-60:
-	* source is 0: just apply mask (less bandwidth lost) and change bltcon
-	move.l	d6,bltcon0(a5)	| sets con0 and con1: C-A->D cookie cut, B fixed
- 	move.w	d2,bltbdat(a5)	|B word is zero
-	rts
-61:
-	* non-zero: set data source & bltcon
-	move.l	d7,bltcon0(a5)	| sets con0 and con1: C-A+B->D cookie cut full
-	move.l	a4,bltbpt(a5)	|source graphic top left corner
-	rts
-
-	.macro	GEN_MINTERM_TABLE	name,value
-\name\()_table:
-	.set	shift,0
-	.rept	16
-	.long	(shift<<28)+(shift<<12)+(\value<<16)
-	.set	shift,shift+1
-	.endr
-	.endm
-	
-	.macro	GEN_MINTERM_TABLE_2	name,value
-\name\()_table:
-	.set	shift,0
-	.rept	16
-	.long	(shift<<28)+(\value<<16)
-	.set	shift,shift+1
-	.endr
-	.endm
-	
-	GEN_MINTERM_TABLE	cookie_cut_blit,0x0FCA
-	GEN_MINTERM_TABLE_2	cookie_cut_mask_blit,0x0BCA
-
 
 * 2 words: first shift (as bplcon value), then
 * offset in bytes
@@ -2297,7 +1921,6 @@ platform_init:
 	st.b	ntsc_flag
 	* disable extra mid-screen interrupt, as it would be too fast (NTSC)
 	move.w	#0x1FE,pal_intreq_block_game
-	move.w	#0x1FE,pal_wait			| else intreq never happens
 0:
 	.ifdef	AGA_VERSION
     move.w #0x0610+BORDERBLANK,bplcon0(a5) | 8 bitplanes, dual playfield, borderblank
@@ -4099,8 +3722,15 @@ cpu_log_enable:
 	.endr
 	.endm
 
+	.macro	BITPLANE_PLACEHOLDER	param
+	.word	0x01+(\param*256),0xFFFE		| wait till start of row
+	.rept	NB_PLAYFIELD_PLANES
+	.word	0x1FE,0
+	.word	0x1FE,0
+	.endr
+	.endm
 	
-.macro	DECL_COLORS	offset,nb_colors
+	.macro	DECL_COLORS	offset,nb_colors
 	.set	colidx,\offset
 	.rept	\nb_colors
 	dc.w	color+(colidx*2),0
@@ -4108,7 +3738,7 @@ cpu_log_enable:
 	.endr
 	.endm
 
-.macro	DECL_SPRITES
+	.macro	DECL_SPRITES
 	.set	sprite_start,sprpt+0
 	.rept	16
 	* 2 slots
@@ -4154,18 +3784,19 @@ status_bitplanes:
 fine_x_scroll_value:
 	.word	0
 
-
+*bitplane_row_40
+*bitplane_rows_41_80
+*bitplane_rows_81_94
+*bitplane_rows_94_ff
+*bitplane_rows_100_103
+*bitplane_rows_104_123
 
 game_sprites:
 	DECL_SPRITES
 game_sprites_end:
 
-	.word	0x4001,0xFFFE
-status_colors:
-	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
-main_colors:
-	DECL_COLORS	0,TOTAL_NB_COLORS
-	
+
+	.word	0x3F01,0xFFFE
 	.ifdef	AGA_VERSION
 	.word	bplcon3,BASE_BPLCON3_VALUE+(1<<13)
 sprite_colors:
@@ -4175,34 +3806,65 @@ sprite_colors:
 	* ECS
 sprite_colors:
 	DECL_COLORS	16,16
-	
 	.endif
 
-	* mid-line wait & extra interrupt
-	.word	0x8001,0xFFFE
+	.set	row,0x40
+bitplane_row_40:
+	BITPLANE_PLACEHOLDER	row
+status_colors:
+	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
+main_colors:
+	DECL_COLORS	0,TOTAL_NB_COLORS
+
+	* until mid-line wait & extra interrupt
+
+bitplane_rows_41_80:
+	.rept	0x40
+	.set	row,row+1
+	BITPLANE_PLACEHOLDER	row
+	.endr
+
 pal_intreq_block_game:
 	.word	 intreq,0x8014  | call copper interrupt in the middle of a frame, also flag so copper interrupt knows that we're going to call copper int
 
+bitplane_rows_81_94:
+	.rept	0x14
+	.set	row,row+1
+	BITPLANE_PLACEHOLDER	row
+	.endr
+
 	* Y of the radar, dynamic colors that match the bitset ops
 	* from draw_radar_dot. On AGA dyn color shift is 32 on ECS it's 16 (second/status playfield)
-	.word	0x9401,0xFFFE
+	
 	.word	color+14+TOTAL_NB_COLORS*2
 player_radar_dot_color:
 	.word	0x888	| flashing gray from car radar dot
 	.word	color+4+TOTAL_NB_COLORS*2,0xA00    | red enemy cars
-	
-	.word	0xF001,0xFFFE	| if we don't add an extra wait, NTSC version locks up
-	
+
+bitplane_rows_94_ff:
+	.rept	0xFF-0x94
+	.set	row,row+1
+	BITPLANE_PLACEHOLDER	row
+	.endr
 	* pal limit
     .word  0xFFDF,0xFFFE       | PAL wait
-	* extra wait for PAL (NTSC can't afford this)
-pal_wait:
-	.word	0x0401,0xFFFE
+bitplane_rows_100_103:
+	.set	row,0
+	.rept	4
+	.set	row,row+1
+	BITPLANE_PLACEHOLDER	row
+	.endr
+
 	.word	color+14+32,0x04b0	| restore
 	.word	color+4+32,0x0060   | radar dot colors
 	.word	 intreq,0x8010
 
-
+bitplane_rows_104_123:
+	.rept	0x1F
+	.set	row,row+1
+	BITPLANE_PLACEHOLDER	row
+	.endr
+	
 
      .long    -2					
 
