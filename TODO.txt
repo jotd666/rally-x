@@ -1,7 +1,7 @@
-- sometimes cars are all red: snap sprites at this moment for mockup: ok but now
-  sprite/playfield priority to adjust
 - GAME OVER is in black/some other color (random) should be white missing some palette change?
 - write scrolling / read scrolling make atomic? big screen shake issues (on emulation/dev only?)
+  use SNOOPAGA??
+
 - export stack symbol to reset it at A7A
 - enemy car lockup: check where timer is decreased, doesn't seem to be enough to put decrease in irq
 - needs fastmem: mainloop is called roughly 10 times as much as irq

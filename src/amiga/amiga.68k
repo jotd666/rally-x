@@ -55,11 +55,18 @@ BASE_BPLCON3_VALUE = 0x0C00+(BORDERBLANK<<5)  | dpf second playfield palette sta
 *BASE_BPLCON4_VALUE = 0x0000	| sprites take their palette on colors 32-48
 	.endif
 * sprites above main playfield but below status.
-* except sprites 0-1 that are above all (for radar in AGA mode)
 * Status above main
-BASE_BPLCON2_VALUE = 0x004C
+* except sprites 0-1 that are above all (for radar in AGA mode that we finally
+* abandoned as it would have needed another solution on ECS, plus that's for the
+* best as we would have to create separate palette sprites for cars. By using all 8
+* sprite for the 6 cars, we make sure that the colors never conflict as player
+* car is always alone in its 2-sprite color slot
+* BASE_BPLCON2_VALUE = 0x004C
 
-
+* bit 6: priority of main bitplane vs status bitplane
+* lower bits: all 0 to make sprites disappear on the status bitplane
+* (useful for right side clipping of sprites)
+BASE_BPLCON2_VALUE = 0x0040
 
 * changing those offsets can make
 * a quick reuse from game to game as most sprite
