@@ -1,6 +1,6 @@
 - GAME OVER is in black/some other color (random) should be white missing some palette change?
 - write scrolling / read scrolling make atomic? big screen shake issues (on emulation/dev only?)
-  use SNOOPAGA??
+  use SNOOPAGA?? disable scrolling and retry
 
 - export stack symbol to reset it at A7A
 - enemy car lockup: check where timer is decreased, doesn't seem to be enough to put decrease in irq

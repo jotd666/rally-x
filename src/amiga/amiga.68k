@@ -4135,10 +4135,12 @@ debug_color:
 	* main copperlist
 game_copperlist:
 	* all sprites have the same palette no need to specify odd or even
-	.word	0x0801,0xFFFE
 	* black color background plane
 	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
 	DECL_COLORS	0,TOTAL_NB_COLORS
+	* priority: BOBs playfield on top
+	.word	bplcon2,BASE_BPLCON2_VALUE
+	.word	0x0801,0xFFFE
 
 	* enable sprite colors now
 
@@ -4152,8 +4154,6 @@ status_bitplanes:
 fine_x_scroll_value:
 	.word	0
 
-	* priority: BOBs playfield on top
-	.word	bplcon2,BASE_BPLCON2_VALUE
 
 
 game_sprites:
