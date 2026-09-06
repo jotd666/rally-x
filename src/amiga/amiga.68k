@@ -417,6 +417,9 @@ _user:
 	
 	move.l	misc_options,d1
 	btst	#0,d1
+	sne		use_original_main_tune
+	move.l	misc_options,d1
+	btst	#1,d1
 	sne		frameskip
 	.ifndef	RELEASE
 	btst	#31,d1
@@ -844,13 +847,15 @@ _vblank:
 	jbsr	log_used_tiles
 	.endif
 
+
+
+	jbsr		really_update_sprites
+
 	tst.b	frameskip
 	jeq		0f
 	eor.b	#1,flip_flop
 	jeq		23f
 0:
-
-	jbsr		really_update_sprites
 	jbsr		update_radar_dots
 	
 	
@@ -1815,7 +1820,7 @@ store_system:
 3:
 	* no whdload, no 68020: assume slow
 	* if running on PiStorm, well, too bad use whdload
-	*st.b	frameskip
+	st.b	frameskip
 	nop
 1:
 
@@ -3202,7 +3207,12 @@ osd_sound_start:
 	bclr	#7,d0			| stop loop command
 	sne		d2
 
-
+	cmp.w	#START_TUNE_SND,d0
+	jne		0f
+	tst.b	use_original_main_tune
+	jeq		0f
+	move.w	#ORIG_START_TUNE_SND,d0
+0:
 	
 	lsl.w	#3,d0
 	lea		sound_table,a0
@@ -3587,8 +3597,7 @@ interrupt_mode:
 	
 pause_flag:
 	.word	0
-frameskip:
-	.word	0
+
 no_main_tune:
 	.word	0
 tiles_row_flags:
@@ -3636,7 +3645,10 @@ scroll_x:
 	.byte	0
 scroll_y:
 	.byte	0
-	
+use_original_main_tune:
+	.byte	0
+frameskip:
+	.byte	0
 _keyexit:
 	.byte	0x59	| F10 by default unless whdload overwrites it
 

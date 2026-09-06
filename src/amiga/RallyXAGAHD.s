@@ -5,12 +5,11 @@
 
 ;CHIP_ONLY
 
-CHIP_BASE = $200
+CHIP_BASE = $1100
 
 	IFD	CHIP_ONLY
 EXPMEM = 0
 CHIPSIZE = $200000
-dd
 	ELSE
 EXPMEM = $60000
 CHIPSIZE = $80000
@@ -18,7 +17,7 @@ CHIPSIZE = $80000
 
 _base	SLAVE_HEADER					; ws_security + ws_id
 	dc.w	17					; ws_version (was 10)
-	dc.w	WHDLF_NoError
+	dc.w	WHDLF_NoError|WHDLF_Req68020|WHDLF_ReqAGA
 	dc.l	CHIPSIZE					; ws_basememsize
 	dc.l	0					; ws_execinstall
 	dc.w	start-_base		; ws_gameloader
@@ -71,10 +70,10 @@ DECL_VERSION:MACRO
 	ENDC
 	ENDM
 _data   dc.b    0
-_name	dc.b	"Rally'X (OCS)",0
+_name	dc.b	"Rally'X (AGA)",0
 _copy	dc.b	'2026 JOTD',0
 _info
-	dc.b	"Music by no9",10,10
+ 	dc.b	"Music by no9",10,10
     dc.b    "Original by Namco 1980",0
 	dc.b	0
 _kickname   dc.b    0
@@ -87,10 +86,11 @@ start:
 	LEA	_resload(PC),A1
 	MOVE.L	A0,(A1)
 	move.l	a0,a2
-    
+
+	
     IFD CHIP_ONLY
     lea  _expmem(pc),a0
-    move.l  #$200,(a0)
+    move.l  #CHIP_BASE,(a0)
 	ELSE
 	move.l	_expmem(pc),a0
 	add.l	#EXPMEM,a0
@@ -112,6 +112,7 @@ start:
     lea  _custom,a1
     move.w  #$1200,bplcon0(a1)
     move.w  #$0024,bplcon2(a1)
+	
     rts
 	
 _Relocate	movem.l	d0-d1/a0-a2,-(sp)
@@ -142,6 +143,6 @@ progstart
     dc.l    0
 
 exe:
-	dc.b	"rallyx_ecs",0
+	dc.b	"rallyx_aga",0
 
 	
