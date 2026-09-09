@@ -870,6 +870,9 @@ _vblank:
 
 
 3:
+	lea	_custom,a5
+	move.w	#0x14,(intreq,a5)
+
     movem.l (a7)+,d0-d7/a0-a6
     rte
 	
@@ -1093,7 +1096,7 @@ osd_break:
 
 * can work with interrupts enabled or disabled
 osd_wait_a_while:
-	move.w	#0x25,d7
+	move.w	#0x10,d7
 0:
 	move.w	#0x100,d0
 	jbsr	beamdelay
@@ -3207,11 +3210,11 @@ osd_sound_start:
 	bclr	#7,d0			| stop loop command
 	sne		d2
 
-	cmp.w	#START_TUNE_SND,d0
+	cmp.w	#MAIN_TUNE_SND,d0
 	jne		0f
 	tst.b	use_original_main_tune
 	jeq		0f
-	move.w	#ORIG_START_TUNE_SND,d0
+	move.w	#ORIG_MAIN_TUNE_SND,d0
 0:
 	
 	lsl.w	#3,d0

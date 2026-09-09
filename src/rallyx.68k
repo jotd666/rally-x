@@ -468,8 +468,8 @@ irq_01f0:                               	| [global]
 	                 	| [$01f6: push iy] [freq=low, count=6%]
 	                           	| [$01f8: xor  a] [freq=low, count=6%]
 	clr.b	d0                               	| [...]
-	GET_ADDRESS	0xa181,a0                  	| [$01f9: ld   ($a181),a] [freq=low, count=6%]
-	move.b	d0,(a0)                         	| [...]
+	          	| [$01f9: ld   (interrupt_control_a181),a] [freq=low, count=6%]
+	           	| [...]
 	 |  [$01fc: ld   (watchdog_a080),a]
 	jbsr	check_insert_coin_14c5            	| [$01ff: call check_insert_coin_14c5] [freq=low, count=6%]
 	jbsr	play_credit_sounds_154d           	| [$0202: call play_credit_sounds_154d] [freq=low, count=6%]
@@ -806,8 +806,8 @@ l_03aa:
 killed_03ae:
 	CLR_I_FLAG                             	| [$03ae: ei] [freq=low, count=0%]
 	move.b	#0x01,d0                        	| [$03af: ld   a,$01] [freq=low, count=0%]
-	GET_ADDRESS	0xa181,a0                  	| [$03b1: ld   ($a181),a] [freq=low, count=0%]
-	move.b	d0,(a0)                         	| [...]
+             	| [$03b1: ld   (interrupt_control_a181),a] [freq=low, count=0%]
+              	| [...]
 	jra	player_killed_by_car_16d3          	| [$03b4: jp   player_killed_by_car_16d3] [freq=low, count=0%]
 next_enemy_slot_03b7:
                                          | [$03b7: inc  iy] next enemy car sprite coords
@@ -940,8 +940,8 @@ l_0448:
 	and.b	#0x01,d0                         	| [$044e: and  $01] [freq=low, count=6%]
 	jeq	boot_3800                          	| [$0450: jp   z,boot_3800] [freq=low, count=6%]
 	move.b	#0x01,d0                        	| [$0453: ld   a,$01] [freq=low, count=6%]
-	GET_ADDRESS	0xa181,a0                  	| [$0455: ld   ($a181),a] [freq=low, count=6%]
-	move.b	d0,(a0)                         	| [...]
+	            	| [$0455: ld   (interrupt_control_a181),a] [freq=low, count=6%]
+	             	| [...]
      	| [$0458: pop  iy] [freq=low, count=6%]
      	| [$045a: pop  ix] [freq=low, count=6%]
      	| [$045c: pop  af] [freq=low, count=6%]
@@ -1177,6 +1177,9 @@ l_0546:
 	jcc	l_0568                             	| [$0565: jr   nc,$0568]
 	addq.b	#1,d5                           	| [$0567: inc  h] [uncovered]
 l_0568:
+	* end of boot, highscore has been copied (20000)
+	* we can read the highscore exactly once
+	jbsr	osd_read_high_score
 	MAKE_HL	a0                             	| [$0568: ld   e,(hl)]
 	move.b	(a0),d4                         	| [...]
 	MAKE_HL_NO_AR                          	| [$0569: inc  hl]
@@ -1212,8 +1215,8 @@ l_057b:
 	move.b	d0,(a0)                         	| [...]
 	VIDEO_BYTE_DIRTY | [...]
 	addq.b	#1,d0                           	| [$0591: inc  a]
-	GET_ADDRESS	0xa181,a0                  	| [$0592: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	                 	| [$0592: ld   (interrupt_control_a181),a]
+	                  	| [...]
 	GET_ADDRESS	control_flags_8020,a0      	| [$0595: ld   (control_flags_8020),a]
 	move.b	d0,(a0)                         	| [...]
 	move.b	#0xf7,d0                        	| [$0598: ld   a,$f7]
@@ -1221,6 +1224,7 @@ l_057b:
 	jbsr	clear_screen_and_reset_scroll_1dcb	| [$059e: call clear_screen_and_reset_scroll_1dcb]
 	LOAD_HL	0x8c40                         	| [$05a1: ld   hl,$8c40]
 	move.b	#0x90,d1                        	| [$05a4: ld   b,$90]
+
 l_05a6:
 	MAKE_HL_UNCHECKED	a0                             	| [$05a6: ld   (hl),$4a] [video_address]
 	move.b	#0x4a,(a0)                      	| [...] [video_address]
@@ -1252,8 +1256,8 @@ l_05a6:
 	move.b	d0,(a0)                         	| [...]
 	GET_ADDRESS	counter_824b,a0            	| [$05d6: ld   (counter_824b),a]
 	move.b	d0,(a0)                         	| [...]
-	GET_ADDRESS	0xa181,a0                  	| [$05d9: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	             	| [$05d9: ld   (interrupt_control_a181),a]
+	              	| [...]
 	jbsr	osd_get_random |  [$05dc: ld   a,r] random
 	and.b	#0x1f,d0                         	| [$05de: and  $1f]
 l_05e0:
@@ -1322,10 +1326,8 @@ l_0631:
 	and.b	#0x1f,d0                         	| [$0638: and  $1f]
 	jne	l_0631                             	| [$063a: jr   nz,$0631]
 	GET_ADDRESS	counter_824b,a0            	| [$063c: ld   a,(counter_824b)]
-	move.b	(a0),d0                         	| [...]
-	addq.b	#1,d0                           	| [$063f: inc  a]
+	add.b	#1,(a0) 		          	| [$063f: inc  a] now atomic
                                          | [$0640: ld   (counter_824b),a]
-	move.b	d0,(a0)                         	| [...]
 	move.b	#0x81,d0                        	| [$0644: ld   a,$81]| swapped
 	subq.b	#1,d2                           	| [$0643: dec  c]| swapped
 	jne	l_064b                             	| [$0646: jr   nz,$064b]
@@ -1412,8 +1414,8 @@ l_06ab:
 	subq.b	#1,d0                           	| [$06b3: dec  a]
 	GET_ADDRESS	control_flags_8020,a0      	| [$06b4: ld   (control_flags_8020),a]
 	move.b	d0,(a0)                         	| [...]
-	GET_ADDRESS	0xa181,a0                  	| [$06b7: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	             	| [$06b7: ld   (interrupt_control_a181),a]
+	              	| [...]
 	CLR_I_FLAG                             	| [$06ba: ei]
 * set 1 to current level
 	move.b	start_level,d0
@@ -1533,8 +1535,8 @@ clear_sprites_074c:
 	jbsr	ldir                              	| [$0759: ldir]
 	move.w	(a7)+,d6                        	| [$075b: pop  hl]
 	MAKE_H                                 	| [...]
-	GET_ADDRESS	0xa181,a0                  	| [$075c: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	            	| [$075c: ld   (interrupt_control_a181),a]
+	             	| [...]
 	 |  [$075f: ld   (watchdog_a080),a]
 	move.b	#0xf7,d0                        	| [$0762: ld   a,$f7]
 	CLR_I_FLAG                             	| [$0766: ei]
@@ -1607,8 +1609,8 @@ l_07bd:
 	jbsr	l_1191                            	| [$07cc: call $1191]
 	jbsr	l_11c5                            	| [$07cf: call $11c5]
 	move.b	#0x03,d0                        	| [$07d2: ld   a,$03]
-	GET_ADDRESS	0xa181,a0                  	| [$07d4: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	                	| [$07d4: ld   (interrupt_control_a181),a]
+	                 	| [...]
 	CLR_I_FLAG                             	| [$07d7: ei]
 	GET_ADDRESS	control_flags_8020,a0      	| [$07d8: ld   (control_flags_8020),a]
 	move.b	d0,(a0)                         	| [...]
@@ -1620,7 +1622,7 @@ l_07de:
 	and.b	#0x3f,d0                         	| [$07e1: and  $3f]
 	jne	l_07de                             	| [$07e3: jr   nz,$07de]
 l_07e5:
-	CLR_XC_FLAGS                           	| [$07e5: xor  a]
+	                           	| [$07e5: xor  a]
 	clr.b	d0                               	| [...]
 	GET_UNCHECKED_ADDRESS	0x8292,a0                  	| [$07e6: ld   ($8292),a] [video_address]
 	move.b	d0,(a0)                         	| [...]
@@ -1628,7 +1630,7 @@ l_07e5:
 	LOAD_HL	0x8290                         	| [$07e9: ld   hl,$8290]
 	MAKE_HL	a0                             	| [$07ec: ld   (hl),a]
 	move.b	d0,(a0)                         	| [...]
-	MAKE_HL_NO_AR                          	| [$07ed: inc  hl]
+									| [$07ed: inc  hl]
 	addq.w	#1,d6                           	| [...]
 	MAKE_H                                 	| [...]
 	MAKE_HL	a0                             	| [$07ee: ld   (hl),a]
@@ -1834,8 +1836,8 @@ l_08a1:
 	move.b	#0x03,d0                        	| [$08d0: ld   a,$03] [uncovered]
 	GET_ADDRESS	control_flags_8020,a0      	| [$08d2: ld   (control_flags_8020),a] [uncovered]
 	move.b	d0,(a0)                         	| [...] [uncovered]
-	GET_ADDRESS	0xa181,a0                  	| [$08d5: ld   ($a181),a] [uncovered]
-	move.b	d0,(a0)                         	| [...] [uncovered]
+	          	| [$08d5: ld   (interrupt_control_a181),a] [uncovered]
+	           	| [...] [uncovered]
 	CLR_I_FLAG                             	| [$08d8: ei] [uncovered]
 	LOAD_HL	music_control_89f5             	| [$08d9: ld   hl,music_control_89f5] [uncovered]
 l_08dc:
@@ -1851,10 +1853,10 @@ l_08e0:
 	move.b	#0x03,d0                        	| [$08e9: ld   a,$03]
 	GET_ADDRESS	control_flags_8020,a0      	| [$08eb: ld   (control_flags_8020),a]
 	move.b	d0,(a0)                         	| [...]
-	GET_ADDRESS	0xa181,a0                  	| [$08ee: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	                	| [$08ee: ld   (interrupt_control_a181),a]
+	                 	| [...]
 	CLR_I_FLAG                             	| [$08f1: ei]
-	CLR_XC_FLAGS                           	| [$08f2: xor  a] zero scroll in X and Y
+	                           	| [$08f2: xor  a] zero scroll in X and Y
 	clr.b	d0                               	| [...] zero scroll in X and Y
 	jbsr	osd_set_scroll_y |  [$08f3: ld   (scrolly_a140),a]
 	jbsr	osd_set_scroll_x |  [$08f6: ld   (scrollx_a130),a]
@@ -2065,11 +2067,11 @@ l_0a13:
 	move.b	#0x03,d0                        	| [$0a1f: ld   a,$03]
 	GET_ADDRESS	control_flags_8020,a0      	| [$0a21: ld   (control_flags_8020),a]
 	move.b	d0,(a0)                         	| [...]
-	GET_ADDRESS	0xa181,a0                  	| [$0a24: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	                	| [$0a24: ld   (interrupt_control_a181),a]
+	                 	| [...]
 	GET_ADDRESS	counter_824b,a0            	| [$0a27: ld   (counter_824b),a]
-	jbsr	osd_wait_music_end   | force wait
 	move.b	d0,(a0)                         	| [...]
+	jbsr	osd_wait_music_end   | force wait
 * when reaches here the intro/start tune just ended
 l_0a2a:
 	GET_ADDRESS	counter_824b,a0            	| [$0a2a: ld   a,(counter_824b)]
@@ -2120,8 +2122,8 @@ l_0a52:
 	GET_ADDRESS	kill_flag_824c,a0          	| [$0a5a: ld   (kill_flag_824c),a]
 	move.b	d0,(a0)                         	| [...]
 	move.b	#0x01,d0                        	| [$0a5d: ld   a,$01]
-	GET_ADDRESS	0xa181,a0                  	| [$0a5f: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	            	| [$0a5f: ld   (interrupt_control_a181),a]
+	             	| [...]
 	LOAD_HL	sound_control_89f4             	| [$0a62: ld   hl,sound_control_89f4]
 	MAKE_HL	a0                             	| [$0a65: ld   (hl),$40] start engine
 	move.b	#0x40,(a0)                      	| [...] start engine
@@ -2172,6 +2174,7 @@ mainloop_0a7a:
 	move.b	(a0),d0                         	| [...]
 	cmp.b	#0x04,d0                         	| [$0a94: cp   $04] [freq=low, count=31%]
 	jcs	0f                                 	| [$0a96: call nc,$1bcb] [freq=low, count=31%]
+	* running frames behind???
 	jbsr	l_1bcb                            	| [...]
 0:
 	GET_UNCHECKED_ADDRESS	0x8022,a0                  	| [$0a99: ld   a,($8022)] [video_address] [freq=low, count=31%]
@@ -2210,8 +2213,8 @@ l_0ac7:
 	MAKE_H                                 	| [...]
 	subq.b	#1,d1                           	| [$0ac9: djnz $0ac7]
 	jne	l_0ac7                             	| [...]
-	GET_ADDRESS	0xa181,a0                  	| [$0acb: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	                 	| [$0acb: ld   (interrupt_control_a181),a]
+	                  	| [...]
 	GET_ADDRESS	nb_picked_flags_8250,a0    	| [$0ace: ld   (nb_picked_flags_8250),a]
 	move.b	d0,(a0)                         	| [...]
 	move.b	d0,(0x00,a2)                    	| [$0ad1: ld   (ix+$00),a]
@@ -4986,7 +4989,7 @@ l_172a:
 	move.b	(a0),d0                         	| [...]
 	and.b	#0x03,d0                         	| [$172e: and  $03] [freq=low, count=0%]
 	jeq	l_07bd                             	| [$1730: jp   z,$07bd] [freq=low, count=0%]
-	CLR_XC_FLAGS                           	| [$1733: xor  a] [freq=low, count=0%]
+	                           	| [$1733: xor  a] [freq=low, count=0%]
 	clr.b	d0                               	| [...]
 	GET_ADDRESS	counter_824b,a0            	| [$1734: ld   (counter_824b),a] [freq=low, count=0%]
 	move.b	d0,(a0)                         	| [...]
@@ -6147,8 +6150,7 @@ l_1c5e:
 	move.w	(a7)+,d4                        	| [$1c63: pop  de]
 	MAKE_D                                 	| [...]
 	LOAD_HL	0x0020                         	| [$1c64: ld   hl,$0020]
-	jbsr	osd_read_high_score
-	MAKE_DE_NO_AR                          	| [$1c67: add  hl,de]
+	                          	| [$1c67: add  hl,de]
 	MAKE_HL_NO_AR                          	| [...]
 	add.w	d4,d6                            	| [...]
 	MAKE_H                                 	| [...] update MSB reg
@@ -6561,8 +6563,8 @@ write_instructions_text_1e1b:
 	GET_UNCHECKED_ADDRESS	0x8048,a0                  	| [$1e21: ld   ($8048),a] [video_address]
 	move.b	d0,(a0)                         	| [...]
 	VIDEO_BYTE_DIRTY | [...]
-	GET_ADDRESS	0xa181,a0                  	| [$1e24: ld   ($a181),a]
-	move.b	d0,(a0)                         	| [...]
+	             	| [$1e24: ld   (interrupt_control_a181),a]
+	              	| [...]
 	GET_ADDRESS	car_orientation_806b,a0    	| [$1e27: ld   (car_orientation_806b),a]
 	move.b	d0,(a0)                         	| [...]
 	exg	d3,d5                              	| [$1e2a: ex   de,hl]
@@ -7956,7 +7958,7 @@ boot_sequence_384C:
     	| [$38d0: ld   i,a]
     	| [$38d2: ld   a,$fe]
     	| [$38d6: ld   a,$01]
-   	| [$38d8: ld   ($a181),a]
+   	| [$38d8: ld   (interrupt_control_a181),a]
     	| [...]
    	| [$38db: ld   ($a182),a]
     	| [...]
@@ -7968,7 +7970,7 @@ boot_sequence_384C:
                   	| [$38e6: di]
                   	| [$38e7: xor  a]
                     	| [...]
-                  	| [$38e8: ld   ($a181),a]
+                  	| [$38e8: ld   (interrupt_control_a181),a]
                    	| [...]
                   	| [$38eb: ld   ($a182),a]
                    	| [...]
