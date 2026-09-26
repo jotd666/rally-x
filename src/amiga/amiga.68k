@@ -2715,6 +2715,8 @@ set_status_bitplanes:
 set_main_bitplanes:
 	movem.l	a0-a1/d0-d2,-(a7)
 	
+	
+	.ifdef	DEBUG_COPPER_ROWS
 	lea	bitplane_row_list,a0
 	move.w	#0x72,d0
 	
@@ -2730,7 +2732,8 @@ set_main_bitplanes:
 	dbf		d0,0b
 	
 1:
-
+	.endif
+	
 	* set bitplanes
 	moveq	#0,d0
 	moveq	#0,d2
@@ -3658,9 +3661,11 @@ playfield_displayed_screen_ptr:
 	.long	0
 
 PH_SIZE = NB_PLAYFIELD_PLANES*8+4
+
+* 224 pointers on copper lines, that we'll use for copper split
 bitplane_row_list:
-	.set     address, bitplane_rows_40_80
-	.rept	0x41
+	.set     address, bitplane_rows_42_80
+	.rept	0x41-2
 	.long	address
 	.set	address,address+PH_SIZE
 	.endr
@@ -3867,12 +3872,12 @@ status_colors:
 	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
 main_colors:
 	DECL_COLORS	0,TOTAL_NB_COLORS
-	.set	row,0x40-1
+	.set	row,0x42-1
 
 	* until mid-line wait & extra interrupt
 
-bitplane_rows_40_80:
-	.rept	0x41
+bitplane_rows_42_80:
+	.rept	0x41-2
 	.set	row,row+1
 	BITPLANE_PLACEHOLDER	row
 	.endr
