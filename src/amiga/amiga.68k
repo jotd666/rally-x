@@ -2710,10 +2710,19 @@ set_status_bitplanes:
 	lea	status_bitplanes+2,a0
     moveq #NB_PLAYFIELD_PLANES-1,d1
  	move.l	#STATUS_SCREEN_PLANE_SIZE,d2
- 	jra		set_bitplanes
+1:
+    swap d0
+    move.w d0,(a0)
+    swap d0
+    move.w d0,(4,a0)    
+    addq.w  #8,a0
+    add.l d2,d0
+    dbf d1,1b
+	movem.l	(a7)+,a0-a1/d0-d2
+    rts
 
 set_main_bitplanes:
-	movem.l	a0-a1/d0-d2,-(a7)
+	movem.l	a0-a2/d0-d3,-(a7)
 	
 	
 	.ifdef	DEBUG_COPPER_ROWS
@@ -2747,22 +2756,21 @@ set_main_bitplanes:
 	add.w	d2,d2
 	lea		scroll_table,a2
 	move.w	(a2,d2.w),fine_x_scroll_value
-	add.w	(2,a2,d2.w),d0
+	move.w	(2,a2,d2.w),d3		| X offset in d3
 	.else
 	move.w 	(a2,d0.w*2),d0
 	lea		scroll_table,a2
 	move.w	(a2,d2.w*4),fine_x_scroll_value
-	add.w	(2,a2,d2.w*4),d0
+	move.w	(2,a2,d2.w*4),d3	| X offset in d3
 	.endif
-	
-	
+	add.w	d3,d0				| X+Y offset
+
     moveq #NB_PLAYFIELD_PLANES-1,d1
  	move.l	#MAIN_SCREEN_PLANE_SIZE,d2
     move.l	playfield_displayed_screen_ptr(pc),a0
 	add.w	d0,a0		| X/Y scroll offset
-	move.l	a0,d0		| first bitplane screen pointer
- 	lea	main_bitplanes+2,a0
-set_bitplanes:
+	move.l	a0,d0		| first bitplane screen pointer	
+ 	lea	main_bitplanes+2,a0  | address in copperlist
 1:
     swap d0
     move.w d0,(a0)
@@ -2771,7 +2779,34 @@ set_bitplanes:
     addq.w  #8,a0
     add.l d2,d0
     dbf d1,1b
-	movem.l	(a7)+,a0-a1/d0-d2
+	
+	moveq	#0,d0
+	move.b	scroll_y,d0
+	cmp.w	#0x21,d0
+	jra		2f
+	jcs		2f
+	neg.w	d0
+	* scroll Y > 0x20: we need to wrap the bitplanes
+	add.w	#256,d0
+    move.l	playfield_displayed_screen_ptr(pc),a0
+	add.w	d3,a0		| X scroll offset, Y = 0 (wrap)
+	* now pick the proper copperlist entry
+	lea		bitplane_row_list,a2
+	add.w	d0,d0
+	add.w	d0,d0
+	move.l	(a2,d0.w),a2
+	move.w	#color,4(a2)
+	move.w	#0xF00,6(a2)
+	move.l	previous_wrap_copper_entry,d1
+	jeq		3f
+	* reset previous entry
+	move.l	d1,a1
+	move.w	#0x1FE,4(a1)
+3:
+	move.l	a2,previous_wrap_copper_entry
+2:
+
+	movem.l	(a7)+,a0-a2/d0-d3
     rts
 
 scroll_table:
@@ -3489,6 +3524,8 @@ status_log_name:
 looped_sound_enabled:
 	.long	0
 
+previous_wrap_copper_entry:
+	.long	0
 previous_radar_addresses_ptr:
 	.long	0
 
