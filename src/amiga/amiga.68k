@@ -334,7 +334,6 @@ _user:
 	move.l	a0,cop1lc(a5)
 	
 	lea		bobs_screen_buffer_1,a0
-	addq	#2,a0	| leave 16 bits hidden for left side clipping
 	move.l	a0,playfield_screen_data_1
 	move.l	a0,playfield_drawn_screen_ptr
 	move.l	a0,playfield_displayed_screen_ptr
@@ -353,12 +352,6 @@ _user:
 	
 	st		music_track_start_number
 
-	.ifne	OPT_ENABLE_DOUBLE_BUFFERING
-	lea		bobs_screen_buffer_2,a0
-	addq	#2,a0	| leave 16 bits hidden for left side clipping
-	move.l	a0,playfield_screen_data_2
-	move.l	a0,playfield_displayed_screen_ptr
-	.endif
 		
 	* blank sprites
 	lea		game_sprites,a2
@@ -2724,7 +2717,6 @@ set_status_bitplanes:
 set_main_bitplanes:
 	movem.l	a0-a2/d0-d3,-(a7)
 	
-	
 	.ifdef	DEBUG_COPPER_ROWS
 	lea	bitplane_row_list,a0
 	move.w	#0x72,d0
@@ -2782,6 +2774,7 @@ set_main_bitplanes:
 	
 	moveq	#0,d0
 	move.b	scroll_y,d0
+
 	cmp.w	#0x21,d0
 	jcs		2f
 	neg.w	d0
@@ -2795,29 +2788,36 @@ set_main_bitplanes:
 	add.w	d0,d0
 	move.l	(a2,d0.w),a2
 	move.l	previous_wrap_copper_entry,d1
-	cmp.l	d1,a2
-	jeq		3f		| same: don't change (horizontal scroll)
-	*move.w	#color,4(a2)
-	*move.w	#0xF00,6(a2)
+
+	.ifdef	DEBUG_COPPER_ROWS
+	move.w	#color,4(a2)
+	move.w	#0xF00,6(a2)
+	.else
 	lea	(4,a2),a1
 	move.l	a0,d0
 	move.w	#bplpt,d3
 	
-	.rept	NB_PLAYFIELD_PLANES
-	swap	d0		| upper nibble
-	move.w	d3,(a1)+	| bplpt (high)
-	addq	#2,d3
-	move.w	d0,(a1)+ 
-	swap	d0		| lower nibble
-	move.w	d3,(a1)+  | bplpt (low)
-	addq	#2,d3
-	move.w	d0,(a1)+
-	add.l	#MAIN_SCREEN_PLANE_SIZE,d0
-	addq	#4,d3	| dual playfield!!
-	.endr
+	move.w	#color,(A1)+
+	move.w	#0xF00,(a1)+
+	
+*	.rept	NB_PLAYFIELD_PLANES
+*	swap	d0		| upper nibble
+*	move.w	d3,(a1)+	| bplpt (high)
+*	addq	#2,d3
+*	move.w	d0,(a1)+ 
+*	swap	d0		| lower nibble
+*	move.w	d3,(a1)+  | bplpt (low)
+*	addq	#2,d3
+*	move.w	d0,(a1)+
+*	add.l	#MAIN_SCREEN_PLANE_SIZE,d0
+*	addq	#4,d3	| dual playfield!!
+*	.endr
+	.endif
 	
 	tst.l	d1		| no previous: don't reset
 	jeq		3f
+	cmp.l	d1,a2
+	jeq		3f		| same: don't change (horizontal scroll)
 	* reset previous entry
 	move.l	d1,a1
 	addq	#4,a1
@@ -3897,10 +3897,10 @@ game_copperlist:
 	DECL_COLORS	0,TOTAL_NB_COLORS
 	* priority: BOBs playfield on top
 	.word	bplcon2,BASE_BPLCON2_VALUE
-	.word	0x0801,0xFFFE
 
 	* enable sprite colors now
 
+	.word	0x0801,0xFFFE
 main_bitplanes:
 	DECL_EVEN_BITPLANES	0,NB_PLAYFIELD_PLANES
 	.word	0x0901,0xFFFE	

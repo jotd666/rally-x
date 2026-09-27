@@ -1865,7 +1865,7 @@ l_08e0:
 l_08ff:
 	MAKE_HL	a0                             	| [$08ff: bit  0,(hl)]
 	btst.b	#0,(a0)                         	| [...]
-	jeq	l_08ff                             	| [$0901: jr   z,$08ff] music is playing: branch
+	jbsr	osd_wait_music_end
 	move.b	#0x05,d1                        	| [$0903: ld   b,$05]
 	LOAD_DE	0x0020                         	| [$0905: ld   de,$0020]
 	move.b	#0x0d,d2                        	| [$0908: ld   c,$0d]

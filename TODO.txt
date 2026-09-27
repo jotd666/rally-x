@@ -3,7 +3,6 @@
   => not 100% ready, revert to color0
 - GAME OVER is in black/some other color (random) should be white missing some palette change?
 - start 2 player is missing
-- game starts after a too big delay after music played
 - export stack symbol to reset it at A7A
 - enemy car lockup: check where timer is decreased, doesn't seem to be enough to put decrease in irq
 - needs fastmem: mainloop is called roughly 10 times as much as irq
