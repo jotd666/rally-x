@@ -2717,9 +2717,10 @@ set_status_bitplanes:
 set_main_bitplanes:
 	movem.l	a0-a2/d0-d3,-(a7)
 	
+
 	.ifdef	DEBUG_COPPER_ROWS
 	lea	bitplane_row_list,a0
-	move.w	#0x72,d0
+	move.w	#0x92,d0
 	
 0:
 	move.l 	(a0)+,a1
@@ -2779,7 +2780,7 @@ set_main_bitplanes:
 	jcs		2f
 	neg.w	d0
 	* scroll Y > 0x20: we need to wrap the bitplanes
-	add.w	#256,d0
+	add.w	#256+0x1A,d0
     move.l	playfield_displayed_screen_ptr(pc),a0
 	add.w	d3,a0		| X scroll offset, Y = 0 (wrap)
 	* now pick the proper copperlist entry
@@ -2797,21 +2798,21 @@ set_main_bitplanes:
 	move.l	a0,d0
 	move.w	#bplpt,d3
 	
-	move.w	#color,(A1)+
-	move.w	#0xF00,(a1)+
+*	move.w	#color,(A1)+
+*	move.w	#0xF00,(a1)+
 	
-*	.rept	NB_PLAYFIELD_PLANES
-*	swap	d0		| upper nibble
-*	move.w	d3,(a1)+	| bplpt (high)
-*	addq	#2,d3
-*	move.w	d0,(a1)+ 
-*	swap	d0		| lower nibble
-*	move.w	d3,(a1)+  | bplpt (low)
-*	addq	#2,d3
-*	move.w	d0,(a1)+
-*	add.l	#MAIN_SCREEN_PLANE_SIZE,d0
-*	addq	#4,d3	| dual playfield!!
-*	.endr
+	.rept	NB_PLAYFIELD_PLANES
+	swap	d0		| upper nibble
+	move.w	d3,(a1)+	| bplpt (high)
+	addq	#2,d3
+	move.w	d0,(a1)+ 
+	swap	d0		| lower nibble
+	move.w	d3,(a1)+  | bplpt (low)
+	addq	#2,d3
+	move.w	d0,(a1)+
+	add.l	#MAIN_SCREEN_PLANE_SIZE,d0
+	addq	#4,d3	| dual playfield!!
+	.endr
 	.endif
 	
 	tst.l	d1		| no previous: don't reset
@@ -3725,8 +3726,8 @@ PH_SIZE = NB_PLAYFIELD_PLANES*8+4
 
 * 224 pointers on copper lines, that we'll use for copper split
 bitplane_row_list:
-	.set     address, bitplane_rows_42_80
-	.rept	0x41-2
+	.set     address, bitplane_rows_19_80
+	.rept	0x80-0x19
 	.long	address
 	.set	address,address+PH_SIZE
 	.endr
@@ -3746,7 +3747,7 @@ bitplane_row_list:
 	.set	address,address+PH_SIZE
 	.endr
 	.set     address, bitplane_rows_104_123
-	.rept	124-104+14
+	.rept	124-104+14+0x20
 	.long	address
 	.set	address,address+PH_SIZE
 	.endr
@@ -3900,12 +3901,6 @@ game_copperlist:
 
 	* enable sprite colors now
 
-	.word	0x0801,0xFFFE
-main_bitplanes:
-	DECL_EVEN_BITPLANES	0,NB_PLAYFIELD_PLANES
-	.word	0x0901,0xFFFE	
-status_bitplanes:
-	DECL_EVEN_BITPLANES	4,NB_PLAYFIELD_PLANES
 
 	.word	bplcon1
 fine_x_scroll_value:
@@ -3916,8 +3911,7 @@ game_sprites:
 	DECL_SPRITES
 game_sprites_end:
 
-
-	.word	0x3F01,0xFFFE
+	.word	0x1701,0xFFFE
 	.ifdef	AGA_VERSION
 	.word	bplcon3,BASE_BPLCON3_VALUE+(1<<13)
 sprite_colors:
@@ -3933,12 +3927,20 @@ status_colors:
 	DECL_COLORS	TOTAL_NB_COLORS,TOTAL_NB_COLORS
 main_colors:
 	DECL_COLORS	0,TOTAL_NB_COLORS
-	.set	row,0x42-1
+
+	.word	0x1701,0xFFFE	
+status_bitplanes:
+	DECL_EVEN_BITPLANES	4,NB_PLAYFIELD_PLANES
+	.word	0x1801,0xFFFE
+main_bitplanes:
+	DECL_EVEN_BITPLANES	0,NB_PLAYFIELD_PLANES
+
+	.set	row,0x19
 
 	* until mid-line wait & extra interrupt
 
-bitplane_rows_42_80:
-	.rept	0x41-2
+bitplane_rows_19_80:
+	.rept	0x80-0x19
 	.set	row,row+1
 	BITPLANE_PLACEHOLDER	row
 	.endr
@@ -3979,7 +3981,7 @@ bitplane_rows_100_103:
 	.word	 intreq,0x8010
 
 bitplane_rows_104_123:
-	.rept	0x14+14
+	.rept	0x34+14
 	.set	row,row+1
 	BITPLANE_PLACEHOLDER	row
 	.endr
