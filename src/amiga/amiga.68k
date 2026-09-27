@@ -64,9 +64,10 @@ BASE_BPLCON3_VALUE = 0x0C00+(BORDERBLANK<<5)  | dpf second playfield palette sta
 * BASE_BPLCON2_VALUE = 0x004C
 
 * bit 6: priority of main bitplane vs status bitplane
-* lower bits: all 0 to make sprites disappear on the status bitplane
+* bits 5-3: all 0 to make sprites disappear on the status bitplane
 * (useful for right side clipping of sprites)
-BASE_BPLCON2_VALUE = 0x0040
+* bits 2-0: all 1 to make sprites above main playfield
+BASE_BPLCON2_VALUE = 0x0047
 
 * changing those offsets can make
 * a quick reuse from game to game as most sprite
@@ -2776,11 +2777,11 @@ set_main_bitplanes:
 	moveq	#0,d0
 	move.b	scroll_y,d0
 
-	cmp.w	#0x21,d0
+	cmp.w	#0x31,d0
 	jcs		2f
 	neg.w	d0
 	* scroll Y > 0x20: we need to wrap the bitplanes
-	add.w	#256+0x1A,d0
+	add.w	#256+0x40,d0
     move.l	playfield_displayed_screen_ptr(pc),a0
 	add.w	d3,a0		| X scroll offset, Y = 0 (wrap)
 	* now pick the proper copperlist entry
