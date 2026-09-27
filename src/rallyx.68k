@@ -4132,8 +4132,7 @@ l_1375:
 	move.b	(a0),d0                         	| [...]
 	or.b	d1,d0                             	| [$1380: or   b] [freq=low, count=21%]
 	MAKE_HL_UNCHECKED	a0                             	| [$1381: ld   (hl),a] [video_address] [freq=low, count=21%]
-	cmp.b	(a0),d0
-	jeq		0f		| [gfx_optim]
+	* we cannot optimize this video write for some reason
 	move.b	d0,(a0)                         	| [...] [video_address]
 	VIDEO_BYTE_DIRTY | [...]
 0:
@@ -4253,7 +4252,7 @@ l_13cf:
 	MAKE_D                                 	| [...]
 	GET_ADDRESS	deltax_car_vs_current_enemy_8050,a0	| [$13dc: ld   a,(deltax_car_vs_current_enemy_8050)] [freq=low, count=5%]
 	move.b	(a0),d0                         	| [...]
-	move.b	#0x00,d1                        	| [$13df: ld   b,$00] [freq=low, count=5%]
+	moveq	#0x00,d1                        	| [$13df: ld   b,$00] [freq=low, count=5%]
 	move.b	d0,d2                           	| [$13e1: ld   c,a] [freq=low, count=5%]
 	btst.b	#7,d0                           	| [$13e2: bit  7,a] [freq=low, count=5%]
 	jeq	l_13e7                             	| [$13e4: jr   z,$13e7] [freq=low, count=5%]
@@ -6289,7 +6288,7 @@ l_1cea:
 	sub.b	d3,d0                            	| [$1cee: sub  d] [freq=low, count=1%]
 	btst.b	#7,d0                           	| [$1cef: bit  7,a] [freq=low, count=1%]
 	jeq	l_1cf4                             	| [$1cf1: jr   z,$1cf4] [freq=low, count=1%]
-	CLR_XC_FLAGS                           	| [$1cf3: xor  a] [freq=low, count=0%]
+	                           	| [$1cf3: xor  a] [freq=low, count=0%]
 	clr.b	d0                               	| [...]
 l_1cf4:
 	add.b	d2,d0                            	| [$1cf4: add  a,c] [freq=low, count=1%]
